@@ -1,0 +1,50 @@
+<!-- settings.html -->
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <title>Settings</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                padding: 20px;
+            }
+            h1 {
+                margin-top: 0;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Settings</h1>
+        <label> <input type="checkbox" id="startOnBoot" /> Start on system startup </label><br /><br />
+        <label> <input type="checkbox" id="enableAnimations" /> Enable overlay animations </label><br /><br />
+        <label>
+            Language:
+            <select id="languageSelect">
+                <option value="en">English</option>
+                <!-- Add more languages -->
+            </select> </label
+        ><br /><br />
+        <button id="saveButton">Save</button>
+
+        <script>
+            const { ipcRenderer } = require('electron')
+
+            ipcRenderer.invoke('get-settings').then((settings) => {
+                document.getElementById('startOnBoot').checked = settings.startOnBoot
+                document.getElementById('enableAnimations').checked = settings.enableAnimations
+                document.getElementById('languageSelect').value = settings.language
+            })
+
+            document.getElementById('saveButton').addEventListener('click', () => {
+                const settings = {
+                    startOnBoot: document.getElementById('startOnBoot').checked,
+                    enableAnimations: document.getElementById('enableAnimations').checked,
+                    language: document.getElementById('languageSelect').value,
+                }
+                ipcRenderer.send('save-settings', settings)
+                window.close()
+            })
+        </script>
+    </body>
+</html>

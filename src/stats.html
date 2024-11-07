@@ -1,0 +1,43 @@
+<!-- stats.html -->
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <title>Break Stats</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                padding: 20px;
+            }
+            h1 {
+                margin-top: 0;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Today's Stats</h1>
+        <p>Total Work Time: <span id="totalWorkTime"></span></p>
+        <p>Total Break Time: <span id="totalBreakTime"></span></p>
+        <p>Breaks Taken: <span id="breaksTaken"></span></p>
+        <p>Longest Work Streak: <span id="longestWorkStreak"></span></p>
+
+        <script>
+            const { ipcRenderer } = require('electron')
+
+            ipcRenderer.invoke('get-stats').then((stats) => {
+                document.getElementById('totalWorkTime').textContent = formatTime(stats.totalWorkTimeToday)
+                document.getElementById('totalBreakTime').textContent = formatTime(stats.totalBreakTimeToday)
+                document.getElementById('breaksTaken').textContent = stats.breaksTakenToday
+                document.getElementById('longestWorkStreak').textContent = formatTime(stats.longestWorkStreak)
+            })
+
+            function formatTime(ms) {
+                const totalSeconds = Math.floor(ms / 1000)
+                const hours = Math.floor(totalSeconds / 3600)
+                const minutes = Math.floor((totalSeconds % 3600) / 60)
+                const seconds = totalSeconds % 60
+                return `${hours}h ${minutes}m ${seconds}s`
+            }
+        </script>
+    </body>
+</html>
