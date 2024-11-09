@@ -45,32 +45,32 @@ function createMainWindow() {
 function createOverlayWindow() {
     const displays = screen.getAllDisplays()
     displays.forEach((display) => {
-        const { width, height, x, y } = display.bounds
-
         const overlay = new BrowserWindow({
-            x,
-            y,
-            width,
-            height,
+            x: display.bounds.x,
+            y: display.bounds.y,
             transparent: true,
             frame: false,
+            skipTaskbar: true,
             alwaysOnTop: true,
-            opacity: 0.85, // Adjusted for frosty effect
-            fullscreen: false, // Managed via width and height
+            opacity: 0.85,
+            fullscreen: true, // Enable true fullscreen
             webPreferences: {
                 nodeIntegration: true,
                 contextIsolation: false,
             },
+            // Remove explicit width and height as fullscreen handles this
         })
 
         overlay.loadFile(path.join(__dirname, 'overlay.html'))
 
         // Set always on top with 'floating' level to maintain highest z-order
         overlay.setAlwaysOnTop(true, 'floating')
+        overlay.maximize() // Ensure window is maximized
 
         // Ensure the overlay stays on top even when blurred
         overlay.on('blur', () => {
             overlay.setAlwaysOnTop(true, 'floating')
+            overlay.maximize() // Re-maximize if needed
         })
 
         overlay.on('closed', () => {
@@ -124,9 +124,9 @@ function startWorkTimer() {
 
     workTimer = setTimeout(() => {
         showOverlay()
-    // }, 20 * 60 * 1000) // 20 minutes
     // For testing:
-    }, 10 * 1000); // 10 seconds
+    // }, 20 * 60 * 1000) // 20 minutes
+    }, 1 * 1000) // 10 seconds
 }
 
 function showOverlay() {
