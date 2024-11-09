@@ -1,0 +1,60 @@
+<!-- src/dashboard.html -->
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8" />
+        <title>Dashboard</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                padding: 20px;
+                text-align: center;
+                background-color: #f0f0f0;
+            }
+            #dismiss-button {
+                margin-top: 20px;
+                padding: 10px 20px;
+                font-size: 16px;
+                cursor: pointer;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Good Job!</h1>
+        <p>
+            You've consecutively rested your eyes
+            <span id="break-count">0</span> times, which is <span id="eye-protection-time">0</span> minutes of eye protection.
+        </p>
+        <button id="dismiss-button">Continue in <span id="dismiss-countdown">5</span>s</button>
+        <script>
+            const { ipcRenderer } = require('electron')
+
+            // Fetch stats from the main process
+            ipcRenderer.invoke('get-stats').then((stats) => {
+                const breakCount = stats.breaksTakenToday
+                const eyeProtectionTime = breakCount * 20 // 20 minutes per break
+                document.getElementById('break-count').textContent = breakCount
+                document.getElementById('eye-protection-time').textContent = eyeProtectionTime
+            })
+
+            let dismissCountdown = 5
+            const dismissCountdownElement = document.getElementById('dismiss-countdown')
+
+            const countdownInterval = setInterval(() => {
+                dismissCountdown -= 1
+                dismissCountdownElement.textContent = dismissCountdown.toString()
+                if (dismissCountdown <= 0) {
+                    clearInterval(countdownInterval)
+                    ipcRenderer.send('dashboard-dismissed') // Notify main process
+                    window.close()
+                }
+            }, 1000)
+
+            document.getElementById('dismiss-button').addEventListener('click', () => {
+                clearInterval(countdownInterval)
+                ipcRenderer.send('dashboard-dismissed') // Notify main process
+                window.close()
+            })
+        </script>
+    </body>
+</html>

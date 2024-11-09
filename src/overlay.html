@@ -1,49 +1,33 @@
+<!-- src/overlay.html -->
 <!DOCTYPE html>
-<html lang="en">
+<html>
     <head>
         <meta charset="UTF-8" />
         <title>Break Time</title>
         <style>
-            html,
+            /* Add your styles here */
             body {
-                width: 100%;
-                height: 100%;
-                margin: 0;
-                padding: 0;
-                overflow: hidden;
-                background: black;
-                backdrop-filter: blur(15px);
-                -webkit-backdrop-filter: blur(15px); /* For better browser support */
                 display: flex;
                 flex-direction: column;
                 justify-content: center;
                 align-items: center;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
                 color: white;
-                font-size: 24px;
+                font-family: Arial, sans-serif;
             }
             #message {
+                font-size: 24px;
                 margin-bottom: 20px;
-                text-align: center;
             }
             #countdown {
-                margin-bottom: 40px;
                 font-size: 48px;
+                margin-bottom: 20px;
             }
             #skip-button {
-                position: absolute;
-                bottom: 40px;
-                right: 40px;
                 padding: 10px 20px;
                 font-size: 18px;
                 cursor: pointer;
-                border: none;
-                border-radius: 5px;
-                background-color: rgba(255, 255, 255, 0.3);
-                color: white;
-                transition: background-color 0.3s;
-            }
-            #skip-button:hover {
-                background-color: rgba(255, 255, 255, 0.5);
             }
         </style>
     </head>
@@ -56,19 +40,20 @@
 
             let countdown = 20
             const countdownElement = document.getElementById('countdown')
+
             const interval = setInterval(() => {
                 countdown -= 1
                 countdownElement.textContent = countdown.toString()
                 if (countdown <= 0) {
                     clearInterval(interval)
-                    ipcRenderer.send('break-ended')
+                    ipcRenderer.send('break-complete') // Notify main process
                     window.close()
                 }
             }, 1000)
 
             document.getElementById('skip-button').addEventListener('click', () => {
                 clearInterval(interval)
-                ipcRenderer.send('break-ended')
+                ipcRenderer.send('break-skip') // Notify main process
                 window.close()
             })
         </script>
