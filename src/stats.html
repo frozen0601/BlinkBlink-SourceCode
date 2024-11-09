@@ -15,25 +15,39 @@
         </style>
     </head>
     <body>
-        <h1>Today's Stats</h1>
-        <p>Total Work Time: <span id="totalWorkTime"></span></p>
-        <p>Total Break Time: <span id="totalBreakTime"></span></p>
-        <p>Breaks Taken: <span id="breaksTaken"></span></p>
-        <p>Longest Work Streak: <span id="longestWorkStreak"></span></p>
-
+        <h1>BlinkBlink Stats</h1>
+        <p>
+            You've consecutively rested your eyes
+            <span id="break-streak-count"></span> times, which is <span id="break-streak-duration"></span> of eye protection.
+        </p>
         <script>
             const { ipcRenderer } = require('electron')
+            const { formatDuration, intervalToDuration } = require('date-fns')
             ipcRenderer.invoke('get-stats').then((stats) => {
                 document.getElementById('break-streak-count').textContent = stats.breakStreakCount
                 document.getElementById('break-streak-duration').textContent = formatTime(stats.breakStreakDuration)
             })
 
             function formatTime(ms) {
-                const totalSeconds = Math.floor(ms / 1000)
-                const hours = Math.floor(totalSeconds / 3600)
-                const minutes = Math.floor((totalSeconds % 3600) / 60)
-                const seconds = totalSeconds % 60
-                return `${hours}h ${minutes}m ${seconds}s`
+                if (!ms) return '0 second'
+                const duration = intervalToDuration({ start: 0, end: ms })
+                if (duration.days > 0) {
+                    return `${duration.days} ${duration.days === 1 ? 'day' : 'days'}${
+                        duration.hours ? ` ${duration.hours} ${duration.hours === 1 ? 'hour' : 'hours'}` : ''
+                    }`
+                }
+
+                if (duration.hours > 0) {
+                    return `${duration.hours} ${duration.hours === 1 ? 'hour' : 'hours'}${
+                        duration.minutes ? ` ${duration.minutes} ${duration.minutes === 1 ? 'minute' : 'minutes'}` : ''
+                    }`
+                }
+
+                if (duration.minutes > 0) {
+                    return `${duration.minutes} ${duration.minutes === 1 ? 'minute' : 'minutes'}`
+                }
+
+                return `${duration.seconds} ${duration.seconds === 1 ? 'second' : 'seconds'}`
             }
         </script>
     </body>

@@ -3,7 +3,7 @@ export const DURATIONS = {
     // BREAK_DURATION: 20 * 1000,     // 20 seconds
     // DASHBOARD_DURATION: 3 * 1000,  // 3 seconds
     // For testing
-    WORK_DURATION: 3 * 1000,
-    BREAK_DURATION: 3 * 1000,
-    DASHBOARD_DURATION: 3 * 1000,
+    WORK_DURATION: 5 * 1000,
+    BREAK_DURATION: 5 * 1000,
+    DASHBOARD_DURATION: 5 * 1000,
 } as const
