@@ -162,6 +162,7 @@ ipcMain.on('break-complete', () => {
 // Handle 'dashboard-dismissed' from dashboard.html (if implemented)
 ipcMain.on('dashboard-dismissed', () => {
     dismissDashboard()
+    closeDashboardWindow()
     startWorkTimer()
 })
 

@@ -4,8 +4,9 @@ import { BrowserWindow, screen, ipcMain } from 'electron'
 import * as path from 'path'
 
 let overlayWindows: BrowserWindow[] = []
-let dashboardWindow: BrowserWindow | null = null
 let overlayIntervals: { window: BrowserWindow; interval: NodeJS.Timeout }[] = []
+let dashboardWindows: BrowserWindow[] = []
+let dashboardIntervals: { window: BrowserWindow; interval: NodeJS.Timeout }[] = []
 
 export function showOverlay() {
     const displays = screen.getAllDisplays()
@@ -90,44 +91,83 @@ export function closeOverlayWindows() {
 }
 
 export function showDashboard() {
-    if (dashboardWindow) {
-        if (!dashboardWindow.isDestroyed()) {
-            dashboardWindow.focus()
-        } else {
-            dashboardWindow = null
-        }
-        return
-    }
+    const displays = screen.getAllDisplays()
+    displays.forEach((display) => {
+        const dashboard = new BrowserWindow({
+            x: display.bounds.x,
+            y: display.bounds.y,
+            width: display.bounds.width,
+            height: display.bounds.height,
+            transparent: true,
+            frame: false,
+            skipTaskbar: true,
+            alwaysOnTop: true,
+            opacity: 0.85,
+            webPreferences: {
+                nodeIntegration: true,
+                contextIsolation: false,
+            },
+        })
 
-    dashboardWindow = new BrowserWindow({
-        width: 400,
-        height: 300,
-        resizable: false,
-        alwaysOnTop: true,
-        webPreferences: {
-            nodeIntegration: true,
-            contextIsolation: false,
-        },
+        dashboard.loadFile(path.join(__dirname, 'dashboard.html'))
+        dashboard.setAlwaysOnTop(true, 'floating')
+        dashboard.maximize()
+
+        dashboard.on('blur', () => {
+            if (!dashboard.isDestroyed()) {
+                dashboard.setAlwaysOnTop(true, 'floating')
+                dashboard.maximize()
+            }
+        })
+
+        dashboard.on('closed', () => {
+            const intervalObj = dashboardIntervals.find((i) => i.window === dashboard)
+            if (intervalObj) {
+                clearInterval(intervalObj.interval)
+                dashboardIntervals = dashboardIntervals.filter((i) => i.window !== dashboard)
+            }
+            dashboardWindows = dashboardWindows.filter((win) => win !== dashboard)
+        })
+
+        dashboard.once('ready-to-show', () => {
+            let countdown = 3
+            const interval = setInterval(() => {
+                if (dashboard.isDestroyed()) {
+                    clearInterval(interval)
+                    return
+                }
+
+                countdown -= 1
+                dashboardWindows.forEach((win) => {
+                    if (!win.isDestroyed()) {
+                        win.webContents.send('countdown-update', countdown)
+                    }
+                })
+
+                if (countdown <= 0) {
+                    clearInterval(interval)
+                    dashboardIntervals = dashboardIntervals.filter((i) => i.interval !== interval)
+                    ipcMain.emit('dashboard-dismissed')
+                }
+            }, 1000)
+
+            dashboardIntervals.push({ window: dashboard, interval })
+        })
+
+        dashboardWindows.push(dashboard)
     })
-
-    dashboardWindow.loadFile(path.join(__dirname, 'dashboard.html'))
-
-    dashboardWindow.on('closed', () => {
-        dashboardWindow = null
-    })
-
-    const dismissTimeout = setTimeout(() => {
-        if (dashboardWindow && !dashboardWindow.isDestroyed()) {
-            closeDashboardWindow()
-            ipcMain.emit('dashboard-dismissed')
-        }
-        clearTimeout(dismissTimeout)
-    }, 3 * 1000)
 }
 
 export function closeDashboardWindow() {
-    if (dashboardWindow && !dashboardWindow.isDestroyed()) {
-        dashboardWindow.close()
-        dashboardWindow = null
-    }
+    // Clear all intervals
+    dashboardIntervals.forEach(({ interval }) => clearInterval(interval))
+    dashboardIntervals = []
+
+    // Close all dashboard windows
+    dashboardWindows.forEach((win) => {
+        if (!win.isDestroyed()) {
+            win.close()
+        }
+    })
+    dashboardWindows = []
 }
