@@ -7,7 +7,7 @@ export const store = new Store<StoreSchema>({
     defaults: {
         stats: {
             totalWorkTimeToday: 0,
-            totalBreakTimeToday: 0,
+            eyeProtectionTime: 0,
             breaksTakenToday: 0,
             longestWorkStreak: 0,
         },

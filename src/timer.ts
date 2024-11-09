@@ -1,7 +1,6 @@
-// src/timer.ts
-
 import { store } from './store'
 import { ipcMain } from 'electron'
+import { DURATIONS } from './constants'
 
 let workTimer: NodeJS.Timeout
 let breakTimer: NodeJS.Timeout | null = null
@@ -48,17 +47,12 @@ export function startWorkTimer() {
     currentState = TimerState.Work
     updateWorkStreak()
 
-    // For production:
-    workTimer = setTimeout(() => {
-        currentState = TimerState.BreakCountdown
-        ipcMain.emit('start-break-countdown')
-    }, 20 * 60 * 1000)
+    const duration = DURATIONS.WORK_DURATION
 
-    // For testing:
     workTimer = setTimeout(() => {
         currentState = TimerState.BreakCountdown
         ipcMain.emit('start-break-countdown')
-    }, 1 * 1000)
+    }, duration)
 }
 
 // Break Management Methods

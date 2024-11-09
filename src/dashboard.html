@@ -53,30 +53,13 @@
         <script>
             const { ipcRenderer } = require('electron')
 
-            // Fetch stats from the main process
-            ipcRenderer.invoke('get-stats').then((stats) => {
-                const breakCount = stats.breaksTakenToday
-                const eyeProtectionTime = breakCount * 20 // 20 minutes per break
-                document.getElementById('break-count').textContent = breakCount
-                document.getElementById('eye-protection-time').textContent = eyeProtectionTime
+            // Single handler for all countdown updates
+            ipcRenderer.on('countdown-update', (event, countdown) => {
+                document.getElementById('dismiss-countdown').textContent = countdown.toString()
             })
 
-            let dismissCountdown = 5
-            const dismissCountdownElement = document.getElementById('dismiss-countdown')
-
-            const countdownInterval = setInterval(() => {
-                dismissCountdown -= 1
-                dismissCountdownElement.textContent = dismissCountdown.toString()
-                if (dismissCountdown <= 0) {
-                    clearInterval(countdownInterval)
-                    ipcRenderer.send('dashboard-dismissed') // Notify main process
-                    window.close()
-                }
-            }, 1000)
-
             document.getElementById('dismiss-button').addEventListener('click', () => {
-                clearInterval(countdownInterval)
-                ipcRenderer.send('dashboard-dismissed') // Notify main process
+                ipcRenderer.send('dashboard-dismissed')
                 window.close()
             })
         </script>

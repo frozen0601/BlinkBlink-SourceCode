@@ -2,16 +2,29 @@
 
 import { BrowserWindow, screen, ipcMain } from 'electron'
 import * as path from 'path'
+import { DURATIONS } from './constants'
 
-let overlayWindows: BrowserWindow[] = []
-let overlayIntervals: { window: BrowserWindow; interval: NodeJS.Timeout }[] = []
-let dashboardWindows: BrowserWindow[] = []
-let dashboardIntervals: { window: BrowserWindow; interval: NodeJS.Timeout }[] = []
+interface WindowWithInterval {
+    window: BrowserWindow
+    interval: NodeJS.Timeout
+}
 
-export function showOverlay() {
-    const displays = screen.getAllDisplays()
-    displays.forEach((display) => {
-        const overlay = new BrowserWindow({
+interface WindowConfig {
+    type: 'overlay' | 'dashboard'
+    display: Electron.Display
+    countdownDuration: number
+    onComplete: () => void
+}
+
+class WindowManager {
+    private overlayWindows: BrowserWindow[] = []
+    private overlayIntervals: WindowWithInterval[] = []
+    private dashboardWindows: BrowserWindow[] = []
+    private dashboardIntervals: WindowWithInterval[] = []
+
+    private createWindow(config: WindowConfig): BrowserWindow {
+        const { type, display } = config
+        const window = new BrowserWindow({
             x: display.bounds.x,
             y: display.bounds.y,
             width: display.bounds.width,
@@ -27,147 +40,139 @@ export function showOverlay() {
             },
         })
 
-        overlay.loadFile(path.join(__dirname, 'overlay.html'))
-        overlay.setAlwaysOnTop(true, 'floating')
-        overlay.maximize()
+        const htmlFile = `${type}.html`
+        window.loadFile(path.join(__dirname, htmlFile))
+        window.setAlwaysOnTop(true, 'floating')
+        window.maximize()
 
-        overlay.on('blur', () => {
-            if (!overlay.isDestroyed()) {
-                overlay.setAlwaysOnTop(true, 'floating')
-                overlay.maximize()
+        this.setupWindowEvents(window, type, config)
+        return window
+    }
+
+    private setupWindowEvents(window: BrowserWindow, type: string, config: WindowConfig) {
+        window.on('blur', () => {
+            if (!window.isDestroyed()) {
+                window.setAlwaysOnTop(true, 'floating')
+                window.maximize()
             }
         })
 
-        overlay.on('closed', () => {
-            // Clear interval associated with this window
-            const intervalObj = overlayIntervals.find((i) => i.window === overlay)
-            if (intervalObj) {
-                clearInterval(intervalObj.interval)
-                overlayIntervals = overlayIntervals.filter((i) => i.window !== overlay)
+        window.on('closed', () => {
+            this.cleanupWindow(window, type)
+        })
+
+        window.once('ready-to-show', () => {
+            this.startCountdown(window, type, config)
+        })
+    }
+
+    private startCountdown(window: BrowserWindow, type: string, config: WindowConfig) {
+        let countdown = Math.floor(config.countdownDuration / 1000)
+        this.updateCountdown(type, countdown)
+
+        const interval = setInterval(() => {
+            if (window.isDestroyed()) {
+                clearInterval(interval)
+                return
             }
-            overlayWindows = overlayWindows.filter((win) => win !== overlay)
+
+            countdown--
+            if (countdown <= 0) {
+                clearInterval(interval)
+                this.handleCountdownComplete(type, config.onComplete)
+                return
+            }
+            this.updateCountdown(type, countdown)
+        }, 1000)
+
+        const windows = type === 'overlay' ? this.overlayWindows : this.dashboardWindows
+        const intervals = type === 'overlay' ? this.overlayIntervals : this.dashboardIntervals
+        windows.push(window)
+        intervals.push({ window, interval })
+    }
+
+    private updateCountdown(type: string, countdown: number) {
+        const windows = type === 'overlay' ? this.overlayWindows : this.dashboardWindows
+        windows.forEach((win) => {
+            if (!win.isDestroyed()) {
+                win.webContents.send('countdown-update', countdown)
+            }
         })
+    }
 
-        overlay.once('ready-to-show', () => {
-            let countdown = 3
-            const interval: NodeJS.Timeout = setInterval(() => {
-                if (overlay.isDestroyed()) {
-                    clearInterval(interval)
-                    return
-                }
+    private handleCountdownComplete(type: string, onComplete: () => void) {
+        const intervals = type === 'overlay' ? this.overlayIntervals : this.dashboardIntervals
+        intervals.forEach(({ interval }) => clearInterval(interval))
+        onComplete()
+    }
 
-                countdown -= 1
-                if (!overlay.isDestroyed()) {
-                    overlay.webContents.send('countdown-update', countdown)
-                }
+    private cleanupWindow(window: BrowserWindow, type: string) {
+        const intervals = type === 'overlay' ? this.overlayIntervals : this.dashboardIntervals
+        const windows = type === 'overlay' ? this.overlayWindows : this.dashboardWindows
 
-                if (countdown <= 0) {
-                    clearInterval(interval)
-                    overlayIntervals = overlayIntervals.filter((i) => i.interval !== interval)
-                    ipcMain.emit('break-complete')
-                }
-            }, 1000)
-
-            // Store interval with its associated window
-            overlayIntervals.push({ window: overlay, interval })
-        })
-
-        overlayWindows.push(overlay)
-    })
-}
-
-export function closeOverlayWindows() {
-    // Clear all intervals
-    overlayIntervals.forEach(({ interval }) => clearInterval(interval))
-    overlayIntervals = []
-
-    // Close all windows
-    overlayWindows.forEach((win) => {
-        if (!win.isDestroyed()) {
-            win.close()
+        const intervalObj = intervals.find((i) => i.window === window)
+        if (intervalObj) {
+            clearInterval(intervalObj.interval)
+            intervals.splice(intervals.indexOf(intervalObj), 1)
         }
-    })
-    overlayWindows = []
-}
 
-export function showDashboard() {
-    const displays = screen.getAllDisplays()
-    displays.forEach((display) => {
-        const dashboard = new BrowserWindow({
-            x: display.bounds.x,
-            y: display.bounds.y,
-            width: display.bounds.width,
-            height: display.bounds.height,
-            transparent: true,
-            frame: false,
-            skipTaskbar: true,
-            alwaysOnTop: true,
-            opacity: 0.85,
-            webPreferences: {
-                nodeIntegration: true,
-                contextIsolation: false,
-            },
+        windows.splice(windows.indexOf(window), 1)
+    }
+
+    showOverlay() {
+        const displays = screen.getAllDisplays()
+        displays.forEach((display) => {
+            this.createWindow({
+                type: 'overlay',
+                display,
+                countdownDuration: DURATIONS.BREAK_DURATION,
+                onComplete: () => ipcMain.emit('break-complete'),
+            })
         })
+    }
 
-        dashboard.loadFile(path.join(__dirname, 'dashboard.html'))
-        dashboard.setAlwaysOnTop(true, 'floating')
-        dashboard.maximize()
+    showDashboard() {
+        const displays = screen.getAllDisplays()
+        displays.forEach((display) => {
+            this.createWindow({
+                type: 'dashboard',
+                display,
+                countdownDuration: DURATIONS.DASHBOARD_DURATION,
+                onComplete: () => ipcMain.emit('dashboard-dismissed'),
+            })
+        })
+    }
 
-        dashboard.on('blur', () => {
-            if (!dashboard.isDestroyed()) {
-                dashboard.setAlwaysOnTop(true, 'floating')
-                dashboard.maximize()
+    closeOverlayWindows() {
+        this.overlayIntervals.forEach(({ interval }) => clearInterval(interval))
+        this.overlayIntervals = []
+
+        this.overlayWindows.forEach((win) => {
+            if (!win.isDestroyed()) {
+                win.close()
             }
         })
+        this.overlayWindows = []
+    }
 
-        dashboard.on('closed', () => {
-            const intervalObj = dashboardIntervals.find((i) => i.window === dashboard)
-            if (intervalObj) {
-                clearInterval(intervalObj.interval)
-                dashboardIntervals = dashboardIntervals.filter((i) => i.window !== dashboard)
+    closeDashboardWindows() {
+        this.dashboardIntervals.forEach(({ interval }) => clearInterval(interval))
+        this.dashboardIntervals = []
+
+        this.dashboardWindows.forEach((win) => {
+            if (!win.isDestroyed()) {
+                win.close()
             }
-            dashboardWindows = dashboardWindows.filter((win) => win !== dashboard)
         })
-
-        dashboard.once('ready-to-show', () => {
-            let countdown = 3
-            const interval = setInterval(() => {
-                if (dashboard.isDestroyed()) {
-                    clearInterval(interval)
-                    return
-                }
-
-                countdown -= 1
-                dashboardWindows.forEach((win) => {
-                    if (!win.isDestroyed()) {
-                        win.webContents.send('countdown-update', countdown)
-                    }
-                })
-
-                if (countdown <= 0) {
-                    clearInterval(interval)
-                    dashboardIntervals = dashboardIntervals.filter((i) => i.interval !== interval)
-                    ipcMain.emit('dashboard-dismissed')
-                }
-            }, 1000)
-
-            dashboardIntervals.push({ window: dashboard, interval })
-        })
-
-        dashboardWindows.push(dashboard)
-    })
+        this.dashboardWindows = []
+    }
 }
 
-export function closeDashboardWindow() {
-    // Clear all intervals
-    dashboardIntervals.forEach(({ interval }) => clearInterval(interval))
-    dashboardIntervals = []
+// Create singleton instance
+const windowManager = new WindowManager()
 
-    // Close all dashboard windows
-    dashboardWindows.forEach((win) => {
-        if (!win.isDestroyed()) {
-            win.close()
-        }
-    })
-    dashboardWindows = []
-}
+// Export methods
+export const showOverlay = () => windowManager.showOverlay()
+export const closeOverlayWindows = () => windowManager.closeOverlayWindows()
+export const showDashboard = () => windowManager.showDashboard()
+export const closeDashboardWindow = () => windowManager.closeDashboardWindows()

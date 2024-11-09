@@ -1,6 +1,6 @@
 export interface Stats {
     totalWorkTimeToday: number
-    totalBreakTimeToday: number
+    eyeProtectionTime: number
     breaksTakenToday: number
     longestWorkStreak: number
 }

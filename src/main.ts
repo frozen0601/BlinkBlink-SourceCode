@@ -14,6 +14,7 @@ import {
     isRunning,
 } from './timer'
 import { showOverlay, closeOverlayWindows, showDashboard, closeDashboardWindow } from './windows'
+import { DURATIONS } from './constants'
 
 let mainWindow: BrowserWindow | null = null
 let statsWindow: BrowserWindow | null = null
@@ -24,7 +25,7 @@ const store = new Store<StoreSchema>({
     defaults: {
         stats: {
             totalWorkTimeToday: 0,
-            totalBreakTimeToday: 0,
+            eyeProtectionTime: 0,
             breaksTakenToday: 0,
             longestWorkStreak: 0,
         },
@@ -43,7 +44,7 @@ function updateBreakStats(skipped: boolean) {
     const stats = store.get('stats')
     const updatedStats = {
         ...stats,
-        totalBreakTimeToday: skipped ? 0 : stats.totalBreakTimeToday + 20 * 1000,
+        eyeProtectionTime: skipped ? 0 : stats.eyeProtectionTime + DURATIONS.BREAK_DURATION,
         breaksTakenToday: skipped ? 0 : stats.breaksTakenToday + 1,
     }
     store.set('stats', updatedStats)

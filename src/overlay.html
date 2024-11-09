@@ -52,18 +52,19 @@
         </style>
     </head>
     <body>
-        <div id="message">Rest your eyes for 20 seconds!</div>
-        <div id="countdown">20</div>
-        <button id="skip-button">Skip Break</button>
+        <div id="message">Look Away😌</div>
+        <div id="countdown"></div>
+        <button id="skip-button">Skip</button>
         <script>
             const { ipcRenderer } = require('electron')
 
+            // Single handler for all countdown updates
             ipcRenderer.on('countdown-update', (event, countdown) => {
                 document.getElementById('countdown').textContent = countdown.toString()
             })
 
             document.getElementById('skip-button').addEventListener('click', () => {
-                ipcRenderer.send('break-skip') // Notify main process
+                ipcRenderer.send('break-skip')
                 window.close()
             })
         </script>
