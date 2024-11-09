@@ -15,14 +15,20 @@ enum TimerState {
 
 let currentState: TimerState = TimerState.Work
 
-export function startWorkTimer() {
-    if (isTimerRunning) {
-        return
-    }
+// Timer Control Methods
+function clearTimers() {
+    clearTimeout(workTimer)
+    clearTimeout(breakTimer!)
+    isTimerRunning = false
+}
 
-    isTimerRunning = true
-    currentState = TimerState.Work
+function scheduleNextWorkTimer(delayInMinutes: number) {
+    clearTimers()
+    setTimeout(startWorkTimer, delayInMinutes * 60 * 1000)
+}
 
+// Stats Management
+function updateWorkStreak() {
     const now = Date.now()
     const lastBreakEndTime = store.get('lastBreakEndTime') as number
     const currentStreak = now - lastBreakEndTime
@@ -32,69 +38,77 @@ export function startWorkTimer() {
     }
 
     store.set('currentWorkStreakStartTime', now)
-
-    console.log('Starting work timer')
-    workTimer = setTimeout(() => {
-        currentState = TimerState.BreakCountdown
-        ipcMain.emit('start-break-countdown')
-    }, 20 * 60 * 1000) // 20 minutes
-
-    // For testing purposes, you can use shorter durations:
-    workTimer = setTimeout(() => {
-        currentState = TimerState.BreakCountdown
-        ipcMain.emit('start-break-countdown')
-    }, 1 * 1000) // 10 seconds
 }
 
+// Primary Timer Methods
+export function startWorkTimer() {
+    if (isTimerRunning) return
+
+    isTimerRunning = true
+    currentState = TimerState.Work
+    updateWorkStreak()
+
+    // For production:
+    workTimer = setTimeout(() => {
+        currentState = TimerState.BreakCountdown
+        ipcMain.emit('start-break-countdown')
+    }, 20 * 60 * 1000)
+
+    // For testing:
+    workTimer = setTimeout(() => {
+        currentState = TimerState.BreakCountdown
+        ipcMain.emit('start-break-countdown')
+    }, 1 * 1000)
+}
+
+// Break Management Methods
 export function skipBreak() {
-    if (currentState === TimerState.BreakCountdown) {
-        clearTimeout(breakTimer!)
-        isTimerRunning = false
-        currentState = TimerState.Work
-    }
+    if (currentState !== TimerState.BreakCountdown) return
+    clearTimers()
+    currentState = TimerState.Work
 }
 
 export function completeBreak() {
-    if (currentState === TimerState.BreakCountdown) {
-        clearTimeout(breakTimer!)
-        isTimerRunning = false
-        currentState = TimerState.Dashboard
-    }
+    if (currentState !== TimerState.BreakCountdown) return
+    clearTimers()
+    currentState = TimerState.Dashboard
 }
 
 export function dismissDashboard() {
-    if (currentState === TimerState.Dashboard) {
-        isTimerRunning = false
-        currentState = TimerState.Work
-    }
+    if (currentState !== TimerState.Dashboard) return
+    isTimerRunning = false
+    currentState = TimerState.Work
 }
 
+// Timer Control Methods
 export function pauseTimer() {
-    clearTimeout(workTimer)
-    clearTimeout(breakTimer!)
-    isTimerRunning = false
+    clearTimers()
     currentState = TimerState.Work
 }
 
 export function skipBreaks(minutes: number) {
-    clearTimeout(workTimer)
-    clearTimeout(breakTimer!)
-    isTimerRunning = false
     currentState = TimerState.Work
-
-    setTimeout(startWorkTimer, minutes * 60 * 1000)
+    scheduleNextWorkTimer(minutes)
 }
 
 export function skipBreaksUntilEndOfDay() {
-    clearTimeout(workTimer)
-    clearTimeout(breakTimer!)
-    isTimerRunning = false
     currentState = TimerState.Work
+    clearTimers()
 
     const now = new Date()
     const endOfDay = new Date()
     endOfDay.setHours(23, 59, 59, 999)
     const millisUntilEOD = endOfDay.getTime() - now.getTime()
+    const minutesUntilEOD = millisUntilEOD / (60 * 1000)
 
-    setTimeout(startWorkTimer, millisUntilEOD)
+    scheduleNextWorkTimer(minutesUntilEOD)
+}
+
+// State Management
+export function getCurrentState() {
+    return currentState
+}
+
+export function isRunning() {
+    return isTimerRunning
 }

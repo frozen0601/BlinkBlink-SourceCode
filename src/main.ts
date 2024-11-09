@@ -1,10 +1,18 @@
-// src/main.ts
-
 import { app, BrowserWindow, Tray, Menu, ipcMain } from 'electron'
 import * as path from 'path'
 import Store from 'electron-store'
 import { StoreSchema, Settings } from './storeTypes'
-import { startWorkTimer, skipBreak, completeBreak, dismissDashboard, pauseTimer, skipBreaks, skipBreaksUntilEndOfDay } from './timer'
+import {
+    startWorkTimer,
+    skipBreak,
+    completeBreak,
+    dismissDashboard,
+    pauseTimer,
+    skipBreaks,
+    skipBreaksUntilEndOfDay,
+    getCurrentState,
+    isRunning,
+} from './timer'
 import { showOverlay, closeOverlayWindows, showDashboard, closeDashboardWindow } from './windows'
 
 let mainWindow: BrowserWindow | null = null
@@ -30,6 +38,18 @@ const store = new Store<StoreSchema>({
     },
 })
 
+// Stats Management
+function updateBreakStats(skipped: boolean) {
+    const stats = store.get('stats')
+    const updatedStats = {
+        ...stats,
+        totalBreakTimeToday: skipped ? 0 : stats.totalBreakTimeToday + 20 * 1000,
+        breaksTakenToday: skipped ? 0 : stats.breaksTakenToday + 1,
+    }
+    store.set('stats', updatedStats)
+}
+
+// Window Creation Methods
 function createMainWindow() {
     mainWindow = new BrowserWindow({
         show: false,
@@ -38,27 +58,6 @@ function createMainWindow() {
             contextIsolation: false,
         },
     })
-}
-
-function createTray() {
-    tray = new Tray(path.join(__dirname, 'icon.png'))
-    const contextMenu = Menu.buildFromTemplate([
-        { label: 'Pause Timer', type: 'normal', click: pauseTimer },
-        {
-            label: 'Skip Breaks',
-            submenu: [
-                { label: '5 minutes', click: () => skipBreaks(5) },
-                { label: '10 minutes', click: () => skipBreaks(10) },
-                { label: '30 minutes', click: () => skipBreaks(30) },
-                { label: 'Rest of the day', click: skipBreaksUntilEndOfDay },
-            ],
-        },
-        { label: 'View Stats', click: createStatsWindow },
-        { label: 'Settings', click: createSettingsWindow },
-        { label: 'Exit', click: () => app.quit() },
-    ])
-    tray.setToolTip('BlinkBlink')
-    tray.setContextMenu(contextMenu)
 }
 
 function createStatsWindow() {
@@ -107,11 +106,55 @@ function createSettingsWindow() {
     })
 }
 
-// IPC Handlers
+function createTray() {
+    tray = new Tray(path.join(__dirname, 'icon.png'))
+    const contextMenu = Menu.buildFromTemplate([
+        { label: 'Pause Timer', type: 'normal', click: pauseTimer },
+        {
+            label: 'Skip Breaks',
+            submenu: [
+                { label: '5 minutes', click: () => skipBreaks(5) },
+                { label: '10 minutes', click: () => skipBreaks(10) },
+                { label: '30 minutes', click: () => skipBreaks(30) },
+                { label: 'Rest of the day', click: skipBreaksUntilEndOfDay },
+            ],
+        },
+        { label: 'View Stats', click: createStatsWindow },
+        { label: 'Settings', click: createSettingsWindow },
+        { label: 'Exit', click: () => app.quit() },
+    ])
+    tray.setToolTip('BlinkBlink')
+    tray.setContextMenu(contextMenu)
+}
+
+// IPC Handlers - Timer Events
 ipcMain.on('start-break-countdown', () => {
-    showOverlay()
+    if (isRunning()) {
+        showOverlay()
+    }
 })
 
+ipcMain.on('break-skip', () => {
+    skipBreak()
+    closeOverlayWindows()
+    updateBreakStats(true)
+    startWorkTimer()
+})
+
+ipcMain.on('break-complete', () => {
+    completeBreak()
+    closeOverlayWindows()
+    updateBreakStats(false)
+    showDashboard()
+})
+
+ipcMain.on('dashboard-dismissed', () => {
+    dismissDashboard()
+    closeDashboardWindow()
+    startWorkTimer()
+})
+
+// IPC Handlers - Data Access
 ipcMain.handle('get-stats', () => {
     return store.get('stats')
 })
@@ -126,52 +169,13 @@ ipcMain.handle('get-settings', () => {
     )
 })
 
+// IPC Handlers - Settings
 ipcMain.on('save-settings', (event, settings: Settings) => {
     store.set('settings', settings)
     // Implement startup behavior if necessary
 })
 
-// Handle 'break-skip' to dismiss all overlays when "Skip" is clicked on any screen
-ipcMain.on('break-skip', () => {
-    skipBreak()
-    closeOverlayWindows()
-    const stats = store.get('stats')
-    const updatedStats = {
-        ...stats,
-        totalBreakTimeToday: 0, // 20 seconds in milliseconds
-        breaksTakenToday: 0,
-    }
-    store.set('stats', updatedStats)
-    startWorkTimer()
-})
-
-// Handle 'break-complete' when countdown finishes naturally
-ipcMain.on('break-complete', () => {
-    completeBreak()
-    closeOverlayWindows()
-    const stats = store.get('stats')
-    const updatedStats = {
-        ...stats,
-        totalBreakTimeToday: stats.totalBreakTimeToday + 20 * 1000, // 20 seconds in milliseconds
-        breaksTakenToday: stats.breaksTakenToday + 1,
-    }
-    store.set('stats', updatedStats)
-    showDashboard()
-})
-
-// Handle 'dashboard-dismissed' from dashboard.html (if implemented)
-ipcMain.on('dashboard-dismissed', () => {
-    dismissDashboard()
-    closeDashboardWindow()
-    startWorkTimer()
-})
-
-// Listen for 'start-break-countdown' to trigger the overlay
-ipcMain.on('start-break-countdown', () => {
-    showOverlay()
-})
-
-// App Events
+// App Lifecycle Events
 app.whenReady().then(() => {
     createMainWindow()
     createTray()
