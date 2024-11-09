@@ -1,7 +1,7 @@
 // src/timer.ts
 
 import { store } from './store'
-import { showOverlay, closeOverlayWindows, showDashboard, closeDashboardWindow } from './windows'
+import { ipcMain } from 'electron'
 
 let workTimer: NodeJS.Timeout
 let breakTimer: NodeJS.Timeout | null = null
@@ -33,54 +33,39 @@ export function startWorkTimer() {
 
     store.set('currentWorkStreakStartTime', now)
 
+    console.log('Starting work timer')
     workTimer = setTimeout(() => {
-        showBreakCountdown()
+        currentState = TimerState.BreakCountdown
+        ipcMain.emit('start-break-countdown')
     }, 20 * 60 * 1000) // 20 minutes
 
     // For testing purposes, you can use shorter durations:
-    workTimer = setTimeout(() => { showBreakCountdown(); }, 1 * 1000); // 10 seconds
-}
-
-function showBreakCountdown() {
-    isTimerRunning = false
-    currentState = TimerState.BreakCountdown
-
-    showOverlay()
-
-    // Start the 20-second break countdown timer
-    breakTimer = setTimeout(() => {
-        // After countdown, show the dashboard
-        closeOverlayWindows()
-        showDashboard()
-    }, 20 * 1000) // 20 seconds
-
-    // Update stats
-    const currentWorkStartTime = store.get('currentWorkStreakStartTime') as number
-    const workDuration = Date.now() - currentWorkStartTime
-    const totalWorkTime = store.get('stats').totalWorkTimeToday + workDuration
-    store.set('stats.totalWorkTimeToday', totalWorkTime)
+    workTimer = setTimeout(() => {
+        currentState = TimerState.BreakCountdown
+        ipcMain.emit('start-break-countdown')
+    }, 1 * 1000) // 10 seconds
 }
 
 export function skipBreak() {
     if (currentState === TimerState.BreakCountdown) {
         clearTimeout(breakTimer!)
-        closeOverlayWindows()
-        startWorkTimer()
+        isTimerRunning = false
+        currentState = TimerState.Work
     }
 }
 
 export function completeBreak() {
     if (currentState === TimerState.BreakCountdown) {
         clearTimeout(breakTimer!)
-        closeOverlayWindows()
-        showDashboard()
+        isTimerRunning = false
+        currentState = TimerState.Dashboard
     }
 }
 
 export function dismissDashboard() {
     if (currentState === TimerState.Dashboard) {
-        closeDashboardWindow()
-        startWorkTimer()
+        isTimerRunning = false
+        currentState = TimerState.Work
     }
 }
 

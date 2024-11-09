@@ -108,6 +108,10 @@ function createSettingsWindow() {
 }
 
 // IPC Handlers
+ipcMain.on('start-break-countdown', () => {
+    showOverlay()
+})
+
 ipcMain.handle('get-stats', () => {
     return store.get('stats')
 })
@@ -130,16 +134,40 @@ ipcMain.on('save-settings', (event, settings: Settings) => {
 // Handle 'break-skip' to dismiss all overlays when "Skip" is clicked on any screen
 ipcMain.on('break-skip', () => {
     skipBreak()
+    closeOverlayWindows()
+    const stats = store.get('stats')
+    const updatedStats = {
+        ...stats,
+        totalBreakTimeToday: 0, // 20 seconds in milliseconds
+        breaksTakenToday: 0,
+    }
+    store.set('stats', updatedStats)
+    startWorkTimer()
 })
 
 // Handle 'break-complete' when countdown finishes naturally
 ipcMain.on('break-complete', () => {
     completeBreak()
+    closeOverlayWindows()
+    const stats = store.get('stats')
+    const updatedStats = {
+        ...stats,
+        totalBreakTimeToday: stats.totalBreakTimeToday + 20 * 1000, // 20 seconds in milliseconds
+        breaksTakenToday: stats.breaksTakenToday + 1,
+    }
+    store.set('stats', updatedStats)
+    showDashboard()
 })
 
 // Handle 'dashboard-dismissed' from dashboard.html (if implemented)
 ipcMain.on('dashboard-dismissed', () => {
     dismissDashboard()
+    startWorkTimer()
+})
+
+// Listen for 'start-break-countdown' to trigger the overlay
+ipcMain.on('start-break-countdown', () => {
+    showOverlay()
 })
 
 // App Events

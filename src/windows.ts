@@ -1,11 +1,11 @@
 // src/windows.ts
 
-import { BrowserWindow, screen } from 'electron'
-import { startWorkTimer } from './timer'
+import { BrowserWindow, screen, ipcMain } from 'electron'
 import * as path from 'path'
 
 let overlayWindows: BrowserWindow[] = []
 let dashboardWindow: BrowserWindow | null = null
+let overlayIntervals: { window: BrowserWindow; interval: NodeJS.Timeout }[] = []
 
 export function showOverlay() {
     const displays = screen.getAllDisplays()
@@ -27,20 +27,48 @@ export function showOverlay() {
         })
 
         overlay.loadFile(path.join(__dirname, 'overlay.html'))
-
         overlay.setAlwaysOnTop(true, 'floating')
         overlay.maximize()
 
-        // Ensure the overlay stays on top even when blurred
         overlay.on('blur', () => {
-            overlay.setAlwaysOnTop(true, 'floating')
-            overlay.maximize()
+            if (!overlay.isDestroyed()) {
+                overlay.setAlwaysOnTop(true, 'floating')
+                overlay.maximize()
+            }
         })
 
-        // Remove reference when closed
         overlay.on('closed', () => {
+            // Clear interval associated with this window
+            const intervalObj = overlayIntervals.find((i) => i.window === overlay)
+            if (intervalObj) {
+                clearInterval(intervalObj.interval)
+                overlayIntervals = overlayIntervals.filter((i) => i.window !== overlay)
+            }
             overlayWindows = overlayWindows.filter((win) => win !== overlay)
-            overlay.destroy()
+        })
+
+        overlay.once('ready-to-show', () => {
+            let countdown = 3
+            const interval: NodeJS.Timeout = setInterval(() => {
+                if (overlay.isDestroyed()) {
+                    clearInterval(interval)
+                    return
+                }
+
+                countdown -= 1
+                if (!overlay.isDestroyed()) {
+                    overlay.webContents.send('countdown-update', countdown)
+                }
+
+                if (countdown <= 0) {
+                    clearInterval(interval)
+                    overlayIntervals = overlayIntervals.filter((i) => i.interval !== interval)
+                    ipcMain.emit('break-complete')
+                }
+            }, 1000)
+
+            // Store interval with its associated window
+            overlayIntervals.push({ window: overlay, interval })
         })
 
         overlayWindows.push(overlay)
@@ -48,6 +76,11 @@ export function showOverlay() {
 }
 
 export function closeOverlayWindows() {
+    // Clear all intervals
+    overlayIntervals.forEach(({ interval }) => clearInterval(interval))
+    overlayIntervals = []
+
+    // Close all windows
     overlayWindows.forEach((win) => {
         if (!win.isDestroyed()) {
             win.close()
@@ -58,7 +91,11 @@ export function closeOverlayWindows() {
 
 export function showDashboard() {
     if (dashboardWindow) {
-        dashboardWindow.focus()
+        if (!dashboardWindow.isDestroyed()) {
+            dashboardWindow.focus()
+        } else {
+            dashboardWindow = null
+        }
         return
     }
 
@@ -79,15 +116,17 @@ export function showDashboard() {
         dashboardWindow = null
     })
 
-    // Automatically dismiss the dashboard after 5 seconds
-    setTimeout(() => {
-        closeDashboardWindow()
-        startWorkTimer() // Start the next work timer
-    }, 5 * 1000) // 5 seconds
+    const dismissTimeout = setTimeout(() => {
+        if (dashboardWindow && !dashboardWindow.isDestroyed()) {
+            closeDashboardWindow()
+            ipcMain.emit('dashboard-dismissed')
+        }
+        clearTimeout(dismissTimeout)
+    }, 3 * 1000)
 }
 
 export function closeDashboardWindow() {
-    if (dashboardWindow) {
+    if (dashboardWindow && !dashboardWindow.isDestroyed()) {
         dashboardWindow.close()
         dashboardWindow = null
     }

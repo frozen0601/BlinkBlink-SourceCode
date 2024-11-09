@@ -38,21 +38,11 @@
         <script>
             const { ipcRenderer } = require('electron')
 
-            let countdown = 20
-            const countdownElement = document.getElementById('countdown')
-
-            const interval = setInterval(() => {
-                countdown -= 1
-                countdownElement.textContent = countdown.toString()
-                if (countdown <= 0) {
-                    clearInterval(interval)
-                    ipcRenderer.send('break-complete') // Notify main process
-                    window.close()
-                }
-            }, 1000)
+            ipcRenderer.on('countdown-update', (event, countdown) => {
+                document.getElementById('countdown').textContent = countdown.toString()
+            })
 
             document.getElementById('skip-button').addEventListener('click', () => {
-                clearInterval(interval)
                 ipcRenderer.send('break-skip') // Notify main process
                 window.close()
             })
