@@ -68,8 +68,13 @@ class WindowManager {
 
     private startCountdown(window: BrowserWindow, type: string, config: WindowConfig) {
         let countdown = Math.floor(config.countdownDuration / 1000)
-        this.updateCountdown(type, countdown)
 
+        // Add window to collection
+        const windows = type === 'overlay' ? this.overlayWindows : this.dashboardWindows
+        const intervals = type === 'overlay' ? this.overlayIntervals : this.dashboardIntervals
+        windows.push(window)
+
+        this.updateCountdown(type, countdown)
         const interval = setInterval(() => {
             if (window.isDestroyed()) {
                 clearInterval(interval)
@@ -84,10 +89,6 @@ class WindowManager {
             }
             this.updateCountdown(type, countdown)
         }, 1000)
-
-        const windows = type === 'overlay' ? this.overlayWindows : this.dashboardWindows
-        const intervals = type === 'overlay' ? this.overlayIntervals : this.dashboardIntervals
-        windows.push(window)
         intervals.push({ window, interval })
     }
 

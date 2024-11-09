@@ -1,8 +1,6 @@
 export interface Stats {
-    totalWorkTimeToday: number
-    eyeProtectionTime: number
-    breaksTakenToday: number
-    longestWorkStreak: number
+    breakStreakCount: number
+    breakStreakDuration: number
 }
 
 export interface Settings {

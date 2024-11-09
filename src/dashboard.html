@@ -47,21 +47,48 @@
         <h1>Good Job!</h1>
         <p>
             You've consecutively rested your eyes
-            <span id="break-count">0</span> times, which is <span id="eye-protection-time">0</span> minutes of eye protection.
+            <span id="break-streak-count"></span> times, which is <span id="break-streak-duration"></span> of eye protection.
         </p>
-        <button id="dismiss-button">Continue in <span id="dismiss-countdown">5</span>s</button>
+        <button id="dismiss-button">Continue in <span id="dismiss-countdown"></span>s</button>
         <script>
             const { ipcRenderer } = require('electron')
+            const { formatDuration, intervalToDuration } = require('date-fns')
 
-            // Single handler for all countdown updates
+            // update countdown every second
             ipcRenderer.on('countdown-update', (event, countdown) => {
                 document.getElementById('dismiss-countdown').textContent = countdown.toString()
+            })
+            // display break stats
+            ipcRenderer.invoke('get-stats').then((stats) => {
+                document.getElementById('break-streak-count').textContent = stats.breakStreakCount
+                document.getElementById('break-streak-duration').textContent = formatTime(stats.breakStreakDuration)
             })
 
             document.getElementById('dismiss-button').addEventListener('click', () => {
                 ipcRenderer.send('dashboard-dismissed')
                 window.close()
             })
+
+            function formatTime(ms) {
+                const duration = intervalToDuration({ start: 0, end: ms })
+                if (duration.days > 0) {
+                    return `${duration.days} ${duration.days === 1 ? 'day' : 'days'}${
+                        duration.hours ? ` ${duration.hours} ${duration.hours === 1 ? 'hour' : 'hours'}` : ''
+                    }`
+                }
+
+                if (duration.hours > 0) {
+                    return `${duration.hours} ${duration.hours === 1 ? 'hour' : 'hours'}${
+                        duration.minutes ? ` ${duration.minutes} ${duration.minutes === 1 ? 'minute' : 'minutes'}` : ''
+                    }`
+                }
+
+                if (duration.minutes > 0) {
+                    return `${duration.minutes} ${duration.minutes === 1 ? 'minute' : 'minutes'}`
+                }
+
+                return `${duration.seconds} ${duration.seconds === 1 ? 'second' : 'seconds'}`
+            }
         </script>
     </body>
 </html>

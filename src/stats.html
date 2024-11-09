@@ -23,12 +23,9 @@
 
         <script>
             const { ipcRenderer } = require('electron')
-
             ipcRenderer.invoke('get-stats').then((stats) => {
-                document.getElementById('totalWorkTime').textContent = formatTime(stats.totalWorkTimeToday)
-                document.getElementById('totalBreakTime').textContent = formatTime(stats.totalBreakTimeToday)
-                document.getElementById('breaksTaken').textContent = stats.breaksTakenToday
-                document.getElementById('longestWorkStreak').textContent = formatTime(stats.longestWorkStreak)
+                document.getElementById('break-streak-count').textContent = stats.breakStreakCount
+                document.getElementById('break-streak-duration').textContent = formatTime(stats.breakStreakDuration)
             })
 
             function formatTime(ms) {

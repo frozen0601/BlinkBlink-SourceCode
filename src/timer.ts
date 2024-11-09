@@ -26,26 +26,12 @@ function scheduleNextWorkTimer(delayInMinutes: number) {
     setTimeout(startWorkTimer, delayInMinutes * 60 * 1000)
 }
 
-// Stats Management
-function updateWorkStreak() {
-    const now = Date.now()
-    const lastBreakEndTime = store.get('lastBreakEndTime') as number
-    const currentStreak = now - lastBreakEndTime
-
-    if (currentStreak > store.get('stats').longestWorkStreak) {
-        store.set('stats.longestWorkStreak', currentStreak)
-    }
-
-    store.set('currentWorkStreakStartTime', now)
-}
-
 // Primary Timer Methods
 export function startWorkTimer() {
     if (isTimerRunning) return
 
     isTimerRunning = true
     currentState = TimerState.Work
-    updateWorkStreak()
 
     const duration = DURATIONS.WORK_DURATION
 

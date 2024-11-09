@@ -24,10 +24,8 @@ let tray: Tray | null = null
 const store = new Store<StoreSchema>({
     defaults: {
         stats: {
-            totalWorkTimeToday: 0,
-            eyeProtectionTime: 0,
-            breaksTakenToday: 0,
-            longestWorkStreak: 0,
+            breakStreakCount: 0,
+            breakStreakDuration: 0,
         },
         lastBreakEndTime: Date.now(),
         currentWorkStreakStartTime: Date.now(),
@@ -44,8 +42,8 @@ function updateBreakStats(skipped: boolean) {
     const stats = store.get('stats')
     const updatedStats = {
         ...stats,
-        eyeProtectionTime: skipped ? 0 : stats.eyeProtectionTime + DURATIONS.BREAK_DURATION,
-        breaksTakenToday: skipped ? 0 : stats.breaksTakenToday + 1,
+        breakStreakDuration: skipped ? 0 : stats.breakStreakDuration + DURATIONS.BREAK_DURATION,
+        breakStreakCount: skipped ? 0 : stats.breakStreakCount + 1,
     }
     store.set('stats', updatedStats)
 }
