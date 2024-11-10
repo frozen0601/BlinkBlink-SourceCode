@@ -69,16 +69,18 @@ function createStatsWindow() {
         return
     }
 
+    const { width, height } = screen.getPrimaryDisplay().workAreaSize
     statsWindow = new BrowserWindow({
-        width: 400,
-        height: 300,
-        resizable: false,
+        width: Math.min(500, width * 0.5),
+        height: Math.min(400, height * 0.5),
+        resizable: true,
+        center: true,
         webPreferences: {
             nodeIntegration: true,
             contextIsolation: false,
         },
+        autoHideMenuBar: true,
     })
-
     statsWindow.loadFile(path.join(__dirname, 'stats.html'))
 
     statsWindow.on('closed', () => {
@@ -92,18 +94,18 @@ function createSettingsWindow() {
         return
     }
 
+    const { width, height } = screen.getPrimaryDisplay().workAreaSize
     settingsWindow = new BrowserWindow({
-        width: 400,
-        height: 400,
-        resizable: false,
+        width: Math.min(500, width * 0.5),
+        height: Math.min(400, height * 0.5),
+        resizable: true,
+        center: true,
         webPreferences: {
             nodeIntegration: true,
             contextIsolation: false,
         },
         autoHideMenuBar: true,
-        frame: true,
     })
-
     settingsWindow.loadFile(path.join(__dirname, 'settings.html'))
 
     settingsWindow.on('closed', () => {
@@ -118,19 +120,16 @@ function createAboutWindow() {
     }
 
     const { width, height } = screen.getPrimaryDisplay().workAreaSize
-
-    const windowWidth = Math.min(500, width * 0.5) // 50% of screen width or max 500
-    const windowHeight = Math.min(400, height * 0.5) // 50% of screen height or max 400
-
     aboutWindow = new BrowserWindow({
-        width: windowWidth,
-        height: windowHeight,
-        resizable: false,
-        center: true, // Center the window
+        width: Math.min(500, width * 0.5),
+        height: Math.min(400, height * 0.5),
+        resizable: true,
+        center: true,
         webPreferences: {
             nodeIntegration: true,
             contextIsolation: false,
         },
+        autoHideMenuBar: true,
     })
     aboutWindow.loadFile(path.join(__dirname, 'about.html'))
     aboutWindow.on('closed', () => {

@@ -45,6 +45,7 @@ select {
     font-size: 14px;
     background: white;
     cursor: pointer;
+    color: #333;
 }
 
 /* Responsive adjustments */

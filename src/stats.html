@@ -8,10 +8,24 @@
     </head>
     <body>
         <h1>BlinkBlink Stats</h1>
-        <p>
-            You've consecutively rested your eyes
-            <span id="break-streak-count"></span> times, which is <span id="break-streak-duration"></span> of eye protection.
-        </p>
+        <div class="stats-container">
+            <div class="stat-item">
+                <p>
+                    You've consecutively rested your eyes
+                    <span id="break-streak-count"></span> times, which is <span id="break-streak-duration"></span> of eye protection.
+                </p>
+            </div>
+            <div class="stat-item">
+                <p>
+                    Your last break ended at <span id="last-break-end-time"></span>.
+                </p>
+            </div>
+            <div class="stat-item">
+                <p>
+                    Your current work streak started at <span id="current-work-streak-start-time"></span>.
+                </p>
+            </div>
+        </div>
         <style>
             body {
                 padding: 20px;
@@ -25,6 +39,8 @@
             ipcRenderer.invoke('get-stats').then((stats) => {
                 document.getElementById('break-streak-count').textContent = stats.breakStreakCount
                 document.getElementById('break-streak-duration').textContent = formatTime(stats.breakStreakDuration)
+                document.getElementById('last-break-end-time').textContent = new Date(stats.lastBreakEndTime).toLocaleString()
+                document.getElementById('current-work-streak-start-time').textContent = new Date(stats.currentWorkStreakStartTime).toLocaleString()
             })
 
             function formatTime(ms) {
