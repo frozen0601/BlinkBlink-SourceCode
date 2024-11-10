@@ -106,6 +106,7 @@ Desktop.ini
 # Electron
 /dist
 /out
+/release
 /*.asar
 
 # Optional IDE directories

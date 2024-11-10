@@ -1,12 +1,5 @@
 import { ipcRenderer } from 'electron'
-import { formatDuration, intervalToDuration } from 'date-fns'
-// import { DURATIONS } from './constants'
-
-// const { DURATIONS } = require('../constants') // Import DURATIONS
 import { DURATIONS } from './constants'
-
-// import { TEST_CONSTANT } from './test'
-// console.log(TEST_CONSTANT) // Should log 'Test worked!'
 
 function calculateMilestones(currentStreak: number): number[] {
     const baseMilestones = [5, 10, 20, 50]
