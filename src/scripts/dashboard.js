@@ -94,10 +94,17 @@ document.getElementById('dismiss-button').addEventListener('click', () => {
 
 // Add this after other event listeners
 document.addEventListener('DOMContentLoaded', () => {
-    const progressBar = document.querySelector('#dismiss-button .progress');
-    progressBar.style.transition = 'transform 5s linear';
-    // Small delay to ensure transition is applied
-    setTimeout(() => {
-        progressBar.style.transform = 'scaleX(1)';
-    }, 100);
+    // Initialize progress bar
+    const progressBar = document.querySelector('#dismiss-button .progress')
+    progressBar.style.transition = 'transform 5s linear'
+
+    // Wait for all resources to load
+    window.addEventListener('load', () => {
+        // Show content only when everything is ready
+        document.body.classList.add('ready')
+        // Start progress bar animation
+        setTimeout(() => {
+            progressBar.style.transform = 'scaleX(1)'
+        }, 100)
+    })
 })
