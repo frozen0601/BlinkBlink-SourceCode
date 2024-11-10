@@ -1,7 +1,7 @@
 // webpack.config.js
 
-const path = require('path');
-const CopyPlugin = require('copy-webpack-plugin');
+const path = require('path')
+const CopyPlugin = require('copy-webpack-plugin')
 
 module.exports = {
     entry: './src/main.ts',
@@ -27,7 +27,9 @@ module.exports = {
         new CopyPlugin({
             patterns: [
                 { from: 'src/overlay.html', to: 'overlay.html' },
-                { from: 'src/dashboard.html', to: 'dashboard.html' }, // Add this line
+                { from: 'src/dashboard.html', to: 'dashboard.html' },
+                { from: 'src/styles/dashboard.css', to: 'dashboard.css' },
+                { from: 'src/scripts/dashboard.js', to: 'dashboard.js' },
                 { from: 'src/stats.html', to: 'stats.html' },
                 { from: 'src/settings.html', to: 'settings.html' },
                 { from: 'src/icon.png', to: 'icon.png' },
@@ -35,4 +37,4 @@ module.exports = {
             ],
         }),
     ],
-};
+}
