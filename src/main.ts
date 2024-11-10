@@ -91,12 +91,14 @@ function createSettingsWindow() {
 
     settingsWindow = new BrowserWindow({
         width: 400,
-        height: 300,
+        height: 400,
         resizable: false,
         webPreferences: {
             nodeIntegration: true,
             contextIsolation: false,
         },
+        autoHideMenuBar: true,
+        frame: true,
     })
 
     settingsWindow.loadFile(path.join(__dirname, 'settings.html'))

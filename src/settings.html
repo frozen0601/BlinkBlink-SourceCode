@@ -6,31 +6,80 @@
         <title>Settings</title>
         <style>
             body {
-                font-family: Arial, sans-serif;
-                padding: 20px;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+                padding: 32px;
+                background: #f5f5f5;
+                margin: 0;
+                color: #333;
+            }
+            .container {
+                background: white;
+                padding: 24px;
+                border-radius: 8px;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                max-width: 500px;
+                margin: 0 auto;
             }
             h1 {
                 margin-top: 0;
+                margin-bottom: 24px;
+                font-size: 24px;
+                font-weight: 500;
+                color: #1a1a1a;
+            }
+            .setting-item {
+                margin-bottom: 20px;
+                display: flex;
+                align-items: center;
+            }
+            label {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                cursor: pointer;
+            }
+            input[type='checkbox'] {
+                width: 16px;
+                height: 16px;
+                cursor: pointer;
+            }
+            select {
+                padding: 8px;
+                border-radius: 4px;
+                border: 1px solid #ddd;
+                font-size: 14px;
+                background: white;
+                cursor: pointer;
             }
         </style>
     </head>
     <body>
-        <h1>Settings</h1>
-        <label> <input type="checkbox" id="startOnBoot" /> Start on system startup </label><br /><br />
-        <label> <input type="checkbox" id="enableAnimations" /> Enable overlay animations </label><br /><br />
-        <label> <input type="checkbox" id="enableAutoDismiss" /> Auto dismiss dashboard </label><br /><br />
-        <label>
-            Language:
-            <select id="languageSelect">
-                <option value="en">English</option>
-                <!-- Add more languages -->
-            </select> </label
-        ><br /><br />
-        <button id="saveButton">Save</button>
+        <div class="container">
+            <h1>Settings</h1>
+            <div class="setting-item">
+                <label><input type="checkbox" id="startOnBoot" />Start on system startup</label>
+            </div>
+            <div class="setting-item">
+                <label><input type="checkbox" id="enableAnimations" />Enable overlay animations</label>
+            </div>
+            <div class="setting-item">
+                <label><input type="checkbox" id="enableAutoDismiss" />Auto dismiss dashboard</label>
+            </div>
+            <div class="setting-item">
+                <label>
+                    Language:
+                    <select id="languageSelect">
+                        <option value="en">English</option>
+                        <!-- Add more languages -->
+                    </select>
+                </label>
+            </div>
+        </div>
 
         <script>
             const { ipcRenderer } = require('electron')
 
+            // Load initial settings
             ipcRenderer.invoke('get-settings').then((settings) => {
                 document.getElementById('startOnBoot').checked = settings.startOnBoot
                 document.getElementById('enableAnimations').checked = settings.enableAnimations
@@ -38,7 +87,8 @@
                 document.getElementById('languageSelect').value = settings.language
             })
 
-            document.getElementById('saveButton').addEventListener('click', () => {
+            // Auto-save function
+            function saveSettings() {
                 const settings = {
                     startOnBoot: document.getElementById('startOnBoot').checked,
                     enableAnimations: document.getElementById('enableAnimations').checked,
@@ -46,7 +96,11 @@
                     language: document.getElementById('languageSelect').value,
                 }
                 ipcRenderer.send('save-settings', settings)
-                window.close()
+            }
+
+            // Add change event listeners to all inputs
+            document.querySelectorAll('input, select').forEach((element) => {
+                element.addEventListener('change', saveSettings)
             })
         </script>
     </body>
