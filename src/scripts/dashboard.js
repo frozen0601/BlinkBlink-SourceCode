@@ -1,4 +1,3 @@
-
 const { ipcRenderer } = require('electron')
 const { formatDuration, intervalToDuration } = require('date-fns')
 
@@ -77,7 +76,10 @@ ipcRenderer.invoke('get-stats').then((stats) => {
 })
 
 ipcRenderer.on('countdown-update', (event, countdown) => {
-    document.getElementById('dismiss-countdown').textContent = countdown.toString()
+    if (countdown <= 0) {
+        ipcRenderer.send('dashboard-dismissed')
+        window.close()
+    }
 })
 
 ipcRenderer.invoke('get-stats').then((stats) => {
@@ -88,4 +90,14 @@ ipcRenderer.invoke('get-stats').then((stats) => {
 document.getElementById('dismiss-button').addEventListener('click', () => {
     ipcRenderer.send('dashboard-dismissed')
     window.close()
+})
+
+// Add this after other event listeners
+document.addEventListener('DOMContentLoaded', () => {
+    const progressBar = document.querySelector('#dismiss-button .progress');
+    progressBar.style.transition = 'transform 5s linear';
+    // Small delay to ensure transition is applied
+    setTimeout(() => {
+        progressBar.style.transform = 'scaleX(1)';
+    }, 100);
 })

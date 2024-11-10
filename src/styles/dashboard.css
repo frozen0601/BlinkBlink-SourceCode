@@ -110,7 +110,19 @@ h1 {
     border: none;
     color: white;
     border-radius: 5px;
-    transition: background 0.3s;
+    position: relative;
+    overflow: hidden;
+}
+
+#dismiss-button .progress {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 3px;
+    background: #4caf50;
+    width: 100%;
+    transform-origin: left;
+    transform: scaleX(0);
 }
 
 #dismiss-button:hover {
