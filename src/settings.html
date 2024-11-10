@@ -18,6 +18,7 @@
         <h1>Settings</h1>
         <label> <input type="checkbox" id="startOnBoot" /> Start on system startup </label><br /><br />
         <label> <input type="checkbox" id="enableAnimations" /> Enable overlay animations </label><br /><br />
+        <label> <input type="checkbox" id="enableAutoDismiss" /> Auto dismiss dashboard </label><br /><br />
         <label>
             Language:
             <select id="languageSelect">
@@ -33,6 +34,7 @@
             ipcRenderer.invoke('get-settings').then((settings) => {
                 document.getElementById('startOnBoot').checked = settings.startOnBoot
                 document.getElementById('enableAnimations').checked = settings.enableAnimations
+                document.getElementById('enableAutoDismiss').checked = settings.enableAutoDismiss
                 document.getElementById('languageSelect').value = settings.language
             })
 
@@ -40,6 +42,7 @@
                 const settings = {
                     startOnBoot: document.getElementById('startOnBoot').checked,
                     enableAnimations: document.getElementById('enableAnimations').checked,
+                    enableAutoDismiss: document.getElementById('enableAutoDismiss').checked,
                     language: document.getElementById('languageSelect').value,
                 }
                 ipcRenderer.send('save-settings', settings)

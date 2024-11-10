@@ -15,6 +15,7 @@ export const store = new Store<StoreSchema>({
             startOnBoot: false,
             enableAnimations: true,
             language: 'en',
+            enableAutoDismiss: true,  // Add this line
         },
     },
 })

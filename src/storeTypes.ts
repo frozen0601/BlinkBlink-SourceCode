@@ -7,6 +7,7 @@ export interface Settings {
     startOnBoot: boolean
     enableAnimations: boolean
     language: string
+    enableAutoDismiss: boolean
 }
 
 export interface StoreSchema {

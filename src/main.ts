@@ -33,6 +33,7 @@ const store = new Store<StoreSchema>({
             startOnBoot: false,
             enableAnimations: true,
             language: 'en',
+            enableAutoDismiss: true,
         },
     },
 })
@@ -164,6 +165,7 @@ ipcMain.handle('get-settings', () => {
             startOnBoot: false,
             enableAnimations: true,
             language: 'en',
+            enableAutoDismiss: true,
         }
     )
 })
