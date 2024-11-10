@@ -4,15 +4,7 @@
     <head>
         <meta charset="UTF-8" />
         <title>Break Stats</title>
-        <style>
-            body {
-                font-family: Arial, sans-serif;
-                padding: 20px;
-            }
-            h1 {
-                margin-top: 0;
-            }
-        </style>
+        <link rel="stylesheet" href="stats.css" />
     </head>
     <body>
         <h1>BlinkBlink Stats</h1>
@@ -20,6 +12,13 @@
             You've consecutively rested your eyes
             <span id="break-streak-count"></span> times, which is <span id="break-streak-duration"></span> of eye protection.
         </p>
+        <style>
+            body {
+                padding: 20px;
+                max-width: 800px;
+                width: 100%;
+            }
+        </style>
         <script>
             const { ipcRenderer } = require('electron')
             const { formatDuration, intervalToDuration } = require('date-fns')

@@ -30,6 +30,7 @@
             "target": "AppImage"
         }
     },
+    "homepage": "https://yourwebsite.com",
     "keywords": [
         "202020",
         "20-20-20",

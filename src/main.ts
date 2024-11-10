@@ -1,7 +1,8 @@
-import { app, BrowserWindow, Tray, Menu, ipcMain } from 'electron'
+import { app, BrowserWindow, Tray, Menu, ipcMain, screen } from 'electron' // Added 'screen' import
 import * as path from 'path'
 import Store from 'electron-store'
 import { StoreSchema, Settings } from './storeTypes'
+import * as fs from 'fs' // Add this import at the top
 import {
     startWorkTimer,
     skipBreak,
@@ -20,6 +21,7 @@ let mainWindow: BrowserWindow | null = null
 let statsWindow: BrowserWindow | null = null
 let settingsWindow: BrowserWindow | null = null
 let tray: Tray | null = null
+let aboutWindow: BrowserWindow | null = null // Declare globally
 
 const store = new Store<StoreSchema>({
     defaults: {
@@ -34,7 +36,7 @@ const store = new Store<StoreSchema>({
             enableAnimations: true,
             language: 'en',
             enableAutoDismiss: true,
-            dashboardDuration: 10000,
+            dashboardDuration: 5000,
         },
     },
 })
@@ -109,6 +111,33 @@ function createSettingsWindow() {
     })
 }
 
+function createAboutWindow() {
+    if (aboutWindow) {
+        aboutWindow.focus()
+        return
+    }
+
+    const { width, height } = screen.getPrimaryDisplay().workAreaSize
+
+    const windowWidth = Math.min(500, width * 0.5) // 50% of screen width or max 500
+    const windowHeight = Math.min(400, height * 0.5) // 50% of screen height or max 400
+
+    aboutWindow = new BrowserWindow({
+        width: windowWidth,
+        height: windowHeight,
+        resizable: false,
+        center: true, // Center the window
+        webPreferences: {
+            nodeIntegration: true,
+            contextIsolation: false,
+        },
+    })
+    aboutWindow.loadFile(path.join(__dirname, 'about.html'))
+    aboutWindow.on('closed', () => {
+        aboutWindow = null
+    })
+}
+
 function createTray() {
     tray = new Tray(path.join(__dirname, 'icon.png'))
     const contextMenu = Menu.buildFromTemplate([
@@ -124,6 +153,7 @@ function createTray() {
         },
         { label: 'View Stats', click: createStatsWindow },
         { label: 'Settings', click: createSettingsWindow },
+        { label: 'About', click: createAboutWindow },
         { label: 'Exit', click: () => app.quit() },
     ])
     tray.setToolTip('BlinkBlink')
@@ -171,6 +201,20 @@ ipcMain.handle('get-settings', () => {
             enableAutoDismiss: true,
         }
     )
+})
+
+// Update the 'get-app-info' IPC handler to match support email
+ipcMain.handle('get-app-info', () => {
+    const packageJsonPath = path.join(__dirname, '..', 'package.json')
+    const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'))
+    return {
+        version: packageJson.version,
+        author: packageJson.author,
+        description: packageJson.description,
+        license: packageJson.license,
+        website: packageJson.homepage || 'https://yourwebsite.com',
+        supportEmail: 'theblinkblinkapp@gmail.com', // Updated support email
+    }
 })
 
 // IPC Handlers - Settings

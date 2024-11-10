@@ -77,6 +77,7 @@ class WindowManager {
         windows.push(window)
 
         if (!config.autoDismiss) return
+
         let countdown = Math.floor(config.duration / 1000)
         window.webContents.send('start-countdown', config.duration)
 
@@ -168,7 +169,6 @@ class WindowManager {
     }
 
     closeDashboardWindows() {
-        // Clear any intervals related to the dashboard
         this.dashboardIntervals.forEach(({ interval }) => clearInterval(interval))
         this.dashboardIntervals = []
         this.dashboardWindows.forEach((win) => {

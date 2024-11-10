@@ -1,6 +1,6 @@
 export interface Stats {
     breakStreakCount: number
-    breakStreakDuration: number
+    breakStreakDuration: number // in milliseconds
 }
 
 export interface Settings {
