@@ -15,7 +15,8 @@ export const store = new Store<StoreSchema>({
             startOnBoot: false,
             enableAnimations: true,
             language: 'en',
-            enableAutoDismiss: true,  // Add this line
+            enableAutoDismiss: true,
+            dashboardDuration: 10000, // 10 seconds default
         },
     },
 })

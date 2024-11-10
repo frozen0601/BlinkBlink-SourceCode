@@ -1,5 +1,6 @@
 import { ipcRenderer } from 'electron'
 import { DURATIONS } from './constants'
+import { store } from './store'
 
 function calculateMilestones(currentStreak: number): number[] {
     const baseMilestones = [5, 10, 20, 50]
@@ -93,8 +94,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize progress bar
     const progressBar = document.querySelector<HTMLElement>('#dismiss-button .progress')
     if (progressBar) {
-        // console.log('Progress bar element found')
-        progressBar.style.transition = `transform ${DURATIONS.DASHBOARD_DURATION / 1000}s linear` // Use DASHBOARD_DURATION
+        const settings = store.get('settings')
+        if (settings?.enableAutoDismiss) {
+            progressBar.style.transition = `transform ${settings.dashboardDuration / 1000}s linear`
+            progressBar.style.display = 'block'
+        } else {
+            progressBar.style.display = 'none'
+        }
     } else {
         console.error('Progress bar element not found')
     }
@@ -105,9 +111,9 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.classList.add('ready')
         // Start progress bar animation
         const progressBarElement = document.querySelector<HTMLElement>('#dismiss-button .progress')
-        if (progressBarElement) {
+        if (progressBarElement && store.get('settings')?.enableAutoDismiss) {
             setTimeout(() => {
-                progressBarElement!.style.transform = 'scaleX(1)' // Non-null assertion
+                progressBarElement.style.transform = 'scaleX(1)'
             }, 100)
         } else {
             console.error('Progress bar element not found for animation')

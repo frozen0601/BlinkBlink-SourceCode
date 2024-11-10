@@ -3,6 +3,7 @@
 import { BrowserWindow, screen, ipcMain } from 'electron'
 import * as path from 'path'
 import { DURATIONS } from './constants'
+import { store } from './store'
 
 interface WindowWithInterval {
     window: BrowserWindow
@@ -136,11 +137,14 @@ class WindowManager {
 
     showDashboard() {
         const displays = screen.getAllDisplays()
+        const settings = store.get('settings')
+        const duration = settings?.enableAutoDismiss ? settings.dashboardDuration : Infinity
+
         displays.forEach((display) => {
             this.createWindow({
                 type: 'dashboard',
                 display,
-                countdownDuration: DURATIONS.DASHBOARD_DURATION,
+                countdownDuration: duration,
                 onComplete: () => ipcMain.emit('dashboard-dismissed'),
             })
         })

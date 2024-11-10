@@ -34,6 +34,7 @@ const store = new Store<StoreSchema>({
             enableAnimations: true,
             language: 'en',
             enableAutoDismiss: true,
+            dashboardDuration: 10000,
         },
     },
 })
