@@ -38,6 +38,8 @@ class WindowManager {
                 nodeIntegration: true,
                 contextIsolation: false,
             },
+            // vibrancy: 'fullscreen-ui', // on MacOS
+            // backgroundMaterial: 'acrylic', // on Windows
         })
 
         const htmlFile = `${type}.html`

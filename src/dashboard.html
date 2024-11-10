@@ -12,21 +12,32 @@
                 margin: 0;
                 padding: 0;
                 overflow: hidden;
-                background: rgba(0, 0, 0, 0.5);
+                background: rgba(0, 0, 0, 0.7);
                 color: white;
                 font-family: Arial, sans-serif;
                 display: flex;
                 flex-direction: column;
                 justify-content: center;
                 align-items: center;
+                position: relative;
+            }
+            .content-container {
+                width: 100%;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: flex-start;
+                position: relative;
+                padding: 10vh 0;
             }
             h1 {
-                font-size: 48px;
-                margin-bottom: 20px;
+                font-size: 4vw;
+                margin-top: 30vh;
+                margin-bottom: 2vh;
             }
-            p {
-                font-size: 24px;
-                margin-bottom: 40px;
+            #stats {
+                font-size: 1vw;
+                margin-bottom: 30vh;
             }
             #dismiss-button {
                 padding: 10px 20px;
@@ -44,12 +55,14 @@
         </style>
     </head>
     <body>
-        <h1>Good Job!</h1>
-        <p>
-            You've consecutively rested your eyes
-            <span id="break-streak-count"></span> times, which is <span id="break-streak-duration"></span> of eye protection.
-        </p>
-        <button id="dismiss-button">Dismiss in <span id="dismiss-countdown"></span>s</button>
+        <div class="content-container">
+            <h1>Good Job!</h1>
+            <p id="stats">
+                You've consecutively rested your eyes
+                <span id="break-streak-count"></span> times, which is <span id="break-streak-duration"></span> of eye protection.
+            </p>
+            <button id="dismiss-button">Dismiss in <span id="dismiss-countdown"></span>s</button>
+        </div>
         <script>
             const { ipcRenderer } = require('electron')
             const { formatDuration, intervalToDuration } = require('date-fns')
