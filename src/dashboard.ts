@@ -1,104 +1,130 @@
 import { ipcRenderer } from 'electron'
 
-function calculateMilestones(currentStreak: number): number[] {
-    const baseMilestones = [5, 10, 20, 50]
-
-    if (currentStreak <= 50) {
-        return baseMilestones
-    }
-
-    if (currentStreak <= 150) {
-        return [75, 100, 125, 150]
-    }
-
-    const baseNumber = Math.floor(currentStreak / 100) * 100
-    return [100, 150, 200, 250].map((offset) => baseNumber + offset)
+// Types
+interface Stats {
+    breakStreakCount: number
+    breakStreakDuration: number
 }
 
-function updateProgressTracker(count: number) {
-    const progressTracker = document.getElementById('progress-tracker')
-    if (!progressTracker) {
-        console.error('Progress tracker element not found')
-        return
+interface DashboardElements {
+    progressTracker: HTMLElement
+    centralCircle: HTMLElement
+    dismissButton: HTMLElement
+    progressBar: HTMLElement
+}
+
+// Constants
+const MILESTONE_TIERS = {
+    BASE: [5, 10, 20, 50],
+    MEDIUM: [75, 100, 125, 150],
+    HIGH: [100, 150, 200, 250],
+}
+
+// UI Management
+class DashboardUI {
+    private elements: DashboardElements
+
+    constructor() {
+        this.elements = this.getDOMElements()
+        this.initializeEventListeners()
     }
-    const milestones = calculateMilestones(count)
 
-    // Find next milestone
-    const nextMilestone = milestones.find((m) => m > count) || null
-
-    progressTracker.innerHTML = ''
-    milestones.forEach((threshold) => {
-        const circle = document.createElement('div')
-        let className = 'circle'
-
-        if (count === threshold) {
-            // Exact milestone hit
-            className += ' milestone-hit'
-        } else if (count > threshold) {
-            // Past milestone
-            className += ' filled'
-        } else if (threshold === nextMilestone) {
-            // Next milestone to achieve
-            className += ' next-milestone'
+    private getDOMElements(): DashboardElements {
+        const getElement = (id: string): HTMLElement => {
+            const element = document.getElementById(id)
+            if (!element) throw new Error(`Element ${id} not found`)
+            return element
         }
 
-        circle.className = className
-        circle.setAttribute('data-threshold', threshold.toString()) // Convert number to string
-        circle.textContent = threshold.toString()
-        progressTracker.appendChild(circle)
-    })
+        return {
+            progressTracker: getElement('progress-tracker'),
+            centralCircle: getElement('central-circle'),
+            dismissButton: getElement('dismiss-button'),
+            progressBar: getElement('dismiss-button').querySelector('.progress') as HTMLElement,
+        }
+    }
 
-    const centralCircleNumber = document.getElementById('central-circle')?.querySelector('.number')
-    if (centralCircleNumber) {
-        centralCircleNumber.textContent = count.toString()
-    } else {
-        console.error('Central circle number element not found')
+    private initializeEventListeners(): void {
+        this.elements.dismissButton.addEventListener('click', () => {
+            ipcRenderer.send('dashboard-dismissed')
+        })
+
+        ipcRenderer.on('close-dashboard', () => {
+            window.close()
+        })
+
+        document.addEventListener('DOMContentLoaded', () => {
+            this.initializeProgressBar()
+        })
+
+        window.addEventListener('load', () => {
+            document.body.classList.add('ready')
+        })
+    }
+
+    private initializeProgressBar(): void {
+        ipcRenderer.on('start-countdown', (_, duration: number) => {
+            const { progressBar } = this.elements
+            progressBar.style.transition = `transform ${duration / 1000}s linear`
+            progressBar.style.display = 'block'
+            requestAnimationFrame(() => (progressBar.style.transform = 'scaleX(1)'))
+        })
+    }
+
+    public updateProgressTracker(count: number): void {
+        const milestones = this.calculateMilestones(count)
+        const nextMilestone = milestones.find((m) => m > count) || null
+
+        this.elements.progressTracker.innerHTML = this.createMilestonesHTML(count, milestones, nextMilestone)
+        this.updateCentralCircle(count)
+    }
+
+    private calculateMilestones(currentStreak: number): number[] {
+        if (currentStreak <= 50) return MILESTONE_TIERS.BASE
+        if (currentStreak <= 150) return MILESTONE_TIERS.MEDIUM
+
+        const baseNumber = Math.floor(currentStreak / 100) * 100
+        return MILESTONE_TIERS.HIGH.map((offset) => baseNumber + offset)
+    }
+
+    private createMilestonesHTML(count: number, milestones: number[], nextMilestone: number | null): string {
+        return milestones
+            .map((threshold) => {
+                const className = this.getMilestoneClassName(count, threshold, nextMilestone)
+                return `<div class="${className}" data-threshold="${threshold}">${threshold}</div>`
+            })
+            .join('')
+    }
+
+    private getMilestoneClassName(count: number, threshold: number, nextMilestone: number | null): string {
+        if (count === threshold) return 'circle milestone-hit'
+        if (count > threshold) return 'circle filled'
+        if (threshold === nextMilestone) return 'circle next-milestone'
+        return 'circle'
+    }
+
+    private updateCentralCircle(count: number): void {
+        const numberElement = this.elements.centralCircle.querySelector('.number')
+        if (numberElement) numberElement.textContent = count.toString()
     }
 }
 
-// Event listeners and initialization
-ipcRenderer.invoke('get-stats').then((stats) => {
-    updateProgressTracker(stats.breakStreakCount)
-})
+// Application initialization
+async function initializeDashboard() {
+    try {
+        const dashboard = new DashboardUI()
+        const stats = (await ipcRenderer.invoke('get-stats')) as Stats
+        dashboard.updateProgressTracker(stats.breakStreakCount)
 
-ipcRenderer.on('countdown-update', (event, countdown) => {
-    if (countdown <= 0) {
-        ipcRenderer.send('dashboard-dismissed')
-        window.close()
+        ipcRenderer.on('countdown-update', (_, countdown: number) => {
+            if (countdown <= 0) {
+                ipcRenderer.send('dashboard-dismissed')
+                window.close()
+            }
+        })
+    } catch (error) {
+        console.error('Failed to initialize dashboard:', error)
     }
-})
-
-ipcRenderer.invoke('get-stats').then((stats) => {
-    const breakStreakCountElement = document.getElementById('break-streak-count')
-    if (breakStreakCountElement) {
-        breakStreakCountElement.textContent = stats.breakStreakCount.toString()
-    } else {
-        console.error('Break streak count element not found')
-    }
-})
-
-const dismissButton = document.getElementById('dismiss-button')
-if (dismissButton) {
-    dismissButton.addEventListener('click', () => {
-        ipcRenderer.send('dashboard-dismissed')
-        window.close()
-    })
-} else {
-    console.error('Dismiss button element not found')
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    const progressBar = document.querySelector<HTMLElement>('#dismiss-button .progress')
-    if (!progressBar) return
-
-    ipcRenderer.on('start-countdown', (_, duration) => {
-        progressBar.style.transition = `transform ${duration / 1000}s linear`
-        progressBar.style.display = 'block'
-        requestAnimationFrame(() => (progressBar.style.transform = 'scaleX(1)'))
-    })
-
-    // Show content when everything is ready
-    window.addEventListener('load', () => {
-        document.body.classList.add('ready')
-    })
-})
+initializeDashboard()

@@ -13,7 +13,7 @@ import {
     getCurrentState,
     isRunning,
 } from './timer'
-import { showOverlay, closeOverlayWindows, showDashboard, closeDashboardWindow } from './windows'
+import { showOverlay, closeOverlayWindows, showDashboard, closeDashboardWindows } from './windows'
 import { DURATIONS } from './constants'
 
 let mainWindow: BrowserWindow | null = null
@@ -153,8 +153,8 @@ ipcMain.on('break-complete', () => {
 
 ipcMain.on('dashboard-dismissed', () => {
     dismissDashboard()
-    closeDashboardWindow()
     startWorkTimer()
+    closeDashboardWindows()
 })
 
 // IPC Handlers - Data Access
@@ -194,7 +194,7 @@ app.on('window-all-closed', () => {
 app.on('before-quit', () => {
     pauseTimer() // Ensure timers are cleared and state is reset
     closeOverlayWindows()
-    closeDashboardWindow()
+    closeDashboardWindows()
     if (statsWindow) statsWindow.close()
     if (settingsWindow) settingsWindow.close()
     if (mainWindow) mainWindow.close()

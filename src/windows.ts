@@ -71,17 +71,14 @@ class WindowManager {
     }
 
     private startCountdown(window: BrowserWindow, type: string, config: WindowConfig) {
-        if (!config.duration || config.duration === Infinity) return
-
-        let countdown = Math.floor(config.duration / 1000)
         const windows = type === 'overlay' ? this.overlayWindows : this.dashboardWindows
         const intervals = type === 'overlay' ? this.overlayIntervals : this.dashboardIntervals
 
         windows.push(window)
 
-        if (config.autoDismiss) {
-            window.webContents.send('start-countdown', config.duration)
-        }
+        if (!config.autoDismiss) return
+        let countdown = Math.floor(config.duration / 1000)
+        window.webContents.send('start-countdown', config.duration)
 
         this.updateCountdown(type, countdown)
         const interval = setInterval(() => {
@@ -162,7 +159,6 @@ class WindowManager {
     closeOverlayWindows() {
         this.overlayIntervals.forEach(({ interval }) => clearInterval(interval))
         this.overlayIntervals = []
-
         this.overlayWindows.forEach((win) => {
             if (!win.isDestroyed()) {
                 win.close()
@@ -172,12 +168,12 @@ class WindowManager {
     }
 
     closeDashboardWindows() {
+        // Clear any intervals related to the dashboard
         this.dashboardIntervals.forEach(({ interval }) => clearInterval(interval))
         this.dashboardIntervals = []
-
         this.dashboardWindows.forEach((win) => {
             if (!win.isDestroyed()) {
-                win.close()
+                win.webContents.send('close-dashboard')
             }
         })
         this.dashboardWindows = []
@@ -191,4 +187,4 @@ const windowManager = new WindowManager()
 export const showOverlay = () => windowManager.showOverlay()
 export const closeOverlayWindows = () => windowManager.closeOverlayWindows()
 export const showDashboard = () => windowManager.showDashboard()
-export const closeDashboardWindow = () => windowManager.closeDashboardWindows()
+export const closeDashboardWindows = () => windowManager.closeDashboardWindows()
