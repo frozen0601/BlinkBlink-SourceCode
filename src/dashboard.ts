@@ -1,6 +1,4 @@
 import { ipcRenderer } from 'electron'
-import { DURATIONS } from './constants'
-import { store } from './store'
 
 function calculateMilestones(currentStreak: number): number[] {
     const baseMilestones = [5, 10, 20, 50]
@@ -89,34 +87,18 @@ if (dismissButton) {
     console.error('Dismiss button element not found')
 }
 
-// Add this after other event listeners
 document.addEventListener('DOMContentLoaded', () => {
-    // Initialize progress bar
     const progressBar = document.querySelector<HTMLElement>('#dismiss-button .progress')
-    if (progressBar) {
-        const settings = store.get('settings')
-        if (settings?.enableAutoDismiss) {
-            progressBar.style.transition = `transform ${settings.dashboardDuration / 1000}s linear`
-            progressBar.style.display = 'block'
-        } else {
-            progressBar.style.display = 'none'
-        }
-    } else {
-        console.error('Progress bar element not found')
-    }
+    if (!progressBar) return
 
-    // Wait for all resources to load
+    ipcRenderer.on('start-countdown', (_, duration) => {
+        progressBar.style.transition = `transform ${duration / 1000}s linear`
+        progressBar.style.display = 'block'
+        requestAnimationFrame(() => (progressBar.style.transform = 'scaleX(1)'))
+    })
+
+    // Show content when everything is ready
     window.addEventListener('load', () => {
-        // Show content only when everything is ready
         document.body.classList.add('ready')
-        // Start progress bar animation
-        const progressBarElement = document.querySelector<HTMLElement>('#dismiss-button .progress')
-        if (progressBarElement && store.get('settings')?.enableAutoDismiss) {
-            setTimeout(() => {
-                progressBarElement.style.transform = 'scaleX(1)'
-            }, 100)
-        } else {
-            console.error('Progress bar element not found for animation')
-        }
     })
 })

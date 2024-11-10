@@ -13,7 +13,8 @@ interface WindowWithInterval {
 interface WindowConfig {
     type: 'overlay' | 'dashboard'
     display: Electron.Display
-    countdownDuration: number
+    duration: number
+    autoDismiss: boolean
     onComplete: () => void
 }
 
@@ -70,12 +71,17 @@ class WindowManager {
     }
 
     private startCountdown(window: BrowserWindow, type: string, config: WindowConfig) {
-        let countdown = Math.floor(config.countdownDuration / 1000)
+        if (!config.duration || config.duration === Infinity) return
 
-        // Add window to collection
+        let countdown = Math.floor(config.duration / 1000)
         const windows = type === 'overlay' ? this.overlayWindows : this.dashboardWindows
         const intervals = type === 'overlay' ? this.overlayIntervals : this.dashboardIntervals
+
         windows.push(window)
+
+        if (config.autoDismiss) {
+            window.webContents.send('start-countdown', config.duration)
+        }
 
         this.updateCountdown(type, countdown)
         const interval = setInterval(() => {
@@ -129,7 +135,8 @@ class WindowManager {
             this.createWindow({
                 type: 'overlay',
                 display,
-                countdownDuration: DURATIONS.BREAK_DURATION,
+                duration: DURATIONS.BREAK_DURATION,
+                autoDismiss: true,
                 onComplete: () => ipcMain.emit('break-complete'),
             })
         })
@@ -139,12 +146,14 @@ class WindowManager {
         const displays = screen.getAllDisplays()
         const settings = store.get('settings')
         const duration = settings?.enableAutoDismiss ? settings.dashboardDuration : Infinity
+        const autoDismiss = settings?.enableAutoDismiss || false
 
         displays.forEach((display) => {
             this.createWindow({
                 type: 'dashboard',
                 display,
-                countdownDuration: duration,
+                duration,
+                autoDismiss,
                 onComplete: () => ipcMain.emit('dashboard-dismissed'),
             })
         })
