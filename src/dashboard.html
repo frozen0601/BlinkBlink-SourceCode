@@ -12,7 +12,7 @@
                 margin: 0;
                 padding: 0;
                 overflow: hidden;
-                background: rgba(0, 0, 0, 0.7);
+                background: rgba(0, 0, 0, 0.5);
                 color: white;
                 font-family: Arial, sans-serif;
                 display: flex;
@@ -22,23 +22,47 @@
                 position: relative;
             }
             .content-container {
-                width: 100%;
+                width: 80%;
                 display: flex;
                 flex-direction: column;
                 align-items: center;
-                justify-content: flex-start;
-                position: relative;
-                padding: 10vh 0;
+                justify-content: center;
+                padding: 2vh 0;
             }
             h1 {
                 font-size: 4vw;
-                margin-top: 30vh;
-                margin-bottom: 2vh;
+                margin: 2vh 0;
             }
-            #stats {
+            /* Progress Tracker Styles */
+            #progress-tracker {
+                display: flex;
+                gap: 20px;
+                justify-content: center;
+                margin: 20px 0;
+            }
+
+            .circle {
+                width: 60px;
+                height: 60px;
+                border: 2px solid #ccc;
+                border-radius: 50%;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                font-size: 1.2rem;
+                color: #ccc;
+                transition: background-color 0.3s, border-color 0.3s, color 0.3s;
+            }
+
+            .circle.filled {
+                background-color: #4caf50; /* Filled circle color */
+                border-color: #4caf50;
+                color: white;
+            }
+            /* #stats {
                 font-size: 1vw;
                 margin-bottom: 30vh;
-            }
+            } */
             #dismiss-button {
                 padding: 10px 20px;
                 font-size: 18px;
@@ -52,11 +76,29 @@
             #dismiss-button:hover {
                 background: rgba(255, 255, 255, 0.3);
             }
+            /* Responsive Adjustments */
+            @media (max-width: 600px) {
+                .circle {
+                    width: 40px;
+                    height: 40px;
+                    font-size: 1rem;
+                }
+
+                h1 {
+                    font-size: 4vw;
+                }
+            }
         </style>
     </head>
     <body>
         <div class="content-container">
             <h1>Good Job!</h1>
+            <div id="progress-tracker">
+                <div class="circle" data-threshold="5">5</div>
+                <div class="circle" data-threshold="10">10</div>
+                <div class="circle" data-threshold="30">30</div>
+                <div class="circle" data-threshold="50">50</div>
+            </div>
             <p id="stats">
                 You've consecutively rested your eyes
                 <span id="break-streak-count"></span> times, which is <span id="break-streak-duration"></span> of eye protection.
@@ -66,6 +108,29 @@
         <script>
             const { ipcRenderer } = require('electron')
             const { formatDuration, intervalToDuration } = require('date-fns')
+
+            function updateProgressTracker(count) {
+                console.log('Updating progress tracker with count:', count) // Debugging
+                const circles = document.querySelectorAll('.circle')
+                circles.forEach((circle) => {
+                    const threshold = parseInt(circle.getAttribute('data-threshold'), 10)
+                    if (count >= threshold) {
+                        circle.classList.add('filled')
+                        console.log(`Filling circle for threshold ${threshold}`) // Debugging
+                    } else {
+                        circle.classList.remove('filled')
+                        console.log(`Unfilling circle for threshold ${threshold}`) // Debugging
+                    }
+                })
+            }
+
+            // Fetch stats and update UI
+            ipcRenderer.invoke('get-stats').then((stats) => {
+                console.log('Received stats:', stats) // Debugging
+                document.getElementById('break-streak-count').textContent = stats.breakStreakCount
+                document.getElementById('break-streak-duration').textContent = formatTime(stats.breakStreakDuration)
+                updateProgressTracker(stats.breakStreakCount)
+            })
 
             // update countdown every second
             ipcRenderer.on('countdown-update', (event, countdown) => {

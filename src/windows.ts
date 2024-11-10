@@ -33,11 +33,11 @@ class WindowManager {
             frame: false,
             skipTaskbar: true,
             alwaysOnTop: true,
-            opacity: 0.85,
             webPreferences: {
                 nodeIntegration: true,
                 contextIsolation: false,
             },
+            // opacity: 0.85,
             // vibrancy: 'fullscreen-ui', // on MacOS
             // backgroundMaterial: 'acrylic', // on Windows
         })
