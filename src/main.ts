@@ -108,8 +108,8 @@ function createStatsWindow() {
 
     const { width, height } = screen.getPrimaryDisplay().workAreaSize
     statsWindow = new BrowserWindow({
-        width: Math.min(500, width * 0.5),
-        height: Math.min(400, height * 0.5),
+        width: Math.min(800, width * 0.8),
+        height: Math.min(600, height * 0.8),
         resizable: true,
         center: true,
         webPreferences: {

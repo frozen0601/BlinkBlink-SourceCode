@@ -9,19 +9,15 @@
         <div class="about-container">
             <img src="icon.png" alt="BlinkBlink Logo" class="logo" />
             <h1>BlinkBlink</h1>
-            <p>Version: <span id="version"></span></p>
-            <p>Description: <span id="description"></span></p>
-            <p>License: <span id="license"></span></p>
-            <p>Website: <a id="website" href="#" target="_blank"></a></p>
-            <p>Support: <a id="support" href="#">support@yourwebsite.com</a></p>
+            <p class="version"><span id="version"></span></p>
+            <div class="info-container">
+                <p><strong>Description:</strong> <span id="description"></span></p>
+                <p><strong>License:</strong> <span id="license"></span></p>
+                <p><strong>Website:</strong> <a id="website" href="#" target="_blank"></a></p>
+                <p><strong>Support:</strong> <a id="support" href="#">support@yourwebsite.com</a></p>
+            </div>
             <p class="author"><span id="author"></span></p>
         </div>
-        <style>
-            .about-container {
-                width: 80%;
-                max-width: 600px;
-            }
-        </style>
         <script>
             const { ipcRenderer } = require('electron')
 
