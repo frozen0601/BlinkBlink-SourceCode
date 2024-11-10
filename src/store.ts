@@ -8,6 +8,11 @@ export const store = new Store<StoreSchema>({
         stats: {
             breakStreakCount: 0,
             breakStreakDuration: 0,
+            streakStartTime: Date.now(),
+            highestStreakCount: 0,
+            highestStreakDuration: 0,
+            highestStreakStartTime: Date.now(),
+            highestStreakEndTime: Date.now(),
         },
         lastBreakEndTime: Date.now(),
         currentWorkStreakStartTime: Date.now(),

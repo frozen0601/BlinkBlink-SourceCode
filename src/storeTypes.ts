@@ -1,6 +1,13 @@
 export interface Stats {
+    // Current streak
     breakStreakCount: number
     breakStreakDuration: number // in milliseconds
+    streakStartTime: number
+    // Highest streak
+    highestStreakCount: number
+    highestStreakDuration: number
+    highestStreakStartTime: number
+    highestStreakEndTime: number
 }
 
 export interface Settings {

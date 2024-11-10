@@ -1,8 +1,8 @@
-import { app, BrowserWindow, Tray, Menu, ipcMain, screen } from 'electron' // Added 'screen' import
+import { app, BrowserWindow, Tray, Menu, ipcMain, screen } from 'electron'
 import * as path from 'path'
 import Store from 'electron-store'
 import { StoreSchema, Settings } from './storeTypes'
-import * as fs from 'fs' // Add this import at the top
+import * as fs from 'fs'
 import {
     startWorkTimer,
     skipBreak,
@@ -20,14 +20,19 @@ import { DURATIONS } from './constants'
 let mainWindow: BrowserWindow | null = null
 let statsWindow: BrowserWindow | null = null
 let settingsWindow: BrowserWindow | null = null
+let aboutWindow: BrowserWindow | null = null
 let tray: Tray | null = null
-let aboutWindow: BrowserWindow | null = null // Declare globally
 
 const store = new Store<StoreSchema>({
     defaults: {
         stats: {
             breakStreakCount: 0,
             breakStreakDuration: 0,
+            streakStartTime: Date.now(),
+            highestStreakCount: 0,
+            highestStreakDuration: 0,
+            highestStreakStartTime: Date.now(),
+            highestStreakEndTime: Date.now(),
         },
         lastBreakEndTime: Date.now(),
         currentWorkStreakStartTime: Date.now(),
@@ -44,12 +49,44 @@ const store = new Store<StoreSchema>({
 // Stats Management
 function updateBreakStats(skipped: boolean) {
     const stats = store.get('stats')
-    const updatedStats = {
-        ...stats,
-        breakStreakDuration: skipped ? 0 : stats.breakStreakDuration + DURATIONS.BREAK_DURATION,
-        breakStreakCount: skipped ? 0 : stats.breakStreakCount + 1,
+    const currentTime = Date.now()
+    if (stats.highestStreakCount === undefined) stats.highestStreakCount = 0
+    if (stats.highestStreakDuration === undefined) stats.highestStreakDuration = 0
+    if (stats.highestStreakStartTime === undefined) stats.highestStreakStartTime = Date.now()
+    if (stats.highestStreakEndTime === undefined) stats.highestStreakEndTime = Date.now()
+
+    if (skipped) {
+        // Just reset current streak but preserve highest
+        store.set('stats', {
+            ...stats,
+            breakStreakCount: 0,
+            breakStreakDuration: 0,
+            streakStartTime: currentTime,
+        })
+        store.set('lastBreakEndTime', currentTime)
+    } else {
+        // Completing a break successfully
+        const newCount = stats.breakStreakCount + 1
+        const newDuration = stats.breakStreakDuration + DURATIONS.BREAK_DURATION
+
+        // Update current streak
+        const updatedStats = {
+            ...stats,
+            breakStreakCount: newCount,
+            breakStreakDuration: newDuration,
+        }
+
+        // Update highest streak
+        if (newCount > stats.highestStreakCount) {
+            updatedStats.highestStreakCount = newCount
+            updatedStats.highestStreakDuration = newDuration
+            updatedStats.highestStreakStartTime = stats.streakStartTime
+            updatedStats.highestStreakEndTime = currentTime
+        }
+
+        store.set('stats', updatedStats)
+        store.set('lastBreakEndTime', currentTime)
     }
-    store.set('stats', updatedStats)
 }
 
 // Window Creation Methods
@@ -212,7 +249,7 @@ ipcMain.handle('get-app-info', () => {
         description: packageJson.description,
         license: packageJson.license,
         website: packageJson.homepage || 'https://yourwebsite.com',
-        supportEmail: 'theblinkblinkapp@gmail.com', // Updated support email
+        supportEmail: 'theblinkblinkapp@gmail.com',
     }
 })
 
@@ -235,7 +272,7 @@ app.on('window-all-closed', () => {
 
 // Gracefully handle app quitting
 app.on('before-quit', () => {
-    pauseTimer() // Ensure timers are cleared and state is reset
+    pauseTimer()
     closeOverlayWindows()
     closeDashboardWindows()
     if (statsWindow) statsWindow.close()
