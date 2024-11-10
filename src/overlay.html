@@ -32,11 +32,16 @@
             h1 {
                 font-size: 4vw;
                 margin-top: 30vh;
-                margin-bottom: 2vh;
+                margin-bottom: 30vh;
             }
             #countdown {
                 font-size: 3vw;
-                margin-bottom: 30vh;
+                margin-bottom: 60vh;
+            }
+            #eye-animation {
+                width: 4vw;
+                height: 4vw;
+                /* margin-bottom: 30vh; */
             }
             #warning-text {
                 display: none;
@@ -69,8 +74,8 @@
     </head>
     <body>
         <div class="content-container">
-            <h1>Look Away 😌</h1>
-            <div id="countdown"></div>
+            <h1>Look Away <img id="eye-animation" src="../assets/rolling_eyes.gif" alt="Eye Animation" /></h1>
+            <!-- <div id="countdown"></div> -->
             <div id="warning-text">This action will reset your streak. Click again to confirm.</div>
             <button id="skip-button">Skip</button>
         </div>
