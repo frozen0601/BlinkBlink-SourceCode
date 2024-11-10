@@ -3,38 +3,49 @@
 const path = require('path')
 const CopyPlugin = require('copy-webpack-plugin')
 
-module.exports = {
+const mainConfig = {
     entry: './src/main.ts',
     target: 'electron-main',
     module: {
-        rules: [
-            {
-                test: /\.ts$/,
-                include: /src/,
-                use: [{ loader: 'ts-loader' }],
-            },
-        ],
+        rules: [{ test: /\.ts$/, include: /src/, use: [{ loader: 'ts-loader' }] }]
     },
-    resolve: {
-        extensions: ['.ts', '.js'],
-    },
+    resolve: { extensions: ['.ts', '.js'] },
     output: {
         path: path.resolve(__dirname, 'dist'),
-        filename: 'main.js',
+        filename: 'main.js'
     },
-    mode: 'development',
-    plugins: [
-        new CopyPlugin({
-            patterns: [
-                { from: 'src/overlay.html', to: 'overlay.html' },
-                { from: 'src/dashboard.html', to: 'dashboard.html' },
-                { from: 'src/styles/dashboard.css', to: 'dashboard.css' },
-                { from: 'src/scripts/dashboard.js', to: 'dashboard.js' },
-                { from: 'src/stats.html', to: 'stats.html' },
-                { from: 'src/settings.html', to: 'settings.html' },
-                { from: 'src/icon.png', to: 'icon.png' },
-                // Add other assets if necessary
-            ],
-        }),
-    ],
+    mode: 'development'
 }
+
+const rendererConfig = {
+    entry: './src/dashboard.ts',
+    target: 'electron-renderer',
+    module: {
+        rules: [{ test: /\.ts$/, include: /src/, use: [{ loader: 'ts-loader' }] }]
+    },
+    resolve: { extensions: ['.ts', '.js'] },
+    output: {
+        path: path.resolve(__dirname, 'dist'),
+        filename: 'dashboard.js'
+    },
+    mode: 'development'
+}
+
+module.exports = [
+    mainConfig,
+    {
+        ...rendererConfig,
+        plugins: [
+            new CopyPlugin({
+                patterns: [
+                    { from: 'src/overlay.html', to: 'overlay.html' },
+                    { from: 'src/dashboard.html', to: 'dashboard.html' },
+                    { from: 'src/styles/dashboard.css', to: 'dashboard.css' },
+                    { from: 'src/stats.html', to: 'stats.html' },
+                    { from: 'src/settings.html', to: 'settings.html' },
+                    { from: 'src/icon.png', to: 'icon.png' },
+                ]
+            })
+        ]
+    }
+]
