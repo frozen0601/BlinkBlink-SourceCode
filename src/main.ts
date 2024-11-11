@@ -94,10 +94,10 @@ function updateBreakStats(skipped: boolean) {
 function createMainWindow() {
     const iconPath =
         process.platform === 'win32'
-            ? path.join(__dirname, 'assets', 'icon.ico')
+            ? path.join(__dirname, 'icon.ico')
             : process.platform === 'darwin'
-            ? path.join(__dirname, 'assets', 'icon.icns')
-            : path.join(__dirname, 'assets', 'icon.png')
+            ? path.join(__dirname, 'icon.icns')
+            : path.join(__dirname, 'icon.png')
     mainWindow = new BrowserWindow({
         show: false,
         icon: iconPath,
@@ -110,6 +110,12 @@ function createMainWindow() {
 }
 
 function createStatsWindow() {
+    const iconPath =
+        process.platform === 'win32'
+            ? path.join(__dirname, 'icon.ico')
+            : process.platform === 'darwin'
+            ? path.join(__dirname, 'icon.icns')
+            : path.join(__dirname, 'icon.png')
     if (statsWindow) {
         statsWindow.focus()
         return
@@ -121,6 +127,7 @@ function createStatsWindow() {
         height: Math.min(600, height * 0.8),
         resizable: true,
         center: true,
+        icon: iconPath,
         webPreferences: {
             nodeIntegration: true,
             contextIsolation: false,
@@ -135,6 +142,12 @@ function createStatsWindow() {
 }
 
 function createSettingsWindow() {
+    const iconPath =
+        process.platform === 'win32'
+            ? path.join(__dirname, 'icon.ico')
+            : process.platform === 'darwin'
+            ? path.join(__dirname, 'icon.icns')
+            : path.join(__dirname, 'icon.png')
     if (settingsWindow) {
         settingsWindow.focus()
         return
@@ -146,6 +159,7 @@ function createSettingsWindow() {
         height: Math.min(400, height * 0.5),
         resizable: true,
         center: true,
+        icon: iconPath,
         webPreferences: {
             nodeIntegration: true,
             contextIsolation: false,
@@ -160,6 +174,12 @@ function createSettingsWindow() {
 }
 
 function createAboutWindow() {
+    const iconPath =
+        process.platform === 'win32'
+            ? path.join(__dirname, 'icon.ico')
+            : process.platform === 'darwin'
+            ? path.join(__dirname, 'icon.icns')
+            : path.join(__dirname, 'icon.png')
     if (aboutWindow) {
         aboutWindow.focus()
         return
@@ -171,6 +191,7 @@ function createAboutWindow() {
         height: Math.min(400, height * 0.5),
         resizable: true,
         center: true,
+        icon: iconPath,
         webPreferences: {
             nodeIntegration: true,
             contextIsolation: false,
