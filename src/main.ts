@@ -300,7 +300,14 @@ ipcMain.handle('get-app-info', () => {
 // IPC Handlers - Settings
 ipcMain.on('save-settings', (event, settings: Settings) => {
     store.set('settings', settings)
-    // Implement startup behavior if necessary
+    // Configure auto-start behavior
+    app.setLoginItemSettings({
+        openAtLogin: settings.startOnBoot,
+        // For Windows, this ensures the app starts minimized in tray
+        openAsHidden: true,
+        // Required for macOS to work properly
+        path: app.getPath('exe'),
+    })
 })
 
 // App Lifecycle Events
@@ -308,6 +315,14 @@ app.whenReady().then(() => {
     createMainWindow()
     createTray()
     startWorkTimer()
+
+    // Initialize auto-start setting based on stored preference
+    const settings = store.get('settings')
+    app.setLoginItemSettings({
+        openAtLogin: settings?.startOnBoot || false,
+        openAsHidden: true,
+        path: app.getPath('exe'),
+    })
 })
 
 app.on('window-all-closed', () => {
