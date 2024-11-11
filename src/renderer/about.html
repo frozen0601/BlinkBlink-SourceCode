@@ -23,7 +23,6 @@
         </div>
         <script>
             const { ipcRenderer } = require('electron')
-            const { autoUpdater } = require('electron-updater')
 
             ipcRenderer.invoke('get-app-info').then((appInfo) => {
                 document.getElementById('version').innerText = appInfo.version
@@ -39,7 +38,7 @@
             })
 
             document.getElementById('update-button').addEventListener('click', () => {
-                autoUpdater.checkForUpdatesAndNotify()
+                ipcRenderer.invoke('check-for-updates')
             })
         </script>
     </body>

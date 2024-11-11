@@ -270,7 +270,7 @@ ipcMain.handle('get-settings', () => {
     )
 })
 
-// Update the 'get-app-info' IPC handler to match support email
+// IPC Handler - get app info from package.json
 ipcMain.handle('get-app-info', () => {
     const packageJsonPath = path.join(__dirname, '..', 'package.json')
     const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'))
@@ -282,6 +282,11 @@ ipcMain.handle('get-app-info', () => {
         website: packageJson.homepage || 'https://yourwebsite.com',
         supportEmail: 'theblinkblinkapp@gmail.com',
     }
+})
+
+// IPC Handler - Check for updates
+ipcMain.handle('check-for-updates', () => {
+    autoUpdater.checkForUpdatesAndNotify()
 })
 
 // IPC Handlers - Settings
