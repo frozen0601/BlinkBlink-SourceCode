@@ -148,6 +148,7 @@ h1 {
     }
 }
 
+/* Animations */
 @keyframes milestone-hit {
     0% {
         transform: scale(1);
