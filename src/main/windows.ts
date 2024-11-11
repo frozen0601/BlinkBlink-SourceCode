@@ -1,6 +1,6 @@
 // src/windows.ts
 
-import { BrowserWindow, screen, ipcMain } from 'electron'
+import { BrowserWindow, screen, ipcMain, nativeTheme } from 'electron' // Import nativeTheme
 import * as path from 'path'
 import { DURATIONS } from './constants'
 import { store } from './store'
@@ -31,7 +31,10 @@ class WindowManager {
             y: display.bounds.y,
             width: display.bounds.width,
             height: display.bounds.height,
-            transparent: true,
+            show: false, // Don't show until ready
+            transparent: type === 'overlay' || type === 'dashboard',
+            backgroundColor:
+                type === 'overlay' || type === 'dashboard' ? undefined : nativeTheme.shouldUseDarkColors ? '#1a1a1a' : '#f5f5f5',
             frame: false,
             skipTaskbar: true,
             alwaysOnTop: true,
@@ -48,7 +51,13 @@ class WindowManager {
         const htmlFile = `${type}.html`
         window.loadFile(path.join(__dirname, htmlFile))
         window.setAlwaysOnTop(true, 'floating')
-        window.maximize()
+        
+        // Only show and maximize when content is ready
+        window.once('ready-to-show', () => {
+            window.show()
+            window.maximize()
+            this.startCountdown(window, type, config)
+        })
 
         this.setupWindowEvents(window, type, config)
         return window
@@ -64,10 +73,6 @@ class WindowManager {
 
         window.on('closed', () => {
             this.cleanupWindow(window, type)
-        })
-
-        window.once('ready-to-show', () => {
-            this.startCountdown(window, type, config)
         })
     }
 
@@ -183,6 +188,9 @@ class WindowManager {
 
 // Create singleton instance
 const windowManager = new WindowManager()
+
+// Set the theme source to system
+nativeTheme.themeSource = 'system'
 
 // Export methods
 export const showOverlay = () => windowManager.showOverlay()

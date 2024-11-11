@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Tray, Menu, MenuItem, ipcMain, screen } from 'electron'
+import { app, BrowserWindow, Tray, Menu, MenuItem, ipcMain, screen, nativeTheme } from 'electron'
 import * as path from 'path'
 import Store from 'electron-store'
 import { StoreSchema, Settings } from './storeTypes'
@@ -99,14 +99,23 @@ function getIconPath() {
 function createWindow(options: Electron.BrowserWindowConstructorOptions, filePath: string, onClose: () => void) {
     const window = new BrowserWindow({
         ...options,
+        show: false, // Don't show the window immediately
+        backgroundColor: nativeTheme.shouldUseDarkColors ? '#1a1a1a' : '#f5f5f5',
         icon: getIconPath(),
         webPreferences: {
             nodeIntegration: true,
             contextIsolation: false,
         },
     })
+
     window.loadFile(path.join(__dirname, filePath))
     window.on('closed', onClose)
+
+    // Only show the window when content is ready
+    window.once('ready-to-show', () => {
+        window.show()
+    })
+
     return window
 }
 
@@ -116,12 +125,15 @@ function createStatsWindow() {
         return
     }
     const { width, height } = screen.getPrimaryDisplay().workAreaSize
+    const windowBounds = store.get('statsWindowBounds', { width: width, height: height, x: undefined, y: undefined })
     statsWindow = createWindow(
         {
-            width: Math.min(800, width * 0.8),
-            height: Math.min(600, height * 0.8),
+            width: Math.min(600, width * 0.8),
+            height: Math.min(650, height * 0.8),
+            x: windowBounds.x,
+            y: windowBounds.y,
             resizable: true,
-            center: true,
+            center: windowBounds.x === undefined || windowBounds.y === undefined,
             autoHideMenuBar: true,
             alwaysOnTop: true,
         },
@@ -141,7 +153,7 @@ function createSettingsWindow() {
     settingsWindow = createWindow(
         {
             width: Math.min(500, width * 0.5),
-            height: Math.min(400, height * 0.5),
+            height: Math.min(470, height * 0.5),
             resizable: true,
             center: true,
             autoHideMenuBar: true,
@@ -163,7 +175,7 @@ function createAboutWindow() {
     aboutWindow = createWindow(
         {
             width: Math.min(500, width * 0.5),
-            height: Math.min(400, height * 0.5),
+            height: Math.min(500, height * 0.5),
             resizable: true,
             center: true,
             autoHideMenuBar: true,

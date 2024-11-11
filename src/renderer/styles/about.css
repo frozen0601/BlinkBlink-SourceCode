@@ -1,44 +1,70 @@
+/* Define CSS variables */
+:root {
+    --background-color: #f5f5f5;
+    --text-color: #333;
+    --heading-color: #1a1a1a;
+    --accent-color: #1a73e8;
+    --scrollbar-bg: #e0e0e0;
+    --scrollbar-thumb: #888;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --background-color: #1a1a1a;
+        --text-color: #f5f5f5;
+        --heading-color: #ffffff;
+        --accent-color: #4285f4;
+        --scrollbar-bg: #333;
+        --scrollbar-thumb: #555;
+    }
+}
+
 html,
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
     padding: 20px;
-    background: #f5f5f5;
+    background: var(--background-color);
     margin: 0;
-    color: #333;
+    color: var(--text-color);
 }
+
 h1 {
     font-size: 28px;
     margin-top: 10px;
     margin-bottom: 5px;
-    color: #1a1a1a;
+    color: var(--heading-color);
 }
+
 p {
     margin: 8px 0;
     font-size: 16px;
-    color: #555;
+    color: var(--text-color);
 }
+
 a {
-    color: #1a73e8;
+    color: var(--accent-color);
     text-decoration: none;
 }
 
+/* Simplify layout */
 body {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
+    display: block;
     margin: 0;
-}
-.about-container {
-    background: white;
     padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    height: auto;
+}
+
+.about-container {
+    background: var(--background-color);
+    padding: 20px;
+    border-radius: 0;
+    box-shadow: none;
     max-width: 800px;
     width: 90%;
     margin: 0 auto;
     text-align: center;
 }
+
 .logo {
     width: 20%;
     max-width: 150px;
@@ -46,16 +72,17 @@ body {
     margin-top: 1vh;
     object-fit: contain;
 }
+
 .author {
     font-size: 14px;
-    color: #888;
+    color: var(--text-color);
     margin-top: 20px;
     text-align: center;
 }
 
 .version {
     font-size: 12px;
-    color: #888;
+    color: var(--text-color);
     margin-top: 0px;
     margin-bottom: 10px;
     text-align: center;
@@ -99,8 +126,23 @@ body {
     border: none;
     font-size: 16px;
     cursor: pointer;
-    color: #1a73e8;
+    color: var(--accent-color);
     margin-left: 10px;
+}
+
+/* Custom scrollbar styles */
+::-webkit-scrollbar {
+    width: 12px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--scrollbar-bg);
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: var(--scrollbar-thumb);
+    border-radius: 10px;
+    border: 3px solid var(--scrollbar-bg);
 }
 
 @media (min-width: 768px) {
