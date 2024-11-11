@@ -94,6 +94,15 @@ body {
     padding-bottom: 5px;
 }
 
+.update-button {
+    background: none;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+    color: #1a73e8;
+    margin-left: 10px;
+}
+
 @media (min-width: 768px) {
     .about-container {
         max-width: 700px;

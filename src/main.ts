@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Tray, Menu, ipcMain, screen, Notification } from 'electron'
+import { app, BrowserWindow, Tray, Menu, MenuItem, ipcMain, screen } from 'electron'
 import * as path from 'path'
 import Store from 'electron-store'
 import { StoreSchema, Settings } from './storeTypes'
@@ -15,7 +15,6 @@ import {
 } from './timer'
 import { showOverlay, closeOverlayWindows, showDashboard, closeDashboardWindows } from './windows'
 import { DURATIONS } from './constants'
-import { initializeAutoUpdater } from './updater'
 import { autoUpdater } from 'electron-updater'
 
 let mainWindow: BrowserWindow | null = null
@@ -23,7 +22,6 @@ let statsWindow: BrowserWindow | null = null
 let settingsWindow: BrowserWindow | null = null
 let aboutWindow: BrowserWindow | null = null
 let tray: Tray | null = null
-let isUpdateDownloaded: boolean = false
 
 const store = new Store<StoreSchema>({
     defaults: {
@@ -91,264 +89,149 @@ function updateBreakStats(skipped: boolean) {
     }
 }
 
-// Window Creation Methods
-function createMainWindow() {
-    const iconPath =
-        process.platform === 'win32'
-            ? path.join(__dirname, 'icon.ico')
-            : process.platform === 'darwin'
-            ? path.join(__dirname, 'icon.icns')
-            : path.join(__dirname, 'icon.png')
-    mainWindow = new BrowserWindow({
-        show: false,
-        icon: iconPath,
+function getIconPath() {
+    return process.platform === 'win32'
+        ? path.join(__dirname, 'icon.ico')
+        : process.platform === 'darwin'
+        ? path.join(__dirname, 'icon.icns')
+        : path.join(__dirname, 'icon.png')
+}
+
+function createWindow(options: Electron.BrowserWindowConstructorOptions, filePath: string, onClose: () => void) {
+    const window = new BrowserWindow({
+        ...options,
+        icon: getIconPath(),
         webPreferences: {
             nodeIntegration: true,
             contextIsolation: false,
         },
     })
-    initializeAutoUpdater(mainWindow)
+    window.loadFile(path.join(__dirname, filePath))
+    window.on('closed', onClose)
+    return window
+}
+
+// Window Creation Methods
+function createMainWindow() {
+    mainWindow = createWindow({ show: false }, 'index.html', () => {
+        mainWindow = null
+    })
 }
 
 function createStatsWindow() {
-    const iconPath =
-        process.platform === 'win32'
-            ? path.join(__dirname, 'icon.ico')
-            : process.platform === 'darwin'
-            ? path.join(__dirname, 'icon.icns')
-            : path.join(__dirname, 'icon.png')
     if (statsWindow) {
         statsWindow.focus()
         return
     }
-
     const { width, height } = screen.getPrimaryDisplay().workAreaSize
-    statsWindow = new BrowserWindow({
-        width: Math.min(800, width * 0.8),
-        height: Math.min(600, height * 0.8),
-        resizable: true,
-        center: true,
-        icon: iconPath,
-        webPreferences: {
-            nodeIntegration: true,
-            contextIsolation: false,
+    statsWindow = createWindow(
+        {
+            width: Math.min(800, width * 0.8),
+            height: Math.min(600, height * 0.8),
+            resizable: true,
+            center: true,
+            autoHideMenuBar: true,
+            alwaysOnTop: true,
         },
-        autoHideMenuBar: true,
-        alwaysOnTop: true, // Ensure window is above overlays
-    })
-    statsWindow.loadFile(path.join(__dirname, 'stats.html'))
-
-    statsWindow.on('closed', () => {
-        statsWindow = null
-    })
+        'stats.html',
+        () => {
+            statsWindow = null
+        }
+    )
 }
 
 function createSettingsWindow() {
-    const iconPath =
-        process.platform === 'win32'
-            ? path.join(__dirname, 'icon.ico')
-            : process.platform === 'darwin'
-            ? path.join(__dirname, 'icon.icns')
-            : path.join(__dirname, 'icon.png')
     if (settingsWindow) {
         settingsWindow.focus()
         return
     }
-
     const { width, height } = screen.getPrimaryDisplay().workAreaSize
-    settingsWindow = new BrowserWindow({
-        width: Math.min(500, width * 0.5),
-        height: Math.min(400, height * 0.5),
-        resizable: true,
-        center: true,
-        icon: iconPath,
-        webPreferences: {
-            nodeIntegration: true,
-            contextIsolation: false,
+    settingsWindow = createWindow(
+        {
+            width: Math.min(500, width * 0.5),
+            height: Math.min(400, height * 0.5),
+            resizable: true,
+            center: true,
+            autoHideMenuBar: true,
+            alwaysOnTop: true,
         },
-        autoHideMenuBar: true,
-        alwaysOnTop: true, // Ensure window is above overlays
-    })
-    settingsWindow.loadFile(path.join(__dirname, 'settings.html'))
-
-    settingsWindow.on('closed', () => {
-        settingsWindow = null
-    })
+        'settings.html',
+        () => {
+            settingsWindow = null
+        }
+    )
 }
 
 function createAboutWindow() {
-    const iconPath =
-        process.platform === 'win32'
-            ? path.join(__dirname, 'icon.ico')
-            : process.platform === 'darwin'
-            ? path.join(__dirname, 'icon.icns')
-            : path.join(__dirname, 'icon.png')
     if (aboutWindow) {
         aboutWindow.focus()
         return
     }
-
     const { width, height } = screen.getPrimaryDisplay().workAreaSize
-    aboutWindow = new BrowserWindow({
-        width: Math.min(500, width * 0.5),
-        height: Math.min(400, height * 0.5),
-        resizable: true,
-        center: true,
-        icon: iconPath,
-        webPreferences: {
-            nodeIntegration: true,
-            contextIsolation: false,
+    aboutWindow = createWindow(
+        {
+            width: Math.min(500, width * 0.5),
+            height: Math.min(400, height * 0.5),
+            resizable: true,
+            center: true,
+            autoHideMenuBar: true,
+            alwaysOnTop: true,
         },
-        autoHideMenuBar: true,
-        alwaysOnTop: true, // Ensure window is above overlays
-    })
-    aboutWindow.loadFile(path.join(__dirname, 'about.html'))
-    aboutWindow.on('closed', () => {
-        aboutWindow = null
-    })
+        'about.html',
+        () => {
+            aboutWindow = null
+        }
+    )
+}
+
+function createSkipBreaksSubmenu() {
+    const durations = [5, 10, 30]
+    return durations
+        .map((duration) => ({
+            label: `${duration} minutes`,
+            click: () => {
+                skipBreaks(duration)
+                closeOverlayWindows()
+                closeDashboardWindows()
+                updateBreakStats(true)
+            },
+        }))
+        .concat([
+            {
+                label: 'Rest of the day',
+                click: () => {
+                    skipBreaksUntilEndOfDay()
+                    closeOverlayWindows()
+                    closeDashboardWindows()
+                    updateBreakStats(true)
+                },
+            },
+        ])
 }
 
 function createTray() {
     tray = new Tray(path.join(__dirname, 'icon.png'))
-    const contextMenu = Menu.buildFromTemplate([
-        { label: 'Pause Timer', type: 'normal', click: pauseTimer },
+    let contextMenu = Menu.buildFromTemplate([
         {
             label: 'Skip Breaks',
-            submenu: [
-                { 
-                    label: '5 minutes', 
-                    click: () => { 
-                        skipBreaks(5)
-                        closeOverlayWindows()
-                        closeDashboardWindows()
-                        updateBreakStats(true)
-                    } 
-                },
-                { 
-                    label: '10 minutes', 
-                    click: () => { 
-                        skipBreaks(10)
-                        closeOverlayWindows()
-                        closeDashboardWindows()
-                        updateBreakStats(true)
-                    } 
-                },
-                { 
-                    label: '30 minutes', 
-                    click: () => { 
-                        skipBreaks(30)
-                        closeOverlayWindows()
-                        closeDashboardWindows()
-                        updateBreakStats(true)
-                    } 
-                },
-                { 
-                    label: 'Rest of the day', 
-                    click: () => { 
-                        skipBreaksUntilEndOfDay()
-                        closeOverlayWindows()
-                        closeDashboardWindows()
-                        updateBreakStats(true)
-                    } 
-                },
-            ],
+            submenu: createSkipBreaksSubmenu(),
         },
-        { label: 'View Stats', click: createStatsWindow },
+        { label: 'Statistics', click: createStatsWindow },
         { label: 'Settings', click: createSettingsWindow },
         { label: 'About', click: createAboutWindow },
-        {
-            label: 'Check for updates',
-            click: () => {
-                if (mainWindow) {
-                    mainWindow.webContents.send('check-for-updates')
-                }
-            },
-        },
         { label: 'Exit', click: () => app.quit() },
     ])
     tray.setToolTip('BlinkBlink')
     tray.setContextMenu(contextMenu)
-    autoUpdater.on('update-available', () => {
-        if (tray) {
-            tray.setToolTip('BlinkBlink - Update Available')
-        }
-    })
 
+    // If an update is available, show restart/exit and install
     autoUpdater.on('update-downloaded', () => {
-        if (tray) {
-            tray.setToolTip('BlinkBlink - Update Ready to Install')
-        }
-    })
-
-    // Listen for update-downloaded event from updater.ts
-    ipcMain.on('update-downloaded', () => {
-        isUpdateDownloaded = true
-        // Update tray menu to show 'Restart to apply updates'
-        if (tray) {
-            const updatedMenu = Menu.buildFromTemplate([
-                { label: 'Pause Timer', type: 'normal', click: pauseTimer },
-                {
-                    label: 'Skip Breaks',
-                    submenu: [
-                        { 
-                            label: '5 minutes', 
-                            click: () => { 
-                                skipBreaks(5)
-                                closeOverlayWindows()
-                                closeDashboardWindows()
-                                updateBreakStats(true)
-                            } 
-                        },
-                        { 
-                            label: '10 minutes', 
-                            click: () => { 
-                                skipBreaks(10)
-                                closeOverlayWindows()
-                                closeDashboardWindows()
-                                updateBreakStats(true)
-                            } 
-                        },
-                        { 
-                            label: '30 minutes', 
-                            click: () => { 
-                                skipBreaks(30)
-                                closeOverlayWindows()
-                                closeDashboardWindows()
-                                updateBreakStats(true)
-                            } 
-                        },
-                        { 
-                            label: 'Rest of the day', 
-                            click: () => { 
-                                skipBreaksUntilEndOfDay()
-                                closeOverlayWindows()
-                                closeDashboardWindows()
-                                updateBreakStats(true)
-                            } 
-                        },
-                    ],
-                },
-                { label: 'View Stats', click: createStatsWindow },
-                { label: 'Settings', click: createSettingsWindow },
-                { label: 'About', click: createAboutWindow },
-                {
-                    label: 'Restart to apply updates',
-                    click: () => {
-                        if (mainWindow) {
-                            mainWindow.webContents.send('restart-and-install')
-                        }
-                    },
-                },
-                { label: 'Exit', click: () => app.quit() },
-            ])
-            tray.setContextMenu(updatedMenu)
-
-            // Notify user that update is ready
-            new Notification({
-                title: 'Update Ready',
-                body: 'A new update has been downloaded. Restart the application to apply the updates.',
-            }).show()
-        }
+        const updateItem = new MenuItem({ label: 'Restart and Install Update', click: () => autoUpdater.quitAndInstall() })
+        const updatedMenu = contextMenu.items
+            .slice(0, -1)
+            .concat(updateItem, new MenuItem({ label: 'Exit and Install Update', click: () => app.quit() }))
+        contextMenu = Menu.buildFromTemplate(updatedMenu)
+        if (tray) tray.setContextMenu(contextMenu)
     })
 }
 
@@ -427,6 +310,9 @@ app.whenReady().then(() => {
     createMainWindow()
     createTray()
     startWorkTimer()
+
+    // Automatically check for updates on startup
+    autoUpdater.checkForUpdatesAndNotify()
 
     // Initialize auto-start setting based on stored preference
     const settings = store.get('settings')

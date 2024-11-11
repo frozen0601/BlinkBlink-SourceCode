@@ -69,7 +69,7 @@
     ],
     "author": "Wei-Cheng Huang",
     "license": "Proprietary",
-    "description": "BlinkBlink is a desktop app that reminds you to follow the 20-20-20 rule, helping protect your eyes and boost productivity with regular break reminders.",
+    "description": "The eye protection app.",
     "devDependencies": {
         "@types/electron": "^1.4.38",
         "@types/node": "^22.9.0",

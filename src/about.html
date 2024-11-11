@@ -9,7 +9,10 @@
         <div class="about-container">
             <img src="icon.png" alt="BlinkBlink Logo" class="logo" />
             <h1>BlinkBlink</h1>
-            <p class="version"><span id="version"></span></p>
+            <p class="version">
+                <span id="version"></span>
+                <button class="update-button" id="update-button">↻</button>
+            </p>
             <div class="info-container">
                 <p><strong>Description:</strong> <span id="description"></span></p>
                 <p><strong>License:</strong> <span id="license"></span></p>
@@ -20,6 +23,7 @@
         </div>
         <script>
             const { ipcRenderer } = require('electron')
+            const { autoUpdater } = require('electron-updater')
 
             ipcRenderer.invoke('get-app-info').then((appInfo) => {
                 document.getElementById('version').innerText = appInfo.version
@@ -32,6 +36,10 @@
                 const supportLink = document.getElementById('support')
                 supportLink.href = `mailto:${appInfo.supportEmail}`
                 supportLink.innerText = appInfo.supportEmail
+            })
+
+            document.getElementById('update-button').addEventListener('click', () => {
+                autoUpdater.checkForUpdatesAndNotify()
             })
         </script>
     </body>
