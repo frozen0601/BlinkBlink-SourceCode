@@ -1,6 +1,6 @@
 {
     "name": "blinkblink",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "main": "dist/main.js",
     "scripts": {
         "start": "webpack && electron .",
@@ -14,20 +14,42 @@
             "dist/**/*",
             "node_modules/**/*",
             "package.json",
-            "assets/**/*"
+            "assets/**/*",
+            "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}",
+            "!**/node_modules/*/{test,__tests__,tests,powered-test,example,examples}",
+            "!**/node_modules/.bin",
+            "!**/*.{map,ts}"
+        ],
+        "extraResources": [
+            {
+                "from": "assets/",
+                "to": "assets/",
+                "filter": ["**/*"]
+            }
         ],
         "directories": {
             "buildResources": "build",
             "output": "release"
         },
+        "publish": {
+            "provider": "github",
+            "owner": "frozen0601",
+            "repo": "BlinkBlink-Releases"
+        },
         "win": {
-            "target": "nsis"
+            "target": "nsis",
+            "artifactName": "${productName}.Setup.${version}.${ext}",
+            "icon": "assets/icon.ico"
         },
         "mac": {
-            "target": "dmg"
+            "target": "dmg",
+            "artifactName": "${productName}.Setup.${version}.${ext}",
+            "icon": "assets/icon.icns"
         },
         "linux": {
-            "target": "AppImage"
+            "target": "AppImage",
+            "artifactName": "${productName}.Setup.${version}.${ext}",
+            "icon": "assets/icon.png"
         }
     },
     "homepage": "https://yourwebsite.com",
@@ -59,6 +81,7 @@
     },
     "dependencies": {
         "date-fns": "^4.1.0",
-        "electron-store": "^8.2.0"
+        "electron-store": "^8.2.0",
+        "electron-updater": "^6.3.9"
     }
 }

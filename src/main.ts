@@ -11,11 +11,12 @@ import {
     pauseTimer,
     skipBreaks,
     skipBreaksUntilEndOfDay,
-    getCurrentState,
     isRunning,
 } from './timer'
 import { showOverlay, closeOverlayWindows, showDashboard, closeDashboardWindows } from './windows'
 import { DURATIONS } from './constants'
+import { initializeAutoUpdater } from './updater'
+import { autoUpdater } from 'electron-updater'
 
 let mainWindow: BrowserWindow | null = null
 let statsWindow: BrowserWindow | null = null
@@ -91,13 +92,21 @@ function updateBreakStats(skipped: boolean) {
 
 // Window Creation Methods
 function createMainWindow() {
+    const iconPath =
+        process.platform === 'win32'
+            ? path.join(__dirname, 'assets', 'icon.ico')
+            : process.platform === 'darwin'
+            ? path.join(__dirname, 'assets', 'icon.icns')
+            : path.join(__dirname, 'assets', 'icon.png')
     mainWindow = new BrowserWindow({
         show: false,
+        icon: iconPath,
         webPreferences: {
             nodeIntegration: true,
             contextIsolation: false,
         },
     })
+    initializeAutoUpdater(mainWindow)
 }
 
 function createStatsWindow() {
@@ -194,6 +203,17 @@ function createTray() {
     ])
     tray.setToolTip('BlinkBlink')
     tray.setContextMenu(contextMenu)
+    autoUpdater.on('update-available', () => {
+        if (tray) {
+            tray.setToolTip('BlinkBlink - Update Available')
+        }
+    })
+
+    autoUpdater.on('update-downloaded', () => {
+        if (tray) {
+            tray.setToolTip('BlinkBlink - Update Ready to Install')
+        }
+    })
 }
 
 // IPC Handlers - Timer Events
