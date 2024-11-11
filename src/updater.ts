@@ -1,52 +1,39 @@
-// src/updater.ts
 import { autoUpdater } from 'electron-updater'
-import { BrowserWindow, dialog, ipcMain } from 'electron'
+import { BrowserWindow, Notification, ipcMain } from 'electron'
 
 export function initializeAutoUpdater(mainWindow: BrowserWindow) {
     if (!mainWindow) return
 
-    // const isProd = process.env.NODE_ENV === 'production'
-    // if (isProd) {
-        autoUpdater.checkForUpdatesAndNotify()
-    // }
+    // Automatically check for updates on startup
+    autoUpdater.checkForUpdatesAndNotify()
 
-    autoUpdater.on('update-available', () => {
-        const result = dialog.showMessageBoxSync(mainWindow, {
-            type: 'info',
-            buttons: ['Later', 'Download'],
-            title: 'Update Available',
-            message: 'A new version is available. Do you want to download it now?',
-            // Removed 'alwaysOnTop' as it's not a valid option
-        })
-        if (result === 1) {
-            // 'Download' button
-            autoUpdater.downloadUpdate()
-        }
-    })
-
+    // Listen for 'update-downloaded' event
     autoUpdater.on('update-downloaded', () => {
-        const result = dialog.showMessageBoxSync(mainWindow, {
-            type: 'info',
-            buttons: ['Restart Now', 'Later'],
-            title: 'Update Ready',
-            message: 'A new version has been downloaded. Restart the application to apply the updates.',
-            // Removed 'alwaysOnTop' as it's not a valid option
-        })
-        if (result === 0) {
-            // 'Restart Now' button
-            autoUpdater.quitAndInstall()
-        }
+        // new Notification({
+        //     title: 'Update Ready',
+        //     body: 'A new update has been downloaded. Restart the application to apply the updates.',
+        // }).show()
+
+        // Notify renderer process that update is ready
+        mainWindow.webContents.send('update-downloaded')
     })
 
+    // Handle any errors during the update process
     autoUpdater.on('error', (error) => {
         console.error('AutoUpdater error:', error)
-        dialog.showErrorBox(
-            'Update Error',
-            `Failed to update the application: ${error == null ? 'unknown' : (error.stack || error).toString()}`
-        )
+        new Notification({
+            title: 'Update Error',
+            body: `Failed to update the application: ${error == null ? 'unknown' : (error.stack || error).toString()}`,
+        }).show()
     })
 
-    ipcMain.on('restart_app', () => {
+    // IPC handler to manually check for updates
+    ipcMain.on('check-for-updates', () => {
+        autoUpdater.checkForUpdates()
+    })
+
+    // IPC handler to restart and install updates
+    ipcMain.on('restart-and-install', () => {
         autoUpdater.quitAndInstall()
     })
 }

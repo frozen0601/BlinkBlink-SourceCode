@@ -5,7 +5,7 @@
     "scripts": {
         "start": "webpack && electron .",
         "build": "webpack",
-        "dist": "electron-builder"
+        "dist": "npm run build && electron-builder"
     },
     "build": {
         "appId": "com.frozen.blinkblink",
@@ -24,7 +24,9 @@
             {
                 "from": "assets/",
                 "to": "assets/",
-                "filter": ["**/*"]
+                "filter": [
+                    "**/*"
+                ]
             }
         ],
         "directories": {

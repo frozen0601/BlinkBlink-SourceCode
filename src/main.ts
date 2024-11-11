@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Tray, Menu, ipcMain, screen } from 'electron'
+import { app, BrowserWindow, Tray, Menu, ipcMain, screen, Notification } from 'electron'
 import * as path from 'path'
 import Store from 'electron-store'
 import { StoreSchema, Settings } from './storeTypes'
@@ -23,6 +23,7 @@ let statsWindow: BrowserWindow | null = null
 let settingsWindow: BrowserWindow | null = null
 let aboutWindow: BrowserWindow | null = null
 let tray: Tray | null = null
+let isUpdateDownloaded: boolean = false
 
 const store = new Store<StoreSchema>({
     defaults: {
@@ -214,15 +215,55 @@ function createTray() {
         {
             label: 'Skip Breaks',
             submenu: [
-                { label: '5 minutes', click: () => skipBreaks(5) },
-                { label: '10 minutes', click: () => skipBreaks(10) },
-                { label: '30 minutes', click: () => skipBreaks(30) },
-                { label: 'Rest of the day', click: skipBreaksUntilEndOfDay },
+                { 
+                    label: '5 minutes', 
+                    click: () => { 
+                        skipBreaks(5)
+                        closeOverlayWindows()
+                        closeDashboardWindows()
+                        updateBreakStats(true)
+                    } 
+                },
+                { 
+                    label: '10 minutes', 
+                    click: () => { 
+                        skipBreaks(10)
+                        closeOverlayWindows()
+                        closeDashboardWindows()
+                        updateBreakStats(true)
+                    } 
+                },
+                { 
+                    label: '30 minutes', 
+                    click: () => { 
+                        skipBreaks(30)
+                        closeOverlayWindows()
+                        closeDashboardWindows()
+                        updateBreakStats(true)
+                    } 
+                },
+                { 
+                    label: 'Rest of the day', 
+                    click: () => { 
+                        skipBreaksUntilEndOfDay()
+                        closeOverlayWindows()
+                        closeDashboardWindows()
+                        updateBreakStats(true)
+                    } 
+                },
             ],
         },
         { label: 'View Stats', click: createStatsWindow },
         { label: 'Settings', click: createSettingsWindow },
         { label: 'About', click: createAboutWindow },
+        {
+            label: 'Check for updates',
+            click: () => {
+                if (mainWindow) {
+                    mainWindow.webContents.send('check-for-updates')
+                }
+            },
+        },
         { label: 'Exit', click: () => app.quit() },
     ])
     tray.setToolTip('BlinkBlink')
@@ -236,6 +277,77 @@ function createTray() {
     autoUpdater.on('update-downloaded', () => {
         if (tray) {
             tray.setToolTip('BlinkBlink - Update Ready to Install')
+        }
+    })
+
+    // Listen for update-downloaded event from updater.ts
+    ipcMain.on('update-downloaded', () => {
+        isUpdateDownloaded = true
+        // Update tray menu to show 'Restart to apply updates'
+        if (tray) {
+            const updatedMenu = Menu.buildFromTemplate([
+                { label: 'Pause Timer', type: 'normal', click: pauseTimer },
+                {
+                    label: 'Skip Breaks',
+                    submenu: [
+                        { 
+                            label: '5 minutes', 
+                            click: () => { 
+                                skipBreaks(5)
+                                closeOverlayWindows()
+                                closeDashboardWindows()
+                                updateBreakStats(true)
+                            } 
+                        },
+                        { 
+                            label: '10 minutes', 
+                            click: () => { 
+                                skipBreaks(10)
+                                closeOverlayWindows()
+                                closeDashboardWindows()
+                                updateBreakStats(true)
+                            } 
+                        },
+                        { 
+                            label: '30 minutes', 
+                            click: () => { 
+                                skipBreaks(30)
+                                closeOverlayWindows()
+                                closeDashboardWindows()
+                                updateBreakStats(true)
+                            } 
+                        },
+                        { 
+                            label: 'Rest of the day', 
+                            click: () => { 
+                                skipBreaksUntilEndOfDay()
+                                closeOverlayWindows()
+                                closeDashboardWindows()
+                                updateBreakStats(true)
+                            } 
+                        },
+                    ],
+                },
+                { label: 'View Stats', click: createStatsWindow },
+                { label: 'Settings', click: createSettingsWindow },
+                { label: 'About', click: createAboutWindow },
+                {
+                    label: 'Restart to apply updates',
+                    click: () => {
+                        if (mainWindow) {
+                            mainWindow.webContents.send('restart-and-install')
+                        }
+                    },
+                },
+                { label: 'Exit', click: () => app.quit() },
+            ])
+            tray.setContextMenu(updatedMenu)
+
+            // Notify user that update is ready
+            new Notification({
+                title: 'Update Ready',
+                body: 'A new update has been downloaded. Restart the application to apply the updates.',
+            }).show()
         }
     })
 }
