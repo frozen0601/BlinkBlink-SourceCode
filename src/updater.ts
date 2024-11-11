@@ -16,6 +16,7 @@ export function initializeAutoUpdater(mainWindow: BrowserWindow) {
             buttons: ['Later', 'Download'],
             title: 'Update Available',
             message: 'A new version is available. Do you want to download it now?',
+            // Removed 'alwaysOnTop' as it's not a valid option
         })
         if (result === 1) {
             // 'Download' button
@@ -29,6 +30,7 @@ export function initializeAutoUpdater(mainWindow: BrowserWindow) {
             buttons: ['Restart Now', 'Later'],
             title: 'Update Ready',
             message: 'A new version has been downloaded. Restart the application to apply the updates.',
+            // Removed 'alwaysOnTop' as it's not a valid option
         })
         if (result === 0) {
             // 'Restart Now' button

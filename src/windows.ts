@@ -35,6 +35,7 @@ class WindowManager {
             frame: false,
             skipTaskbar: true,
             alwaysOnTop: true,
+            titleBarStyle: 'hidden',
             webPreferences: {
                 nodeIntegration: true,
                 contextIsolation: false,

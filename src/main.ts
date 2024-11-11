@@ -133,6 +133,7 @@ function createStatsWindow() {
             contextIsolation: false,
         },
         autoHideMenuBar: true,
+        alwaysOnTop: true, // Ensure window is above overlays
     })
     statsWindow.loadFile(path.join(__dirname, 'stats.html'))
 
@@ -165,6 +166,7 @@ function createSettingsWindow() {
             contextIsolation: false,
         },
         autoHideMenuBar: true,
+        alwaysOnTop: true, // Ensure window is above overlays
     })
     settingsWindow.loadFile(path.join(__dirname, 'settings.html'))
 
@@ -197,6 +199,7 @@ function createAboutWindow() {
             contextIsolation: false,
         },
         autoHideMenuBar: true,
+        alwaysOnTop: true, // Ensure window is above overlays
     })
     aboutWindow.loadFile(path.join(__dirname, 'about.html'))
     aboutWindow.on('closed', () => {
