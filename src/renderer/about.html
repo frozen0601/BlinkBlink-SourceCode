@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <title>About BlinkBlink</title>
+        <link rel="stylesheet" href="about.css" />
+    </head>
+    <body>
+        <div class="about-container">
+            <img src="icon.png" alt="BlinkBlink Logo" class="logo" />
+            <h1>BlinkBlink</h1>
+            <p class="version">
+                <span id="version"></span>
+                <button class="update-button" id="update-button">↻</button>
+            </p>
+            <div class="info-container">
+                <p><strong>Description:</strong> <span id="description"></span></p>
+                <p><strong>License:</strong> <span id="license"></span></p>
+                <p><strong>Website:</strong> <a id="website" href="#" target="_blank"></a></p>
+                <p><strong>Support:</strong> <a id="support" href="#">support@yourwebsite.com</a></p>
+            </div>
+            <p class="author"><span id="author"></span></p>
+        </div>
+        <script>
+            const { ipcRenderer } = require('electron')
+            const { autoUpdater } = require('electron-updater')
+
+            ipcRenderer.invoke('get-app-info').then((appInfo) => {
+                document.getElementById('version').innerText = appInfo.version
+                document.getElementById('author').innerText = `BlinkBlink © ${new Date().getFullYear()}`
+                document.getElementById('description').innerText = appInfo.description
+                document.getElementById('license').innerText = appInfo.license
+                const websiteLink = document.getElementById('website')
+                websiteLink.href = appInfo.website
+                websiteLink.innerText = appInfo.website
+                const supportLink = document.getElementById('support')
+                supportLink.href = `mailto:${appInfo.supportEmail}`
+                supportLink.innerText = appInfo.supportEmail
+            })
+
+            document.getElementById('update-button').addEventListener('click', () => {
+                autoUpdater.checkForUpdatesAndNotify()
+            })
+        </script>
+    </body>
+</html>

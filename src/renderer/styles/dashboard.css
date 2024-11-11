@@ -1,0 +1,185 @@
+html,
+body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    font-family: Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+}
+
+.content-container {
+    width: 80%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2vh 0;
+}
+
+h1 {
+    font-size: 4vw;
+    margin: 2vh 0;
+}
+
+/* Progress Tracker Styles */
+#progress-tracker {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    margin: 20px 0;
+}
+
+.circle {
+    width: 5vh;
+    height: 5vh;
+    border: 2px solid #ccc;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.2rem;
+    color: #ccc;
+    transition: background-color 0.3s, border-color 0.3s, color 0.3s;
+}
+
+.circle.filled {
+    background-color: #4caf50;
+    border-color: #4caf50;
+    color: white;
+}
+
+.central-circle-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 3vh;
+}
+
+.central-circle {
+    width: 10vh;
+    height: 10vh;
+    border: 3px solid #4caf50;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 2.4rem;
+    font-weight: bold;
+    color: #4caf50;
+    background-color: rgba(0, 0, 0, 0.5);
+    position: relative;
+    cursor: pointer;
+}
+
+.central-circle .number {
+    transition: opacity 0.3s ease-in-out;
+}
+
+.central-circle .text {
+    position: absolute;
+    font-size: 1.2rem;
+    color: #fff;
+    text-align: center;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+    pointer-events: none;
+}
+
+.central-circle:hover .number {
+    opacity: 0;
+}
+
+.central-circle:hover .text {
+    opacity: 1;
+}
+
+#dismiss-button {
+    padding: 10px 20px;
+    font-size: 18px;
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    border-radius: 5px;
+    position: relative;
+    overflow: hidden;
+}
+
+#dismiss-button .progress {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 3px;
+    background: #4caf50;
+    width: 100%;
+    transform-origin: left;
+    transform: scaleX(0);
+}
+
+#dismiss-button:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* Responsive Adjustments */
+@media (max-width: 600px) {
+    .circle {
+        width: 40px;
+        height: 40px;
+        font-size: 1rem;
+    }
+
+    .central-circle {
+        width: 60px;
+        height: 60px;
+        font-size: 3rem;
+        top: -30px; /* Adjust position for smaller screens */
+    }
+
+    h1 {
+        font-size: 4vw;
+    }
+}
+
+@keyframes milestone-hit {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.3);
+        background-color: #4caf50;
+        border-color: #4caf50;
+        color: white;
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+@keyframes next-milestone-blink {
+    0% {
+        border-color: #ccc;
+    }
+    50% {
+        border-color: #4caf50;
+        color: #4caf50;
+    }
+    100% {
+        border-color: #ccc;
+    }
+}
+
+.circle.milestone-hit {
+    animation: milestone-hit 1s ease-in-out infinite;
+}
+
+.circle.next-milestone {
+    animation: next-milestone-blink 2s ease-in-out infinite;
+}

@@ -17,7 +17,6 @@ import { showOverlay, closeOverlayWindows, showDashboard, closeDashboardWindows 
 import { DURATIONS } from './constants'
 import { autoUpdater } from 'electron-updater'
 
-let mainWindow: BrowserWindow | null = null
 let statsWindow: BrowserWindow | null = null
 let settingsWindow: BrowserWindow | null = null
 let aboutWindow: BrowserWindow | null = null
@@ -109,13 +108,6 @@ function createWindow(options: Electron.BrowserWindowConstructorOptions, filePat
     window.loadFile(path.join(__dirname, filePath))
     window.on('closed', onClose)
     return window
-}
-
-// Window Creation Methods
-function createMainWindow() {
-    mainWindow = createWindow({ show: false }, 'index.html', () => {
-        mainWindow = null
-    })
 }
 
 function createStatsWindow() {
@@ -307,7 +299,6 @@ ipcMain.on('save-settings', (event, settings: Settings) => {
 
 // App Lifecycle Events
 app.whenReady().then(() => {
-    createMainWindow()
     createTray()
     startWorkTimer()
 
@@ -334,5 +325,4 @@ app.on('before-quit', () => {
     closeDashboardWindows()
     if (statsWindow) statsWindow.close()
     if (settingsWindow) settingsWindow.close()
-    if (mainWindow) mainWindow.close()
 })

@@ -4,7 +4,7 @@ const path = require('path')
 const CopyPlugin = require('copy-webpack-plugin')
 
 const mainConfig = {
-    entry: './src/main.ts',
+    entry: './src/main/main.ts',
     target: 'electron-main',
     module: {
         rules: [{ test: /\.ts$/, include: /src/, use: [{ loader: 'ts-loader' }] }],
@@ -27,7 +27,7 @@ const mainConfig = {
 }
 
 const rendererConfig = {
-    entry: './src/dashboard.ts',
+    entry: './src/renderer/dashboard.ts',
     target: 'electron-renderer',
     module: {
         rules: [{ test: /\.ts$/, include: /src/, use: [{ loader: 'ts-loader' }] }],
@@ -47,16 +47,16 @@ module.exports = [
         plugins: [
             new CopyPlugin({
                 patterns: [
-                    { from: 'src/overlay.html', to: 'overlay.html' },
-                    { from: 'src/dashboard.html', to: 'dashboard.html' },
-                    { from: 'src/settings.html', to: 'settings.html' },
-                    { from: 'src/about.html', to: 'about.html' },
-                    { from: 'src/styles/dashboard.css', to: 'dashboard.css' },
-                    { from: 'src/styles/overlay.css', to: 'overlay.css' },
-                    { from: 'src/styles/settings.css', to: 'settings.css' },
-                    { from: 'src/styles/about.css', to: 'about.css' },
-                    { from: 'src/styles/stats.css', to: 'stats.css' },
-                    { from: 'src/stats.html', to: 'stats.html' },
+                    { from: 'src/renderer/overlay.html', to: 'overlay.html' },
+                    { from: 'src/renderer/dashboard.html', to: 'dashboard.html' },
+                    { from: 'src/renderer/settings.html', to: 'settings.html' },
+                    { from: 'src/renderer/about.html', to: 'about.html' },
+                    { from: 'src/renderer/styles/dashboard.css', to: 'dashboard.css' },
+                    { from: 'src/renderer/styles/overlay.css', to: 'overlay.css' },
+                    { from: 'src/renderer/styles/settings.css', to: 'settings.css' },
+                    { from: 'src/renderer/styles/about.css', to: 'about.css' },
+                    { from: 'src/renderer/styles/stats.css', to: 'stats.css' },
+                    { from: 'src/renderer/stats.html', to: 'stats.html' },
                     { from: 'assets/icon.png', to: 'icon.png' },
                 ],
             }),
