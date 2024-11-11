@@ -1,6 +1,6 @@
 {
     "name": "blinkblink",
-    "version": "1.0.1",
+    "version": "1.0.0",
     "main": "dist/main.js",
     "scripts": {
         "start": "webpack && electron .",
@@ -39,17 +39,17 @@
         "win": {
             "target": "nsis",
             "artifactName": "${productName}.Setup.${version}.${ext}",
-            "icon": "icon.ico"
+            "icon": "assets/icon.ico"
         },
         "mac": {
             "target": "dmg",
             "artifactName": "${productName}.Setup.${version}.${ext}",
-            "icon": "icon.icns"
+            "icon": "assets/icon.icns"
         },
         "linux": {
             "target": "AppImage",
             "artifactName": "${productName}.Setup.${version}.${ext}",
-            "icon": "icon.png"
+            "icon": "assets/icon.png"
         }
     },
     "homepage": "https://yourwebsite.com",
