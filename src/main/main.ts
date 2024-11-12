@@ -214,7 +214,20 @@ function createSkipBreaksSubmenu() {
 }
 
 function createTray() {
-    tray = new Tray(path.join(__dirname, 'icon.png'))
+    const { nativeImage } = require('electron')
+    let trayIcon = nativeImage.createFromPath(path.join(__dirname, 'icon.png'))
+    const iconSize = trayIcon.getSize()
+    if (iconSize.width === 0 && iconSize.height === 0) {
+        console.error('Failed to load tray icon:', getIconPath())
+        return
+    }
+    // Optionally resize the icon if needed
+    if (process.platform === 'darwin') {
+        console.log('Resizing tray icon for macOS')
+        trayIcon = trayIcon.resize({ width: 16 })
+    }
+    trayIcon.setTemplateImage(true)
+    tray = new Tray(trayIcon)
     let contextMenu = Menu.buildFromTemplate([
         {
             label: 'Skip Breaks',
@@ -316,6 +329,7 @@ ipcMain.on('save-settings', (event, settings: Settings) => {
 
 // App Lifecycle Events
 app.whenReady().then(() => {
+    app.dock.hide() // Hide the dock icon on macOS
     createTray()
     startWorkTimer()
 

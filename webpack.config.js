@@ -1,20 +1,25 @@
-// webpack.config.js
+require('dotenv').config();
+const path = require('path');
+const CopyPlugin = require('copy-webpack-plugin');
 
-const path = require('path')
-const CopyPlugin = require('copy-webpack-plugin')
+const mode = process.env.NODE_ENV || 'development';
 
-const mainConfig = {
-    entry: './src/main/main.ts',
-    target: 'electron-main',
+const commonConfig = {
     module: {
         rules: [{ test: /\.ts$/, include: /src/, use: [{ loader: 'ts-loader' }] }],
     },
     resolve: { extensions: ['.ts', '.js'] },
+    mode,
+};
+
+const mainConfig = {
+    ...commonConfig,
+    entry: './src/main/main.ts',
+    target: 'electron-main',
     output: {
         path: path.resolve(__dirname, 'dist'),
         filename: 'main.js',
     },
-    mode: 'development',
     plugins: [
         new CopyPlugin({
             patterns: [
@@ -24,42 +29,34 @@ const mainConfig = {
             ],
         }),
     ],
-}
+};
 
 const rendererConfig = {
+    ...commonConfig,
     entry: './src/renderer/dashboard.ts',
     target: 'electron-renderer',
-    module: {
-        rules: [{ test: /\.ts$/, include: /src/, use: [{ loader: 'ts-loader' }] }],
-    },
-    resolve: { extensions: ['.ts', '.js'] },
     output: {
         path: path.resolve(__dirname, 'dist'),
         filename: 'dashboard.js',
     },
-    mode: 'development',
-}
+    plugins: [
+        new CopyPlugin({
+            patterns: [
+                { from: 'src/renderer/overlay.html', to: 'overlay.html' },
+                { from: 'src/renderer/dashboard.html', to: 'dashboard.html' },
+                { from: 'src/renderer/settings.html', to: 'settings.html' },
+                { from: 'src/renderer/about.html', to: 'about.html' },
+                { from: 'src/renderer/styles/dashboard.css', to: 'dashboard.css' },
+                { from: 'src/renderer/styles/overlay.css', to: 'overlay.css' },
+                { from: 'src/renderer/styles/settings.css', to: 'settings.css' },
+                { from: 'src/renderer/styles/about.css', to: 'about.css' },
+                { from: 'src/renderer/styles/stats.css', to: 'stats.css' },
+                { from: 'src/renderer/stats.html', to: 'stats.html' },
+                { from: 'assets/icon.png', to: 'icon.png' },
+                { from: 'assets/rolling_eyes.gif', to: 'rolling_eyes.gif' },
+            ],
+        }),
+    ],
+};
 
-module.exports = [
-    mainConfig,
-    {
-        ...rendererConfig,
-        plugins: [
-            new CopyPlugin({
-                patterns: [
-                    { from: 'src/renderer/overlay.html', to: 'overlay.html' },
-                    { from: 'src/renderer/dashboard.html', to: 'dashboard.html' },
-                    { from: 'src/renderer/settings.html', to: 'settings.html' },
-                    { from: 'src/renderer/about.html', to: 'about.html' },
-                    { from: 'src/renderer/styles/dashboard.css', to: 'dashboard.css' },
-                    { from: 'src/renderer/styles/overlay.css', to: 'overlay.css' },
-                    { from: 'src/renderer/styles/settings.css', to: 'settings.css' },
-                    { from: 'src/renderer/styles/about.css', to: 'about.css' },
-                    { from: 'src/renderer/styles/stats.css', to: 'stats.css' },
-                    { from: 'src/renderer/stats.html', to: 'stats.html' },
-                    { from: 'assets/icon.png', to: 'icon.png' },
-                ],
-            }),
-        ],
-    },
-]
+module.exports = [mainConfig, rendererConfig];

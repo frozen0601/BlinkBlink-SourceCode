@@ -3,8 +3,8 @@
     "version": "1.0.1",
     "main": "dist/main.js",
     "scripts": {
-        "start": "webpack && electron .",
-        "build": "webpack",
+        "start": "NODE_ENV=development webpack --config webpack.config.js && electron .",
+        "build": "NODE_ENV=production webpack --config webpack.config.js",
         "dist": "npm run build && electron-builder"
     },
     "build": {
@@ -24,9 +24,7 @@
             {
                 "from": "assets/",
                 "to": "assets/",
-                "filter": [
-                    "**/*"
-                ]
+                "filter": ["**/*"]
             }
         ],
         "directories": {
