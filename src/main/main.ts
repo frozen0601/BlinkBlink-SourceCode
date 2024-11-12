@@ -329,7 +329,7 @@ ipcMain.on('save-settings', (event, settings: Settings) => {
 
 // App Lifecycle Events
 app.whenReady().then(() => {
-    app.dock.hide() // Hide the dock icon on macOS
+    if (process.platform === 'darwin') app.dock.hide() // Hide the dock icon if we're on macOS
     createTray()
     startWorkTimer()
 
