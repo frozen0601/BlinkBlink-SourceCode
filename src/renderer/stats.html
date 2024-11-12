@@ -51,17 +51,17 @@
             })
 
             function formatTime(ms) {
-                if (!ms) return '0 second'
+                if (!ms) return '0 seconds'
                 const duration = intervalToDuration({ start: 0, end: ms })
                 if (duration.days > 0) {
                     return `${duration.days} ${duration.days === 1 ? 'day' : 'days'}${
-                        duration.hours ? ` ${duration.hours === 1 ? 'hour' : 'hours'}` : ''
-                    }`
+                        duration.hours ? ` ${duration.hours} ${duration.hours === 1 ? 'hour' : 'hours'}` : ''
+                    }${duration.minutes ? ` ${duration.minutes} ${duration.minutes === 1 ? 'minute' : 'minutes'}` : ''}`
                 }
 
                 if (duration.hours > 0) {
                     return `${duration.hours} ${duration.hours === 1 ? 'hour' : 'hours'}${
-                        duration.minutes ? ` ${duration.minutes === 1 ? 'minute' : 'minutes'}` : ''
+                        duration.minutes ? ` ${duration.minutes} ${duration.minutes === 1 ? 'minute' : 'minutes'}` : ''
                     }`
                 }
 
