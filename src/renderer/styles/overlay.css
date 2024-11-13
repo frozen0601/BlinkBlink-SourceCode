@@ -13,9 +13,17 @@ body {
     justify-content: center;
     align-items: center;
     position: relative;
-    -webkit-backdrop-filter: blur(10px);
-    backdrop-filter: blur(10px);
 }
+
+@media screen and (-webkit-device-pixel-ratio: 2) {
+    /* Only apply backdrop-filter on macOS */
+    html,
+    body {
+        -webkit-backdrop-filter: blur(10px);
+        backdrop-filter: blur(10px);
+    }
+}
+
 .content-container {
     width: 80%;
     display: flex;

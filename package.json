@@ -67,7 +67,7 @@
     ],
     "author": "Wei-Cheng Huang",
     "license": "Proprietary",
-    "description": "The eye protection app.",
+    "description": "Protect your eyes",
     "devDependencies": {
         "@types/electron": "^1.4.38",
         "@types/node": "^22.9.0",

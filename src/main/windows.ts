@@ -32,7 +32,7 @@ class WindowManager {
             width: display.bounds.width,
             height: display.bounds.height,
             show: false,
-            transparent: true,
+            transparent: process.platform === 'darwin',
             frame: false,
             skipTaskbar: true,
             titleBarStyle: 'hidden',
@@ -57,10 +57,10 @@ class WindowManager {
             window.setPosition(display.bounds.x, display.bounds.y)
             window.setSize(display.bounds.width, display.bounds.height)
         }
-
         // Only show and maximize when content is ready
         window.once('ready-to-show', () => {
             window.show()
+            window.setFocusable(false)
             this.startCountdown(window, type, config)
         })
 
