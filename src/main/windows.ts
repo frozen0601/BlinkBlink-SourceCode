@@ -53,14 +53,16 @@ class WindowManager {
         if (process.platform === 'darwin') {
             window.setWindowButtonVisibility(false)
             window.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
-            // Force the window to cover the entire screen including dock and menu bar
             window.setPosition(display.bounds.x, display.bounds.y)
             window.setSize(display.bounds.width, display.bounds.height)
         }
-        // Only show and maximize when content is ready
+
         window.once('ready-to-show', () => {
             window.show()
-            window.setFocusable(false)
+            if (config.type === 'dashboard') {
+                this.closeOverlayWindows()
+            }
+            // window.setFocusable(false)
             this.startCountdown(window, type, config)
         })
 

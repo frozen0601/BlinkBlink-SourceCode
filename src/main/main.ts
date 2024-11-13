@@ -261,7 +261,6 @@ ipcMain.on('break-skip', () => {
 
 ipcMain.on('break-complete', () => {
     completeBreak()
-    closeOverlayWindows()
     updateBreakStats(false)
     showDashboard()
 })
