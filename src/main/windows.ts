@@ -31,31 +31,35 @@ class WindowManager {
             y: display.bounds.y,
             width: display.bounds.width,
             height: display.bounds.height,
-            show: false, // Don't show until ready
-            transparent: type === 'overlay' || type === 'dashboard',
-            backgroundColor:
-                type === 'overlay' || type === 'dashboard' ? undefined : nativeTheme.shouldUseDarkColors ? '#1a1a1a' : '#f5f5f5',
+            show: false,
+            transparent: true,
             frame: false,
             skipTaskbar: true,
-            alwaysOnTop: true,
             titleBarStyle: 'hidden',
+            hasShadow: false,
+            enableLargerThanScreen: true,
             webPreferences: {
                 nodeIntegration: true,
                 contextIsolation: false,
             },
-            // opacity: 0.85,
-            // vibrancy: 'fullscreen-ui', // on MacOS
-            // backgroundMaterial: 'acrylic', // on Windows
+            vibrancy: 'fullscreen-ui', // MacOS specific
+            backgroundMaterial: 'acrylic', // Windows specific
         })
 
         const htmlFile = `${type}.html`
         window.loadFile(path.join(__dirname, htmlFile))
-        window.setAlwaysOnTop(true, 'floating')
-        
+        window.setAlwaysOnTop(true, 'screen-saver')
+        if (process.platform === 'darwin') {
+            window.setWindowButtonVisibility(false)
+            window.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
+            // Force the window to cover the entire screen including dock and menu bar
+            window.setPosition(display.bounds.x, display.bounds.y)
+            window.setSize(display.bounds.width, display.bounds.height)
+        }
+
         // Only show and maximize when content is ready
         window.once('ready-to-show', () => {
             window.show()
-            window.maximize()
             this.startCountdown(window, type, config)
         })
 

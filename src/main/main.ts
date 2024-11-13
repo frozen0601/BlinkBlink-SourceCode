@@ -221,11 +221,7 @@ function createTray() {
         console.error('Failed to load tray icon:', getIconPath())
         return
     }
-    // Optionally resize the icon if needed
-    if (process.platform === 'darwin') {
-        console.log('Resizing tray icon for macOS')
-        trayIcon = trayIcon.resize({ width: 16 })
-    }
+    if (process.platform === 'darwin') trayIcon = trayIcon.resize({ width: 16 })
     trayIcon.setTemplateImage(true)
     tray = new Tray(trayIcon)
     let contextMenu = Menu.buildFromTemplate([
