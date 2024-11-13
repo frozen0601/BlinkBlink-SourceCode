@@ -38,6 +38,7 @@ class WindowManager {
             titleBarStyle: 'hidden',
             hasShadow: false,
             enableLargerThanScreen: true,
+            visualEffectState: 'active',
             webPreferences: {
                 nodeIntegration: true,
                 contextIsolation: false,
@@ -68,13 +69,6 @@ class WindowManager {
     }
 
     private setupWindowEvents(window: BrowserWindow, type: string, config: WindowConfig) {
-        window.on('blur', () => {
-            if (!window.isDestroyed()) {
-                window.setAlwaysOnTop(true, 'floating')
-                window.maximize()
-            }
-        })
-
         window.on('closed', () => {
             this.cleanupWindow(window, type)
         })

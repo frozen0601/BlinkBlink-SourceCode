@@ -5,7 +5,7 @@ body {
     margin: 0;
     padding: 0;
     overflow: hidden;
-    background: rgba(0, 0, 0, 0.5);
+    background: transparent;
     color: white;
     font-family: Arial, sans-serif;
     display: flex;
@@ -13,6 +13,8 @@ body {
     justify-content: center;
     align-items: center;
     position: relative;
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
 }
 
 .content-container {
