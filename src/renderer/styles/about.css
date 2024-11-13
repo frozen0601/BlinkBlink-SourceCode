@@ -22,7 +22,7 @@
 html,
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-    padding: 20px;
+    padding: 0px;
     background: var(--background-color);
     margin: 0;
     color: var(--text-color);
@@ -31,7 +31,7 @@ body {
 h1 {
     font-size: 28px;
     margin-top: 10px;
-    margin-bottom: 5px;
+    margin-bottom: 5px; /* Reduce bottom margin */
     color: var(--heading-color);
 }
 
@@ -56,18 +56,18 @@ body {
 
 .about-container {
     background: var(--background-color);
-    padding: 20px;
+    padding: 15px; /* Reduce padding */
     border-radius: 0;
     box-shadow: none;
-    max-width: 800px;
-    width: 90%;
+    max-width: 700px; /* Reduce max-width */
+    width: 80%; /* Reduce width */
     margin: 0 auto;
     text-align: center;
 }
 
 .logo {
-    width: 20%;
-    max-width: 150px;
+    width: 15%; /* Reduce logo size */
+    max-width: 120px; /* Reduce max-width */
     height: auto;
     margin-top: 1vh;
     object-fit: contain;
@@ -82,16 +82,26 @@ body {
 
 .version {
     font-size: 12px;
-    color: var(--text-color);
+    color: rgba(51, 51, 51, 0.7); /* Less contrasty for light theme */
     margin-top: 0px;
-    margin-bottom: 10px;
+    margin-bottom: 5px; /* Reduce bottom margin */
     text-align: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+@media (prefers-color-scheme: dark) {
+    .version {
+        color: rgba(245, 245, 245, 0.7); /* Less contrasty for dark theme */
+    }
 }
 
 .info-container {
     text-align: left;
     display: table;
-    width: 100%;
+    width: 80%; /* Match the width of the separator */
+    margin: 0 auto; /* Center the content */
 }
 
 .info-container p {
@@ -103,7 +113,7 @@ body {
     display: table-cell;
     width: 150px;
     padding-right: 10px;
-    text-align: left;
+    text-align: right; /* Align titles to the right */
     vertical-align: top;
 }
 
@@ -124,10 +134,31 @@ body {
 .update-button {
     background: none;
     border: none;
-    font-size: 16px;
+    font-size: 14px; /* Smaller font size */
     cursor: pointer;
-    color: var(--accent-color);
+    color: rgba(51, 51, 51, 0.7); /* Match version number color for light theme */
     margin-left: 10px;
+    margin-top: 5px; /* Add top margin */
+    margin-bottom: 20px; /* Add bottom margin to separate from the rest */
+    position: relative;
+}
+
+@media (prefers-color-scheme: dark) {
+    .update-button {
+        color: rgba(245, 245, 245, 0.7); /* Match version number color for dark theme */
+    }
+}
+
+.separator {
+    border-top: 1px solid rgba(51, 51, 51, 0.2); /* Fine line color for light theme */
+    margin: 15px auto; /* Reduce margin */
+    width: 80%; /* Match the width of the content */
+}
+
+@media (prefers-color-scheme: dark) {
+    .separator {
+        border-top: 1px solid rgba(245, 245, 245, 0.2); /* Fine line color for dark theme */
+    }
 }
 
 /* Custom scrollbar styles */
@@ -145,6 +176,73 @@ body {
     border: 3px solid var(--scrollbar-bg);
 }
 
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes shake {
+    0%, 100% {
+        transform: translateX(0);
+    }
+    25% {
+        transform: translateX(-5px);
+    }
+    75% {
+        transform: translateX(5px);
+    }
+}
+
+@keyframes shake-maniacally {
+    0%,
+    100% {
+        transform: translate(0, 0);
+    }
+    10% {
+        transform: translate(-10px, -10px);
+    }
+    20% {
+        transform: translate(10px, 10px);
+    }
+    30% {
+        transform: translate(-10px, 10px);
+    }
+    40% {
+        transform: translate(10px, -10px);
+    }
+    50% {
+        transform: translate(-10px, -10px);
+    }
+    60% {
+        transform: translate(10px, 10px);
+    }
+    70% {
+        transform: translate(-10px, 10px);
+    }
+    80% {
+        transform: translate(10px, -10px);
+    }
+    90% {
+        transform: translate(-10px, -10px);
+    }
+}
+
+@keyframes move {
+    0% {
+        transform: translateX(-5px);
+    }
+    50% {
+        transform: translateX(5px);
+    }
+    100% {
+        transform: translateX(-5px);
+    }
+}
+
 @media (min-width: 768px) {
     .about-container {
         max-width: 700px;
@@ -155,4 +253,28 @@ body {
     .about-container {
         max-width: 800px;
     }
+}
+
+.buy-me-coffee,
+.ko-fi,
+.paypal {
+    background-color: #ffdd00;
+    color: #000;
+    font-size: 14px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    margin-top: 20px;
+    transition: transform 0.2s;
+    animation: move 1s infinite;
+}
+
+.buy-me-coffee:hover,
+.ko-fi:hover,
+.paypal:hover {
+    background-color: #ffcc00;
+    animation: shake-maniacally 0.05s infinite;
 }

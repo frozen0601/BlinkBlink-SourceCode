@@ -2,7 +2,7 @@
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <title>About BlinkBlink</title>
+        <title>About</title>
         <link rel="stylesheet" href="about.css" />
     </head>
     <body>
@@ -11,18 +11,22 @@
             <h1>BlinkBlink</h1>
             <p class="version">
                 <span id="version"></span>
-                <button class="update-button" id="update-button">↻</button>
             </p>
+            <button class="update-button" id="update-button"></button>
+            <div class="separator"></div>
             <div class="info-container">
-                <p><strong>Description:</strong> <span id="description"></span></p>
-                <p><strong>License:</strong> <span id="license"></span></p>
-                <p><strong>Website:</strong> <a id="website" href="#" target="_blank"></a></p>
-                <p><strong>Support:</strong> <a id="support" href="#">support@yourwebsite.com</a></p>
+                <p><strong>Description</strong> <span id="description"></span></p>
+                <p><strong>License</strong> <span id="license"></span></p>
+                <p><strong>Website</strong> <a id="website" href="#" target="_blank"></a></p>
+                <p><strong>Support</strong> <a id="support" href="#"></a></p>
             </div>
             <p class="author"><span id="author"></span></p>
+            <p><a href="https://www.buymeacoffee.com/frozen0601" target="_blank" class="buy-me-coffee">Buy Me a Coffee</a></p>
+            <p><a href="https://ko-fi.com/frozen0601" target="_blank" class="ko-fi">Support on Ko-fi</a></p>
+            <p><a href="https://www.paypal.com/donate/?business=ND2YBSXX9N5TW&no_recurring=0&item_name=building+software+that+solves+everyday+problems&currency_code=USD" target="_blank" class="paypal">Donate via PayPal</a></p>
         </div>
         <script>
-            const { ipcRenderer } = require('electron')
+            const { ipcRenderer, shell } = require('electron')
 
             ipcRenderer.invoke('get-app-info').then((appInfo) => {
                 document.getElementById('version').innerText = appInfo.version
@@ -31,15 +35,52 @@
                 document.getElementById('license').innerText = appInfo.license
                 const websiteLink = document.getElementById('website')
                 websiteLink.href = appInfo.website
-                websiteLink.innerText = appInfo.website
+                websiteLink.innerText = "GitHub"
                 const supportLink = document.getElementById('support')
                 supportLink.href = `mailto:${appInfo.supportEmail}`
                 supportLink.innerText = appInfo.supportEmail
             })
 
-            document.getElementById('update-button').addEventListener('click', () => {
-                ipcRenderer.invoke('check-for-updates')
+            const updateButton = document.getElementById('update-button')
+            updateButton.innerText = 'Check for updates'
+            updateButton.addEventListener('click', () => {
+                updateButton.innerText = 'Checking...'
+                ipcRenderer
+                    .invoke('check-for-updates')
+                    .then((result) => {
+                        if (result && result.updateInfo) {
+                            updateButton.innerText = 'Update available'
+                        } else {
+                            updateButton.innerText = 'Up-to-date ✔'
+                        }
+                    })
+                    .catch(() => {
+                        updateButton.innerText = 'Check for updates'
+                    })
             })
+
+            document.getElementById('website').addEventListener('click', (event) => {
+                event.preventDefault()
+                shell.openExternal(event.target.href)
+            })
+
+            const buyMeCoffeeButton = document.querySelector('.buy-me-coffee');
+            buyMeCoffeeButton.addEventListener('click', (event) => {
+                event.preventDefault();
+                shell.openExternal(event.target.href);
+            });
+
+            const koFiButton = document.querySelector('.ko-fi');
+            koFiButton.addEventListener('click', (event) => {
+                event.preventDefault();
+                shell.openExternal(event.target.href);
+            });
+
+            const paypalButton = document.querySelector('.paypal');
+            paypalButton.addEventListener('click', (event) => {
+                event.preventDefault();
+                shell.openExternal(event.target.href);
+            });
         </script>
     </body>
 </html>

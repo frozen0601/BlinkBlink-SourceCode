@@ -135,7 +135,6 @@ function createStatsWindow() {
             resizable: true,
             center: windowBounds.x === undefined || windowBounds.y === undefined,
             autoHideMenuBar: true,
-            alwaysOnTop: true,
         },
         'stats.html',
         () => {
@@ -157,7 +156,6 @@ function createSettingsWindow() {
             resizable: true,
             center: true,
             autoHideMenuBar: true,
-            alwaysOnTop: true,
         },
         'settings.html',
         () => {
@@ -174,12 +172,11 @@ function createAboutWindow() {
     const { width, height } = screen.getPrimaryDisplay().workAreaSize
     aboutWindow = createWindow(
         {
-            width: Math.min(500, width * 0.5),
-            height: Math.min(500, height * 0.5),
-            resizable: true,
+            width: Math.min(430),
+            height: Math.min(650),
+            resizable: false,
             center: true,
             autoHideMenuBar: true,
-            alwaysOnTop: true,
         },
         'about.html',
         () => {
@@ -232,13 +229,6 @@ function createTray() {
         { label: 'Statistics', click: createStatsWindow },
         { label: 'Settings', click: createSettingsWindow },
         { label: 'About', click: createAboutWindow },
-        { label: 'Test Notification', click: () => {
-            new Notification({
-                title: 'Test Notification',
-                body: 'This is a test notification.',
-                icon: getIconPath() // Set the icon for the notification
-            }).show()
-        }},
         { label: 'Exit', click: () => app.quit() },
     ])
     tray.setToolTip('BlinkBlink')
@@ -307,14 +297,24 @@ ipcMain.handle('get-app-info', () => {
         author: packageJson.author,
         description: packageJson.description,
         license: packageJson.license,
-        website: packageJson.homepage || 'https://yourwebsite.com',
+        website: packageJson.homepage,
         supportEmail: 'theblinkblinkapp@gmail.com',
     }
 })
 
 // IPC Handler - Check for updates
-ipcMain.handle('check-for-updates', () => {
-    autoUpdater.checkForUpdatesAndNotify()
+ipcMain.handle('check-for-updates', async () => {
+    if (process.env.NODE_ENV === 'development') {
+        console.log('Simulating update check in development mode.')
+        return new Promise<void>((resolve) => {
+            setTimeout(() => {
+                console.log('Simulated update check complete.')
+                resolve()
+            }, 2000)
+        })
+    } else {
+        return autoUpdater.checkForUpdatesAndNotify()
+    }
 })
 
 // IPC Handlers - Settings
