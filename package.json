@@ -1,6 +1,6 @@
 {
     "name": "blinkblink",
-    "version": "1.0.1",
+    "version": "1.0.3",
     "main": "dist/main.js",
     "scripts": {
         "start": "cross-env NODE_ENV=development webpack --config webpack.config.js && electron .",
@@ -39,6 +39,7 @@
         "win": {
             "target": "nsis",
             "artifactName": "${productName}.Setup.${version}.${ext}",
+            "appId": "blinkblink",
             "icon": "assets/icon.ico"
         },
         "mac": {

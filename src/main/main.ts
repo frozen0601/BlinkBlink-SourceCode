@@ -214,7 +214,7 @@ function createSkipBreaksSubmenu() {
 }
 
 function createTray() {
-    const { nativeImage } = require('electron')
+    const { nativeImage, Notification } = require('electron')
     let trayIcon = nativeImage.createFromPath(path.join(__dirname, 'icon.png'))
     const iconSize = trayIcon.getSize()
     if (iconSize.width === 0 && iconSize.height === 0) {
@@ -232,6 +232,13 @@ function createTray() {
         { label: 'Statistics', click: createStatsWindow },
         { label: 'Settings', click: createSettingsWindow },
         { label: 'About', click: createAboutWindow },
+        { label: 'Test Notification', click: () => {
+            new Notification({
+                title: 'Test Notification',
+                body: 'This is a test notification.',
+                icon: getIconPath() // Set the icon for the notification
+            }).show()
+        }},
         { label: 'Exit', click: () => app.quit() },
     ])
     tray.setToolTip('BlinkBlink')
@@ -325,7 +332,10 @@ ipcMain.on('save-settings', (event, settings: Settings) => {
 
 // App Lifecycle Events
 app.whenReady().then(() => {
-    if (process.platform === 'darwin') app.dock.hide() // Hide the dock icon if we're on macOS
+    if (process.platform === 'win32') {
+        app.setAppUserModelId('BlinkBLink')
+    }
+    if (process.platform === 'darwin') app.dock.hide()
     createTray()
     startWorkTimer()
 
