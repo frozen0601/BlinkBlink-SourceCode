@@ -1,50 +1,55 @@
-
 import Store from 'electron-store'
 import { StoreSchema } from './storeTypes'
-import { eventBus, AppEvents } from './events'
+
+export enum AppStatus {
+    Idle = 'idle',
+    Working = 'working',
+    Breaking = 'breaking',
+    Dashboard = 'dashboard',
+}
 
 class AppState {
-  private store: Store<StoreSchema>
-  private currentState: {
-    isBreakActive: boolean
-    isDashboardVisible: boolean
-    currentStreak: number
-  }
+    private store: Store<StoreSchema>
+    private status: AppStatus = AppStatus.Idle
+    private breakStreak: number
 
-  constructor(store: Store<StoreSchema>) {
-    this.store = store
-    this.currentState = {
-      isBreakActive: false,
-      isDashboardVisible: false,
-      currentStreak: store.get('stats').breakStreakCount
+    constructor(store: Store<StoreSchema>) {
+        this.store = store
+        this.breakStreak = store.get('stats').breakStreakCount
     }
 
-    this.setupEventListeners()
-  }
+    public getStatus(): AppStatus {
+        return this.status
+    }
 
-  private setupEventListeners() {
-    eventBus.on(AppEvents.BREAK_START, () => {
-      this.currentState.isBreakActive = true
-    })
+    public setStatus(newStatus: AppStatus) {
+        this.status = newStatus
+        if (newStatus === AppStatus.Dashboard) {
+            this.incrementStreak()
+        }
+    }
 
-    eventBus.on(AppEvents.BREAK_COMPLETE, () => {
-      this.currentState.isBreakActive = false
-      this.currentState.currentStreak++
-      this.updateStats()
-    })
-  }
+    private incrementStreak() {
+        this.breakStreak++
+        const stats = this.store.get('stats')
+        this.store.set('stats', {
+            ...stats,
+            breakStreakCount: this.breakStreak,
+        })
+    }
 
-  private updateStats() {
-    const stats = this.store.get('stats')
-    this.store.set('stats', {
-      ...stats,
-      breakStreakCount: this.currentState.currentStreak
-    })
-  }
+    public resetStreak() {
+        this.breakStreak = 0
+        const stats = this.store.get('stats')
+        this.store.set('stats', {
+            ...stats,
+            breakStreakCount: 0,
+        })
+    }
 
-  public getState() {
-    return { ...this.currentState }
-  }
+    public getStats() {
+        return this.store.get('stats')
+    }
 }
 
 export const appState = new AppState(new Store<StoreSchema>())

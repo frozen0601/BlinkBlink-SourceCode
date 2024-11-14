@@ -1,6 +1,6 @@
 // src/windows.ts
 
-import { BrowserWindow, screen, ipcMain, nativeTheme } from 'electron' // Import nativeTheme
+import { BrowserWindow, screen, ipcMain, nativeTheme } from 'electron'
 import * as path from 'path'
 import { DURATIONS } from './constants'
 import { store } from './store'
@@ -19,13 +19,7 @@ interface WindowConfig {
 }
 
 class WindowManager {
-    constructor() {
-        // Add this at the beginning of constructor or right after other ipcMain handlers
-        ipcMain.handle('get-dashboard-duration', () => {
-            const settings = store.get('settings')
-            return settings?.dashboardDuration
-        })
-    }
+    constructor() {}
 
     private windowsByDisplay = new Map<number, BrowserWindow>()
     private activeIntervals: WindowWithInterval[] = []
@@ -36,7 +30,7 @@ class WindowManager {
 
         let window = this.windowsByDisplay.get(display.id)
         let isNewWindow = false
-        
+
         if (!window) {
             isNewWindow = true
             window = new BrowserWindow({
@@ -44,8 +38,8 @@ class WindowManager {
                 y: display.bounds.y,
                 width: display.bounds.width,
                 height: display.bounds.height,
-                closable: false, // prevent command+w/alt+f4 from closing the window
-                show: false, // Hide the window until ready
+                closable: false,
+                show: false,
                 transparent: process.platform === 'darwin',
                 frame: false,
                 skipTaskbar: true,
@@ -57,13 +51,13 @@ class WindowManager {
                     nodeIntegration: true,
                     contextIsolation: false,
                 },
-                vibrancy: 'fullscreen-ui', // MacOS specific
-                backgroundMaterial: 'acrylic', // Windows specific
+                vibrancy: 'fullscreen-ui',
+                backgroundMaterial: 'acrylic',
             })
 
             window.loadFile(path.join(__dirname, 'unified.html'))
             window.setAlwaysOnTop(true, 'screen-saver')
-            
+
             if (process.platform === 'darwin') {
                 window.setWindowButtonVisibility(false)
                 window.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
@@ -151,7 +145,7 @@ class WindowManager {
         const intervalObj = this.activeIntervals.find((i) => i.window === window)
         if (intervalObj) {
             clearInterval(intervalObj.interval)
-            this.activeIntervals = this.activeIntervals.filter(i => i !== intervalObj)
+            this.activeIntervals = this.activeIntervals.filter((i) => i !== intervalObj)
         }
     }
 
@@ -199,7 +193,7 @@ class WindowManager {
     closeAllWindows() {
         this.activeIntervals.forEach(({ interval }) => clearInterval(interval))
         this.activeIntervals = []
-        
+
         for (const [displayId, window] of this.windowsByDisplay) {
             if (!window.isDestroyed()) {
                 window.closable = true

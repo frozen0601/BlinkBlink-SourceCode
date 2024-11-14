@@ -1,8 +1,8 @@
-require('dotenv').config();
-const path = require('path');
-const CopyPlugin = require('copy-webpack-plugin');
+require('dotenv').config()
+const path = require('path')
+const CopyPlugin = require('copy-webpack-plugin')
 
-const mode = process.env.NODE_ENV || 'development';
+const mode = process.env.NODE_ENV || 'development'
 
 const commonConfig = {
     module: {
@@ -10,7 +10,7 @@ const commonConfig = {
     },
     resolve: { extensions: ['.ts', '.js'] },
     mode,
-};
+}
 
 const mainConfig = {
     ...commonConfig,
@@ -29,12 +29,12 @@ const mainConfig = {
             ],
         }),
     ],
-};
+}
 
 const rendererConfig = {
     ...commonConfig,
     entry: {
-        unified: './src/renderer/unified.ts'  // We only need unified now
+        unified: './src/renderer/unified.ts', // We only need unified now
     },
     target: 'electron-renderer',
     output: {
@@ -45,14 +45,12 @@ const rendererConfig = {
         new CopyPlugin({
             patterns: [
                 { from: 'src/renderer/unified.html', to: 'unified.html' },
-                { from: 'src/renderer/styles/overlay.css', to: 'overlay.css' },
-                { from: 'src/renderer/styles/dashboard.css', to: 'dashboard.css' },
                 { from: 'src/renderer/styles/unified.css', to: 'unified.css' },
                 { from: 'assets/icon.png', to: 'icon.png' },
                 { from: 'assets/rolling_eyes.gif', to: 'rolling_eyes.gif' },
             ],
         }),
     ],
-};
+}
 
-module.exports = [mainConfig, rendererConfig];
+module.exports = [mainConfig, rendererConfig]

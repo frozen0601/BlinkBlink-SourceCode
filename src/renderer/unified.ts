@@ -1,11 +1,24 @@
 import { ipcRenderer } from 'electron'
 
+const MILESTONE_TIERS = {
+    BASE: [3, 10, 20, 50],
+    MEDIUM: [75, 100, 125, 150],
+    HIGH: [100, 150, 200, 250],
+}
+
 // Types
 interface Stats {
     breakStreakCount: number
     breakStreakDuration: number
 }
 
+// 1. Define View Enum
+enum View {
+    Overlay = 'overlay',
+    Dashboard = 'dashboard',
+}
+
+// 2. Inject ipcRenderer via constructor for better testability
 class UnifiedUI {
     private skipConfirmed = false
     private dashboardDuration: number = 0
@@ -18,7 +31,7 @@ class UnifiedUI {
         warningText: HTMLElement
     }
 
-    constructor() {
+    constructor(private ipc: typeof ipcRenderer = ipcRenderer) {
         this.elements = this.getDOMElements()
         this.initializeEventListeners()
     }
@@ -40,40 +53,46 @@ class UnifiedUI {
         }
     }
 
+    // 3. Refactor initializeEventListeners into separate methods
     private initializeEventListeners() {
-        // View switching
-        ipcRenderer.on('show-view', (_, view: 'overlay' | 'dashboard') => {
+        this.initializeViewSwitching()
+        this.initializeButtonHandlers()
+        this.initializeIpcEvents()
+        this.initializeWindowLoad()
+    }
+
+    private initializeViewSwitching() {
+        this.ipc.on('show-view', (_, view: View) => {
             console.log(`Showing view: ${view}`)
             document.body.className = `ready show-${view}`
 
-            if (view === 'dashboard') {
+            if (view === View.Dashboard) {
                 this.initializeDashboard()
             } else {
                 this.initializeOverlay()
             }
         })
+    }
 
-        // Button handlers
+    private initializeButtonHandlers() {
         this.elements.skipButton?.addEventListener('click', () => this.handleSkipClick())
         this.elements.dismissButton?.addEventListener('click', () => {
-            ipcRenderer.send('dashboard-dismissed')
+            this.ipc.send('dashboard-dismissed')
             window.close()
         })
+    }
 
-        // Progress bar updates
-        ipcRenderer.on('start-countdown', (_, duration: number) => {
-            this.startProgress(duration)
-        })
-
-        // Remove or update the countdown-update handler
-        ipcRenderer.on('countdown-update', (_, countdown: number) => {
+    private initializeIpcEvents() {
+        this.ipc.on('start-countdown', (_, duration: number) => this.startProgress(duration))
+        this.ipc.on('countdown-update', (_, countdown: number) => {
             if (countdown <= 0) {
-                ipcRenderer.send('dashboard-dismissed')
+                this.ipc.send('dashboard-dismissed')
                 window.close()
             }
         })
+    }
 
-        // Window load
+    private initializeWindowLoad() {
         window.addEventListener('load', () => {
             document.body.classList.add('ready')
         })
@@ -92,7 +111,7 @@ class UnifiedUI {
             this.elements.skipButton.textContent = 'Confirm'
             this.skipConfirmed = true
         } else {
-            ipcRenderer.send('break-skip')
+            this.ipc.send('break-skip')
             window.close()
         }
     }
@@ -103,22 +122,28 @@ class UnifiedUI {
         this.skipConfirmed = false
     }
 
+    // 4. Enhance error handling in initializeDashboard
     private async initializeDashboard() {
         try {
-            const stats = (await ipcRenderer.invoke('get-stats')) as Stats
+            const stats = (await this.ipc.invoke('get-stats')) as Stats
             this.updateProgressTracker(stats.breakStreakCount)
             this.elements.progressBar.style.transform = 'scaleX(0)'
-            
-            // Get the dashboard duration and start the countdown
-            this.dashboardDuration = await ipcRenderer.invoke('get-dashboard-duration')
+
+            // Get settings first to check if auto-dismiss is enabled
+            const settings = await this.ipc.invoke('get-settings')
+            if (!settings?.enableAutoDismiss) {
+                return // Skip progress bar initialization if auto-dismiss is disabled
+            }
+
+            // Only initialize progress bar if auto-dismiss is enabled
+            this.dashboardDuration = await this.ipc.invoke('get-dashboard-duration')
             const progressBar = this.elements.dismissButton.querySelector('.progress-bar')
             if (progressBar) {
-                const progressFill = progressBar.querySelector('::after') || progressBar
+                const progressFill = progressBar.querySelector('.progress-fill') || progressBar
                 if (progressFill instanceof HTMLElement) {
                     progressFill.style.transition = 'none'
                     progressFill.style.transform = 'scaleX(0)'
-                    // Force a reflow
-                    progressFill.offsetHeight
+                    progressFill.offsetHeight // Force a reflow
                     progressFill.style.transition = `transform ${this.dashboardDuration}ms linear`
                     progressFill.style.transform = 'scaleX(1)'
                 }
@@ -211,17 +236,3 @@ class UnifiedUI {
 
 // Initialize the unified UI
 new UnifiedUI()
-
-// ... Include the rest of the DashboardUI class from dashboard.ts ...
-// ...existing code...
-interface DashboardElements {
-    progressTracker: HTMLElement
-    centralCircle: HTMLElement
-    dismissButton: HTMLElement
-    progressBar: HTMLElement
-}
-const MILESTONE_TIERS = {
-    BASE: [3, 10, 20, 50],
-    MEDIUM: [75, 100, 125, 150],
-    HIGH: [100, 150, 200, 250],
-}

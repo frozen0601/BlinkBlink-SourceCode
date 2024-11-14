@@ -1,18 +1,12 @@
-import { store } from './store'
 import { ipcMain } from 'electron'
 import { DURATIONS } from './constants'
-
-enum TimerState {
-    Work,
-    BreakCountdown,
-    Dashboard,
-}
+import { appState, AppStatus } from './state'
 
 class TimerManager {
     private static instance: TimerManager
-    private workTimer!: NodeJS.Timeout  // Add ! to tell TypeScript this will be assigned
+    private currentTimer?: NodeJS.Timeout
+    private skipUntil?: Date
     private isTimerRunning = false
-    private currentState: TimerState = TimerState.Work
 
     private constructor() {}
 
@@ -23,72 +17,65 @@ class TimerManager {
         return TimerManager.instance
     }
 
-    private clearTimers() {
-        if (this.workTimer) {
-            clearTimeout(this.workTimer)
+    private clearTimer() {
+        if (this.currentTimer) {
+            clearTimeout(this.currentTimer)
+            this.currentTimer = undefined
         }
         this.isTimerRunning = false
     }
 
-    private scheduleNextWorkTimer(delayInMinutes: number) {
-        this.clearTimers()
-        setTimeout(() => this.startWorkTimer(), delayInMinutes * 60 * 1000)
-    }
-
     startWorkTimer() {
-        this.clearTimers()
-        this.isTimerRunning = true
-        this.currentState = TimerState.Work
+        if (this.skipUntil && this.skipUntil > new Date()) {
+            return
+        }
 
-        this.workTimer = setTimeout(() => {
-            this.currentState = TimerState.BreakCountdown
+        this.clearTimer()
+        appState.setStatus(AppStatus.Working)
+
+        this.currentTimer = setTimeout(() => {
+            appState.setStatus(AppStatus.Breaking)
             ipcMain.emit('start-break-countdown')
         }, DURATIONS.WORK_DURATION)
+        this.isTimerRunning = true
     }
 
-    skipBreak() {
-        if (this.currentState !== TimerState.BreakCountdown) return
-        this.clearTimers()
-        this.currentState = TimerState.Work
-    }
-
-    completeBreak() {
-        if (this.currentState !== TimerState.BreakCountdown) return
-        this.clearTimers()
-        this.currentState = TimerState.Dashboard
-        this.isTimerRunning = false
-    }
-
-    dismissDashboard() {
-        if (this.currentState !== TimerState.Dashboard) return
-        this.currentState = TimerState.Work
-    }
-
-    pauseTimer() {
-        this.clearTimers()
-        this.currentState = TimerState.Work
-    }
-
-    skipBreaks(minutes: number) {
-        this.currentState = TimerState.Work
-        this.scheduleNextWorkTimer(minutes)
+    skipBreaksFor(minutes: number) {
+        this.skipUntil = new Date(Date.now() + minutes * 60 * 1000)
+        appState.resetStreak()
+        this.startWorkTimer()
     }
 
     skipBreaksUntilEndOfDay() {
-        this.currentState = TimerState.Work
-        this.clearTimers()
-
-        const now = new Date()
         const endOfDay = new Date()
         endOfDay.setHours(23, 59, 59, 999)
-        const millisUntilEOD = endOfDay.getTime() - now.getTime()
-        const minutesUntilEOD = millisUntilEOD / (60 * 1000)
-
-        this.scheduleNextWorkTimer(minutesUntilEOD)
+        this.skipUntil = endOfDay
+        appState.resetStreak()
+        this.startWorkTimer()
     }
 
-    getCurrentState() {
-        return this.currentState
+    skipBreak() {
+        if (this.skipUntil && this.skipUntil > new Date()) {
+            return
+        }
+        this.clearTimer()
+        appState.setStatus(AppStatus.Working)
+        this.startWorkTimer()
+    }
+
+    completeBreak() {
+        this.clearTimer()
+        appState.setStatus(AppStatus.Dashboard)
+    }
+
+    dismissDashboard() {
+        appState.setStatus(AppStatus.Working)
+        this.startWorkTimer()
+    }
+
+    pause() {
+        this.clearTimer()
+        appState.setStatus(AppStatus.Idle)
     }
 
     isRunning() {
@@ -96,14 +83,14 @@ class TimerManager {
     }
 }
 
+// Export singleton methods
 const timerManager = TimerManager.getInstance()
-
 export const startWorkTimer = () => timerManager.startWorkTimer()
 export const skipBreak = () => timerManager.skipBreak()
+export const skipBreaksFor = (minutes: number) => timerManager.skipBreaksFor(minutes)
+export const skipBreaks = skipBreaksFor // Alias for backward compatibility
+export const skipBreaksUntilEndOfDay = () => timerManager.skipBreaksUntilEndOfDay()
 export const completeBreak = () => timerManager.completeBreak()
 export const dismissDashboard = () => timerManager.dismissDashboard()
-export const pauseTimer = () => timerManager.pauseTimer()
-export const skipBreaks = (minutes: number) => timerManager.skipBreaks(minutes)
-export const skipBreaksUntilEndOfDay = () => timerManager.skipBreaksUntilEndOfDay()
-export const getCurrentState = () => timerManager.getCurrentState()
+export const pauseTimer = () => timerManager.pause() // Alias for backward compatibility
 export const isRunning = () => timerManager.isRunning()

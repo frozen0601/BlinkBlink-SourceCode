@@ -16,7 +16,6 @@ import {
 import { showOverlay, closeOverlayWindows, showDashboard, closeDashboardWindows } from './windows'
 import { DURATIONS } from './constants'
 import { autoUpdater } from 'electron-updater'
-import { eventBus, AppEvents } from './events'
 
 let statsWindow: BrowserWindow | null = null
 let settingsWindow: BrowserWindow | null = null
@@ -246,10 +245,9 @@ function createTray() {
     })
 }
 
-// IPC Handlers - Timer Events
+// Simplified IPC handlers - Single source of truth
 ipcMain.on('start-break-countdown', () => {
     if (isRunning()) {
-        eventBus.emit(AppEvents.BREAK_START)
         showOverlay()
     }
 })
@@ -273,21 +271,10 @@ ipcMain.on('dashboard-dismissed', () => {
     startWorkTimer()
 })
 
-// IPC Handlers - Data Access
-ipcMain.handle('get-stats', () => {
-    return store.get('stats')
-})
-
-ipcMain.handle('get-settings', () => {
-    return (
-        store.get('settings') || {
-            startOnBoot: false,
-            enableAnimations: true,
-            language: 'en',
-            enableAutoDismiss: true,
-        }
-    )
-})
+// Data access handlers
+ipcMain.handle('get-stats', () => store.get('stats'))
+ipcMain.handle('get-settings', () => store.get('settings'))
+ipcMain.handle('get-dashboard-duration', () => store.get('settings')?.dashboardDuration)
 
 // IPC Handler - get app info from package.json
 ipcMain.handle('get-app-info', () => {
