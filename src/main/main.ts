@@ -1,26 +1,13 @@
-import { app, BrowserWindow, Tray, Menu, MenuItem, ipcMain, screen, nativeTheme } from 'electron'
+import { app, BrowserWindow, ipcMain, screen, nativeTheme } from 'electron'
 import * as path from 'path'
 import { store } from './store'
-import { StoreSchema, Settings } from './storeTypes'
+import { Settings } from './storeTypes'
 import * as fs from 'fs'
-import {
-    startWorkTimer,
-    skipBreak,
-    completeBreak,
-    dismissDashboard,
-    pauseTimer,
-    skipBreaks,
-    skipBreaksUntilEndOfDay,
-    isRunning,
-} from './timer'
+import { startWorkTimer, dismissDashboard, pauseTimer, skipBreaks, skipBreaksUntilEndOfDay, isRunning } from './timer'
 import { showOverlay, closeOverlayWindows, showDashboard, closeDashboardWindows } from './windows'
 import { DURATIONS } from './constants'
 import { autoUpdater } from 'electron-updater'
-
-let statsWindow: BrowserWindow | null = null
-let settingsWindow: BrowserWindow | null = null
-let aboutWindow: BrowserWindow | null = null
-let tray: Tray | null = null
+import { createTray } from './tray'
 
 export enum AppStatus {
     Idle = 'idle',
@@ -95,138 +82,12 @@ function createWindow(options: Electron.BrowserWindowConstructorOptions, filePat
     window.loadFile(path.join(__dirname, filePath))
     window.on('closed', onClose)
 
-    // Only show the window when content is ready
+    // Show the window once it's ready
     window.once('ready-to-show', () => {
         window.show()
     })
 
     return window
-}
-
-function createStatsWindow() {
-    if (statsWindow) {
-        statsWindow.focus()
-        return
-    }
-    const { width, height } = screen.getPrimaryDisplay().workAreaSize
-    const windowBounds = store.get('statsWindowBounds', { width: width, height: height, x: undefined, y: undefined })
-    statsWindow = createWindow(
-        {
-            width: Math.min(600, width * 0.8),
-            height: Math.min(650, height * 0.8),
-            x: windowBounds.x,
-            y: windowBounds.y,
-            resizable: true,
-            center: windowBounds.x === undefined || windowBounds.y === undefined,
-            autoHideMenuBar: true,
-        },
-        'stats.html',
-        () => {
-            statsWindow = null
-        }
-    )
-}
-
-function createSettingsWindow() {
-    if (settingsWindow) {
-        settingsWindow.focus()
-        return
-    }
-    const { width, height } = screen.getPrimaryDisplay().workAreaSize
-    settingsWindow = createWindow(
-        {
-            width: Math.min(500, width * 0.5),
-            height: Math.min(470, height * 0.5),
-            resizable: true,
-            center: true,
-            autoHideMenuBar: true,
-        },
-        'settings.html',
-        () => {
-            settingsWindow = null
-        }
-    )
-}
-
-function createAboutWindow() {
-    if (aboutWindow) {
-        aboutWindow.focus()
-        return
-    }
-    const { width, height } = screen.getPrimaryDisplay().workAreaSize
-    aboutWindow = createWindow(
-        {
-            width: Math.min(430),
-            height: Math.min(650),
-            resizable: false,
-            center: true,
-            autoHideMenuBar: true,
-        },
-        'about.html',
-        () => {
-            aboutWindow = null
-        }
-    )
-}
-
-function createSkipBreaksSubmenu() {
-    const durations = [5, 10, 30]
-    return durations
-        .map((duration) => ({
-            label: `${duration} minutes`,
-            click: () => {
-                skipBreaks(duration)
-                closeOverlayWindows()
-                closeDashboardWindows()
-                updateBreakStats(true)
-            },
-        }))
-        .concat([
-            {
-                label: 'Rest of the day',
-                click: () => {
-                    skipBreaksUntilEndOfDay()
-                    closeOverlayWindows()
-                    closeDashboardWindows()
-                    updateBreakStats(true)
-                },
-            },
-        ])
-}
-
-function createTray() {
-    const { nativeImage, Notification } = require('electron')
-    let trayIcon = nativeImage.createFromPath(path.join(__dirname, 'icon.png'))
-    const iconSize = trayIcon.getSize()
-    if (iconSize.width === 0 && iconSize.height === 0) {
-        console.error('Failed to load tray icon:', getIconPath())
-        return
-    }
-    if (process.platform === 'darwin') trayIcon = trayIcon.resize({ width: 16 })
-    trayIcon.setTemplateImage(true)
-    tray = new Tray(trayIcon)
-    let contextMenu = Menu.buildFromTemplate([
-        {
-            label: 'Skip Breaks',
-            submenu: createSkipBreaksSubmenu(),
-        },
-        { label: 'Statistics', click: createStatsWindow },
-        { label: 'Settings', click: createSettingsWindow },
-        { label: 'About', click: createAboutWindow },
-        { label: 'Exit', click: () => app.quit() },
-    ])
-    tray.setToolTip('BlinkBlink')
-    tray.setContextMenu(contextMenu)
-
-    // If an update is available, show restart/exit and install
-    autoUpdater.on('update-downloaded', () => {
-        const updateItem = new MenuItem({ label: 'Restart and Install Update', click: () => autoUpdater.quitAndInstall() })
-        const updatedMenu = contextMenu.items
-            .slice(0, -1)
-            .concat(updateItem, new MenuItem({ label: 'Exit and Install Update', click: () => app.quit() }))
-        contextMenu = Menu.buildFromTemplate(updatedMenu)
-        if (tray) tray.setContextMenu(contextMenu)
-    })
 }
 
 // Simplified IPC handlers - Single source of truth
@@ -332,6 +193,4 @@ app.on('before-quit', () => {
     pauseTimer()
     closeOverlayWindows()
     closeDashboardWindows()
-    if (statsWindow) statsWindow.close()
-    if (settingsWindow) settingsWindow.close()
 })
