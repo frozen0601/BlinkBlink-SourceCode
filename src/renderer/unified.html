@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8" />
+        <title>BlinkBlink</title>
+        <link rel="stylesheet" href="unified.css" />
+        <style>
+            body, html {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+                overflow: hidden;
+            }
+            .content-container {
+                text-align: center;
+                opacity: 0;
+                transition: opacity 0.3s ease-out;
+            }
+            .ready .content-container {
+                opacity: 1;
+            }
+            #overlay-view, #dashboard-view {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                z-index: 1000;
+            }
+            .show-overlay #overlay-view,
+            .show-dashboard #dashboard-view {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
+        </style>
+    </head>
+    <body>
+        <!-- Shared progress bar -->
+        
+
+        <!-- Overlay view -->
+        <div id="overlay-view">
+            <div class="content-container">
+                <h1>Look Away <img id="eye-animation" src="rolling_eyes.gif" alt="Eye Animation" /></h1>
+                <div id="warning-text">This action will reset your streak. Click again to confirm.</div>
+                <button id="skip-button">Skip</button>
+            </div>
+        </div>
+
+        <!-- Dashboard view -->
+        <div id="dashboard-view">
+            <div class="content-container">
+                <h1>Well Done</h1>
+                <div class="central-circle-container">
+                    <div id="central-circle" class="central-circle">
+                        <span class="number"></span>
+                        <span class="text">Current Streak</span>
+                    </div>
+                </div>
+                <div id="progress-tracker"></div>
+                <button id="dismiss-button" class="dismiss-button">
+                    <span>Dismiss</span>
+                    <div class="progress-bar"></div>
+                </button>
+            </div>
+            <div id="progress-bar" class="progress"></div>
+        </div>
+        <script src="unified.js"></script>
+    </body>
+</html>

@@ -33,25 +33,21 @@ const mainConfig = {
 
 const rendererConfig = {
     ...commonConfig,
-    entry: './src/renderer/dashboard.ts',
+    entry: {
+        unified: './src/renderer/unified.ts'  // We only need unified now
+    },
     target: 'electron-renderer',
     output: {
         path: path.resolve(__dirname, 'dist'),
-        filename: 'dashboard.js',
+        filename: 'unified.js',
     },
     plugins: [
         new CopyPlugin({
             patterns: [
-                { from: 'src/renderer/overlay.html', to: 'overlay.html' },
-                { from: 'src/renderer/dashboard.html', to: 'dashboard.html' },
-                { from: 'src/renderer/settings.html', to: 'settings.html' },
-                { from: 'src/renderer/about.html', to: 'about.html' },
-                { from: 'src/renderer/styles/dashboard.css', to: 'dashboard.css' },
+                { from: 'src/renderer/unified.html', to: 'unified.html' },
                 { from: 'src/renderer/styles/overlay.css', to: 'overlay.css' },
-                { from: 'src/renderer/styles/settings.css', to: 'settings.css' },
-                { from: 'src/renderer/styles/about.css', to: 'about.css' },
-                { from: 'src/renderer/styles/stats.css', to: 'stats.css' },
-                { from: 'src/renderer/stats.html', to: 'stats.html' },
+                { from: 'src/renderer/styles/dashboard.css', to: 'dashboard.css' },
+                { from: 'src/renderer/styles/unified.css', to: 'unified.css' },
                 { from: 'assets/icon.png', to: 'icon.png' },
                 { from: 'assets/rolling_eyes.gif', to: 'rolling_eyes.gif' },
             ],

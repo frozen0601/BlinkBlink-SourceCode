@@ -19,78 +19,96 @@ interface WindowConfig {
 }
 
 class WindowManager {
-    private overlayWindows: BrowserWindow[] = []
-    private overlayIntervals: WindowWithInterval[] = []
-    private dashboardWindows: BrowserWindow[] = []
-    private dashboardIntervals: WindowWithInterval[] = []
-
-    private createWindow(config: WindowConfig): BrowserWindow {
-        const { type, display } = config
-        const window = new BrowserWindow({
-            x: display.bounds.x,
-            y: display.bounds.y,
-            width: display.bounds.width,
-            height: display.bounds.height,
-            closable: false, // prevent command+w/alt+f4 from closing the window
-            show: false, // Hide the window until ready
-            transparent: process.platform === 'darwin',
-            frame: false,
-            skipTaskbar: true,
-            titleBarStyle: 'hidden',
-            hasShadow: false,
-            enableLargerThanScreen: true,
-            visualEffectState: 'active',
-            webPreferences: {
-                nodeIntegration: true,
-                contextIsolation: false,
-            },
-            vibrancy: 'fullscreen-ui', // MacOS specific
-            backgroundMaterial: 'acrylic', // Windows specific
+    constructor() {
+        // Add this at the beginning of constructor or right after other ipcMain handlers
+        ipcMain.handle('get-dashboard-duration', () => {
+            const settings = store.get('settings')
+            return settings?.dashboardDuration
         })
+    }
 
-        const htmlFile = `${type}.html`
-        window.loadFile(path.join(__dirname, htmlFile))
-        window.setAlwaysOnTop(true, 'screen-saver')
-        if (process.platform === 'darwin') {
-            window.setWindowButtonVisibility(false)
-            window.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
-            window.setPosition(display.bounds.x, display.bounds.y)
-            window.setSize(display.bounds.width, display.bounds.height)
+    private windowsByDisplay = new Map<number, BrowserWindow>()
+    private activeIntervals: WindowWithInterval[] = []
+
+    private createOrUpdateWindow(config: WindowConfig): BrowserWindow {
+        const { type, display } = config
+        console.log(`${this.windowsByDisplay.has(display.id) ? 'Updating' : 'Creating'} window for display:`, display.id)
+
+        let window = this.windowsByDisplay.get(display.id)
+        let isNewWindow = false
+        
+        if (!window) {
+            isNewWindow = true
+            window = new BrowserWindow({
+                x: display.bounds.x,
+                y: display.bounds.y,
+                width: display.bounds.width,
+                height: display.bounds.height,
+                closable: false, // prevent command+w/alt+f4 from closing the window
+                show: false, // Hide the window until ready
+                transparent: process.platform === 'darwin',
+                frame: false,
+                skipTaskbar: true,
+                titleBarStyle: 'hidden',
+                hasShadow: false,
+                enableLargerThanScreen: true,
+                visualEffectState: 'active',
+                webPreferences: {
+                    nodeIntegration: true,
+                    contextIsolation: false,
+                },
+                vibrancy: 'fullscreen-ui', // MacOS specific
+                backgroundMaterial: 'acrylic', // Windows specific
+            })
+
+            window.loadFile(path.join(__dirname, 'unified.html'))
+            window.setAlwaysOnTop(true, 'screen-saver')
+            
+            if (process.platform === 'darwin') {
+                window.setWindowButtonVisibility(false)
+                window.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
+                window.setPosition(display.bounds.x, display.bounds.y)
+                window.setSize(display.bounds.width, display.bounds.height)
+            }
+
+            this.setupWindowEvents(window, display.id)
+            this.windowsByDisplay.set(display.id, window)
         }
 
-        window.once('ready-to-show', () => {
-            window.show()
-            window.setFocusable(false)
-            if (config.type === 'dashboard') {
-                this.closeOverlayWindows()
-            }
-            // window.setFocusable(false)
+        if (isNewWindow) {
+            // For new windows, wait for ready-to-show
+            window.once('ready-to-show', () => {
+                console.log(`New window ready on display ${display.id}, showing ${type} view`)
+                window.show()
+                window.setFocusable(false)
+                window.webContents.send('show-view', type)
+                this.startCountdown(window, type, config)
+            })
+        } else {
+            // For existing windows, update view immediately
+            console.log(`Updating existing window on display ${display.id} to ${type} view`)
+            window.webContents.send('show-view', type)
             this.startCountdown(window, type, config)
-        })
+        }
 
-        this.setupWindowEvents(window, type, config)
         return window
     }
 
-    private setupWindowEvents(window: BrowserWindow, type: string, config: WindowConfig) {
-        // Prevent default close behavior
+    private setupWindowEvents(window: BrowserWindow, displayId: number) {
         window.on('close', (event) => {
-            // Only allow closing if we explicitly set a flag
             if (!window.closable) {
                 event.preventDefault()
             }
         })
 
         window.on('closed', () => {
-            this.cleanupWindow(window, type)
+            this.windowsByDisplay.delete(displayId)
+            this.cleanupWindow(window)
         })
     }
 
     private startCountdown(window: BrowserWindow, type: string, config: WindowConfig) {
-        const windows = type === 'overlay' ? this.overlayWindows : this.dashboardWindows
-        const intervals = type === 'overlay' ? this.overlayIntervals : this.dashboardIntervals
-
-        windows.push(window)
+        const intervals = this.activeIntervals
 
         if (!config.autoDismiss) return
 
@@ -116,31 +134,25 @@ class WindowManager {
     }
 
     private updateCountdown(type: string, countdown: number) {
-        const windows = type === 'overlay' ? this.overlayWindows : this.dashboardWindows
-        windows.forEach((win) => {
-            if (!win.isDestroyed()) {
-                win.webContents.send('countdown-update', countdown)
+        for (const window of this.windowsByDisplay.values()) {
+            if (!window.isDestroyed()) {
+                window.webContents.send('countdown-update', countdown)
             }
-        })
+        }
     }
 
     private handleCountdownComplete(type: string, onComplete: () => void) {
-        const intervals = type === 'overlay' ? this.overlayIntervals : this.dashboardIntervals
+        const intervals = this.activeIntervals
         intervals.forEach(({ interval }) => clearInterval(interval))
         onComplete()
     }
 
-    private cleanupWindow(window: BrowserWindow, type: string) {
-        const intervals = type === 'overlay' ? this.overlayIntervals : this.dashboardIntervals
-        const windows = type === 'overlay' ? this.overlayWindows : this.dashboardWindows
-
-        const intervalObj = intervals.find((i) => i.window === window)
+    private cleanupWindow(window: BrowserWindow) {
+        const intervalObj = this.activeIntervals.find((i) => i.window === window)
         if (intervalObj) {
             clearInterval(intervalObj.interval)
-            intervals.splice(intervals.indexOf(intervalObj), 1)
+            this.activeIntervals = this.activeIntervals.filter(i => i !== intervalObj)
         }
-
-        windows.splice(windows.indexOf(window), 1)
     }
 
     private closeWindow(window: BrowserWindow) {
@@ -152,7 +164,7 @@ class WindowManager {
     showOverlay() {
         const displays = screen.getAllDisplays()
         displays.forEach((display) => {
-            this.createWindow({
+            this.createOrUpdateWindow({
                 type: 'overlay',
                 display,
                 duration: DURATIONS.BREAK_DURATION,
@@ -168,8 +180,13 @@ class WindowManager {
         const duration = settings?.enableAutoDismiss ? settings.dashboardDuration : Infinity
         const autoDismiss = settings?.enableAutoDismiss || false
 
+        // Clear existing intervals before updating views
+        this.activeIntervals.forEach(({ interval }) => clearInterval(interval))
+        this.activeIntervals = []
+
+        console.log(`Updating windows to dashboard view for ${displays.length} displays`)
         displays.forEach((display) => {
-            this.createWindow({
+            this.createOrUpdateWindow({
                 type: 'dashboard',
                 display,
                 duration,
@@ -179,28 +196,22 @@ class WindowManager {
         })
     }
 
-    closeOverlayWindows() {
-        this.overlayIntervals.forEach(({ interval }) => clearInterval(interval))
-        this.overlayIntervals = []
-        this.overlayWindows.forEach((win) => {
-            if (!win.isDestroyed()) {
-                this.closeWindow(win)
+    closeAllWindows() {
+        this.activeIntervals.forEach(({ interval }) => clearInterval(interval))
+        this.activeIntervals = []
+        
+        for (const [displayId, window] of this.windowsByDisplay) {
+            if (!window.isDestroyed()) {
+                window.closable = true
+                window.close()
             }
-        })
-        this.overlayWindows = []
+        }
+        this.windowsByDisplay.clear()
     }
 
-    closeDashboardWindows() {
-        this.dashboardIntervals.forEach(({ interval }) => clearInterval(interval))
-        this.dashboardIntervals = []
-        this.dashboardWindows.forEach((win) => {
-            if (!win.isDestroyed()) {
-                win.webContents.send('close-dashboard')
-                this.closeWindow(win)
-            }
-        })
-        this.dashboardWindows = []
-    }
+    // Replace both closeOverlayWindows and closeDashboardWindows with closeAllWindows
+    closeOverlayWindows = this.closeAllWindows.bind(this)
+    closeDashboardWindows = this.closeAllWindows.bind(this)
 }
 
 // Create singleton instance
