@@ -31,7 +31,8 @@ class WindowManager {
             y: display.bounds.y,
             width: display.bounds.width,
             height: display.bounds.height,
-            show: false,
+            closable: false, // prevent command+w/alt+f4 from closing the window
+            show: false, // Hide the window until ready
             transparent: process.platform === 'darwin',
             frame: false,
             skipTaskbar: true,
@@ -71,6 +72,14 @@ class WindowManager {
     }
 
     private setupWindowEvents(window: BrowserWindow, type: string, config: WindowConfig) {
+        // Prevent default close behavior
+        window.on('close', (event) => {
+            // Only allow closing if we explicitly set a flag
+            if (!window.closable) {
+                event.preventDefault()
+            }
+        })
+
         window.on('closed', () => {
             this.cleanupWindow(window, type)
         })
@@ -133,6 +142,12 @@ class WindowManager {
         windows.splice(windows.indexOf(window), 1)
     }
 
+    private closeWindow(window: BrowserWindow) {
+        // Set closable flag to true before closing
+        window.closable = true
+        window.close()
+    }
+
     showOverlay() {
         const displays = screen.getAllDisplays()
         displays.forEach((display) => {
@@ -168,7 +183,7 @@ class WindowManager {
         this.overlayIntervals = []
         this.overlayWindows.forEach((win) => {
             if (!win.isDestroyed()) {
-                win.close()
+                this.closeWindow(win)
             }
         })
         this.overlayWindows = []
@@ -180,6 +195,7 @@ class WindowManager {
         this.dashboardWindows.forEach((win) => {
             if (!win.isDestroyed()) {
                 win.webContents.send('close-dashboard')
+                this.closeWindow(win)
             }
         })
         this.dashboardWindows = []
