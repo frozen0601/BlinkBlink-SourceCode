@@ -60,6 +60,7 @@ class WindowManager {
 
         window.once('ready-to-show', () => {
             window.show()
+            window.setFocusable(false)
             if (config.type === 'dashboard') {
                 this.closeOverlayWindows()
             }
