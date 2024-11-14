@@ -46,7 +46,7 @@ body.ready {
 }
 
 /* View Management */
-#overlay-view, #dashboard-view {
+#break-view, #dashboard-view {
     display: none;
     position: fixed;
     top: 0;
@@ -56,7 +56,7 @@ body.ready {
     z-index: 1000;
 }
 
-.show-overlay #overlay-view,
+.show-break #break-view,
 .show-dashboard #dashboard-view {
     display: flex;
     justify-content: center;
@@ -69,8 +69,8 @@ h1 {
     margin: 2vh 0;
 }
 
-/* Overlay View Specific */
-.overlay-view h1 {
+/* Break View Specific */
+.break-view h1 {
     margin-top: 30vh;
     margin-bottom: 30vh;
 }

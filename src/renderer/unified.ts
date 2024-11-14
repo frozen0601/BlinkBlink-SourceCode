@@ -14,7 +14,7 @@ interface Stats {
 
 // 1. Define View Enum
 enum View {
-    Overlay = 'overlay',
+    Break = 'break',
     Dashboard = 'dashboard',
 }
 
@@ -69,7 +69,7 @@ class UnifiedUI {
             if (view === View.Dashboard) {
                 this.initializeDashboard()
             } else {
-                this.initializeOverlay()
+                this.initializeBreak()
             }
         })
     }
@@ -116,7 +116,7 @@ class UnifiedUI {
         }
     }
 
-    private initializeOverlay() {
+    private initializeBreak() {
         this.elements.warningText.style.display = 'none'
         this.elements.skipButton.textContent = 'Skip'
         this.skipConfirmed = false

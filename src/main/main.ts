@@ -4,7 +4,7 @@ import { store } from './store'
 import { Settings } from './storeTypes'
 import * as fs from 'fs'
 import { startWorkTimer, dismissDashboard, pauseTimer, skipBreaks, skipBreaksUntilEndOfDay, isRunning } from './timer'
-import { showOverlay, closeOverlayWindows, showDashboard, closeDashboardWindows } from './windows'
+import { showBreak, closeBreakWindows, showDashboard, closeDashboardWindows } from './windows'
 import { DURATIONS } from './constants'
 import { autoUpdater } from 'electron-updater'
 import { createTray } from './tray'
@@ -93,14 +93,14 @@ function createWindow(options: Electron.BrowserWindowConstructorOptions, filePat
 // Simplified IPC handlers - Single source of truth
 ipcMain.on('start-break-countdown', () => {
     if (isRunning()) {
-        showOverlay()
+        showBreak()
     }
 })
 
 ipcMain.on('break-skip', () => {
     setAppStatus(AppStatus.Working)
     updateBreakStats(true)
-    closeOverlayWindows()
+    closeBreakWindows()
     startWorkTimer()
 })
 
@@ -191,6 +191,6 @@ app.on('window-all-closed', () => {
 // Gracefully handle app quitting
 app.on('before-quit', () => {
     pauseTimer()
-    closeOverlayWindows()
+    closeBreakWindows()
     closeDashboardWindows()
 })

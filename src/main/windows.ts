@@ -11,7 +11,7 @@ interface WindowWithInterval {
 }
 
 interface WindowConfig {
-    type: 'overlay' | 'dashboard'
+    type: 'break' | 'dashboard'
     display: Electron.Display
     duration: number
     autoDismiss: boolean
@@ -155,11 +155,11 @@ class WindowManager {
         window.close()
     }
 
-    showOverlay() {
+    showBreak() {
         const displays = screen.getAllDisplays()
         displays.forEach((display) => {
             this.createOrUpdateWindow({
-                type: 'overlay',
+                type: 'break',
                 display,
                 duration: DURATIONS.BREAK_DURATION,
                 autoDismiss: true,
@@ -203,8 +203,8 @@ class WindowManager {
         this.windowsByDisplay.clear()
     }
 
-    // Replace both closeOverlayWindows and closeDashboardWindows with closeAllWindows
-    closeOverlayWindows = this.closeAllWindows.bind(this)
+    // Replace both closeBreakWindows and closeDashboardWindows with closeAllWindows
+    closeBreakWindows = this.closeAllWindows.bind(this)
     closeDashboardWindows = this.closeAllWindows.bind(this)
 }
 
@@ -215,7 +215,7 @@ const windowManager = new WindowManager()
 nativeTheme.themeSource = 'system'
 
 // Export methods
-export const showOverlay = () => windowManager.showOverlay()
-export const closeOverlayWindows = () => windowManager.closeOverlayWindows()
+export const showBreak = () => windowManager.showBreak()
+export const closeBreakWindows = () => windowManager.closeBreakWindows()
 export const showDashboard = () => windowManager.showDashboard()
 export const closeDashboardWindows = () => windowManager.closeDashboardWindows()

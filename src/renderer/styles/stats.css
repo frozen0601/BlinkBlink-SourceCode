@@ -172,5 +172,5 @@ p {
 /* Add glossy effect */
 /* .stat-group, .stat-item {
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1)), var(--stat-group-bg);
-    background-blend-mode: overlay;
+    background-blend-mode: break;
 } */

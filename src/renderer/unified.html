@@ -20,7 +20,7 @@
             .ready .content-container {
                 opacity: 1;
             }
-            #overlay-view, #dashboard-view {
+            #break-view, #dashboard-view {
                 display: none;
                 position: fixed;
                 top: 0;
@@ -29,7 +29,7 @@
                 height: 100%;
                 z-index: 1000;
             }
-            .show-overlay #overlay-view,
+            .show-break #break-view,
             .show-dashboard #dashboard-view {
                 display: flex;
                 justify-content: center;
@@ -39,8 +39,8 @@
     </head>
     <body>
 
-        <!-- Overlay view -->
-        <div id="overlay-view">
+        <!-- Break view -->
+        <div id="break-view">
             <div class="content-container">
                 <h1>Look Away <img id="eye-animation" src="rolling_eyes.gif" alt="Eye Animation" /></h1>
                 <div id="warning-text">This action will reset your streak. Click again to confirm.</div>
