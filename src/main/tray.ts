@@ -1,4 +1,3 @@
-// src/main/tray.ts
 import { BrowserWindow, screen, Tray, Menu, nativeTheme, app, MenuItem } from 'electron'
 import { autoUpdater } from 'electron-updater'
 import { store } from './store'

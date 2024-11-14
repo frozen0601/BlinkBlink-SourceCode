@@ -15,13 +15,13 @@ interface Stats {
 // 1. Define View Enum
 enum View {
     Break = 'break',
-    Dashboard = 'dashboard',
+    Summary = 'summary',
 }
 
 // 2. Inject ipcRenderer via constructor for better testability
 class UnifiedUI {
     private skipConfirmed = false
-    private dashboardDuration: number = 0
+    private summaryDuration: number = 0
     private elements: {
         progressBar: HTMLElement
         progressTracker: HTMLElement
@@ -66,8 +66,8 @@ class UnifiedUI {
             console.log(`Showing view: ${view}`)
             document.body.className = `ready show-${view}`
 
-            if (view === View.Dashboard) {
-                this.initializeDashboard()
+            if (view === View.Summary) {
+                this.initializeSummary()
             } else {
                 this.initializeBreak()
             }
@@ -77,7 +77,7 @@ class UnifiedUI {
     private initializeButtonHandlers() {
         this.elements.skipButton?.addEventListener('click', () => this.handleSkipClick())
         this.elements.dismissButton?.addEventListener('click', () => {
-            this.ipc.send('dashboard-dismissed')
+            this.ipc.send('summary-dismissed')
             window.close()
         })
     }
@@ -86,7 +86,7 @@ class UnifiedUI {
         this.ipc.on('start-countdown', (_, duration: number) => this.startProgress(duration))
         this.ipc.on('countdown-update', (_, countdown: number) => {
             if (countdown <= 0) {
-                this.ipc.send('dashboard-dismissed')
+                this.ipc.send('summary-dismissed')
                 window.close()
             }
         })
@@ -122,8 +122,8 @@ class UnifiedUI {
         this.skipConfirmed = false
     }
 
-    // 4. Enhance error handling in initializeDashboard
-    private async initializeDashboard() {
+    // 4. Enhance error handling in initializeSummary
+    private async initializeSummary() {
         try {
             const stats = (await this.ipc.invoke('get-stats')) as Stats
             this.updateProgressTracker(stats.breakStreakCount)
@@ -136,7 +136,7 @@ class UnifiedUI {
             }
 
             // Only initialize progress bar if auto-dismiss is enabled
-            this.dashboardDuration = await this.ipc.invoke('get-dashboard-duration')
+            this.summaryDuration = await this.ipc.invoke('get-summary-duration')
             const progressBar = this.elements.dismissButton.querySelector('.progress-bar')
             if (progressBar) {
                 const progressFill = progressBar.querySelector('.progress-fill') || progressBar
@@ -144,12 +144,12 @@ class UnifiedUI {
                     progressFill.style.transition = 'none'
                     progressFill.style.transform = 'scaleX(0)'
                     progressFill.offsetHeight // Force a reflow
-                    progressFill.style.transition = `transform ${this.dashboardDuration}ms linear`
+                    progressFill.style.transition = `transform ${this.summaryDuration}ms linear`
                     progressFill.style.transform = 'scaleX(1)'
                 }
             }
         } catch (error) {
-            console.error('Failed to initialize dashboard:', error)
+            console.error('Failed to initialize summary:', error)
         }
     }
 

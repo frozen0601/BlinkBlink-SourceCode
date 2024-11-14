@@ -20,7 +20,7 @@ export const STORE_DEFAULTS: StoreSchema = {
         enableAnimations: true,
         language: 'en',
         enableAutoDismiss: true,
-        dashboardDuration: 5000,
+        summaryDuration: 5000,
     },
 }
 

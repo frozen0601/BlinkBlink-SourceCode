@@ -15,7 +15,7 @@ export interface Settings {
     enableAnimations: boolean
     language: string
     enableAutoDismiss: boolean
-    dashboardDuration: number // in milliseconds
+    summaryDuration: number // in milliseconds
 }
 
 export interface StoreSchema {

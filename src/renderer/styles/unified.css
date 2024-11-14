@@ -46,7 +46,7 @@ body.ready {
 }
 
 /* View Management */
-#break-view, #dashboard-view {
+#break-view, #summary-view {
     display: none;
     position: fixed;
     top: 0;
@@ -57,7 +57,7 @@ body.ready {
 }
 
 .show-break #break-view,
-.show-dashboard #dashboard-view {
+.show-summary #summary-view {
     display: flex;
     justify-content: center;
     align-items: center;
@@ -110,7 +110,7 @@ h1 {
     color: rgba(255, 255, 255, 1);
 }
 
-/* Dashboard View Specific */
+/* Summary View Specific */
 #progress-tracker {
     width: 100%;
     position: relative;

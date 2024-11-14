@@ -16,12 +16,12 @@
                 <label><input type="checkbox" id="enableAnimations" />Enable break animations</label>
             </div>
             <div class="setting-item">
-                <label><input type="checkbox" id="enableAutoDismiss" />Auto dismiss dashboard</label>
+                <label><input type="checkbox" id="enableAutoDismiss" />Auto dismiss Summary View</label>
             </div>
             <div class="setting-item">
                 <label>
                     Dashboard duration (seconds):
-                    <input type="number" id="dashboardDuration" min="1" max="60" style="width: 60px; padding: 4px" />
+                    <input type="number" id="summaryDuration" min="1" max="60" style="width: 60px; padding: 4px" />
                 </label>
             </div>
             <div class="setting-item">
@@ -50,13 +50,13 @@
                 document.getElementById('startOnBoot').checked = settings.startOnBoot
                 document.getElementById('enableAnimations').checked = settings.enableAnimations
                 document.getElementById('enableAutoDismiss').checked = settings.enableAutoDismiss
-                document.getElementById('dashboardDuration').value = settings.dashboardDuration / 1000
+                document.getElementById('summaryDuration').value = settings.summaryDuration / 1000
                 document.getElementById('languageSelect').value = settings.language
                 updateDashboardDurationState(settings.enableAutoDismiss)
             })
 
             function updateDashboardDurationState(enableAutoDismiss) {
-                const durationInput = document.getElementById('dashboardDuration')
+                const durationInput = document.getElementById('summaryDuration')
                 durationInput.disabled = !enableAutoDismiss
             }
 
@@ -71,7 +71,7 @@
                     enableAnimations: document.getElementById('enableAnimations').checked,
                     enableAutoDismiss: document.getElementById('enableAutoDismiss').checked,
                     language: document.getElementById('languageSelect').value,
-                    dashboardDuration: document.getElementById('dashboardDuration').value * 1000,
+                    summaryDuration: document.getElementById('summaryDuration').value * 1000,
                 }
                 ipcRenderer.send('save-settings', settings)
             }

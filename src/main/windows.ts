@@ -11,7 +11,7 @@ interface WindowWithInterval {
 }
 
 interface WindowConfig {
-    type: 'break' | 'dashboard'
+    type: 'break' | 'summary'
     display: Electron.Display
     duration: number
     autoDismiss: boolean
@@ -155,7 +155,7 @@ class WindowManager {
         window.close()
     }
 
-    showBreak() {
+    showBreakView() {
         const displays = screen.getAllDisplays()
         displays.forEach((display) => {
             this.createOrUpdateWindow({
@@ -168,10 +168,10 @@ class WindowManager {
         })
     }
 
-    showDashboard() {
+    showSummaryView() {
         const displays = screen.getAllDisplays()
         const settings = store.get('settings')
-        const duration = settings?.enableAutoDismiss ? settings.dashboardDuration : Infinity
+        const duration = settings?.enableAutoDismiss ? settings.summaryDuration : Infinity
         const autoDismiss = settings?.enableAutoDismiss || false
 
         // Clear existing intervals before updating views
@@ -181,11 +181,11 @@ class WindowManager {
         console.log(`Updating windows to dashboard view for ${displays.length} displays`)
         displays.forEach((display) => {
             this.createOrUpdateWindow({
-                type: 'dashboard',
+                type: 'summary',
                 display,
                 duration,
                 autoDismiss,
-                onComplete: () => ipcMain.emit('dashboard-dismissed'),
+                onComplete: () => ipcMain.emit('summary-dismissed'),
             })
         })
     }
@@ -203,9 +203,9 @@ class WindowManager {
         this.windowsByDisplay.clear()
     }
 
-    // Replace both closeBreakWindows and closeDashboardWindows with closeAllWindows
-    closeBreakWindows = this.closeAllWindows.bind(this)
-    closeDashboardWindows = this.closeAllWindows.bind(this)
+    // Replace both closeBreakView and closeSummaryView with closeAllWindows
+    closeBreakView = this.closeAllWindows.bind(this)
+    closeSummaryView = this.closeAllWindows.bind(this)
 }
 
 // Create singleton instance
@@ -215,7 +215,7 @@ const windowManager = new WindowManager()
 nativeTheme.themeSource = 'system'
 
 // Export methods
-export const showBreak = () => windowManager.showBreak()
-export const closeBreakWindows = () => windowManager.closeBreakWindows()
-export const showDashboard = () => windowManager.showDashboard()
-export const closeDashboardWindows = () => windowManager.closeDashboardWindows()
+export const showBreakView = () => windowManager.showBreakView()
+export const closeBreakView = () => windowManager.closeBreakView()
+export const showSummaryView = () => windowManager.showSummaryView()
+export const closeSummaryView = () => windowManager.closeSummaryView()

@@ -3,24 +3,11 @@ import * as path from 'path'
 import { store } from './store'
 import { Settings } from './storeTypes'
 import * as fs from 'fs'
-import { startWorkTimer, dismissDashboard, pauseTimer, skipBreaks, skipBreaksUntilEndOfDay, isRunning } from './timer'
-import { showBreak, closeBreakWindows, showDashboard, closeDashboardWindows } from './windows'
+import { startWorkTimer, clearTimer, isRunning } from './timer'
+import { showBreakView, closeBreakView, showSummaryView, closeSummaryView } from './windows'
 import { DURATIONS } from './constants'
 import { autoUpdater } from 'electron-updater'
 import { createTray } from './tray'
-
-export enum AppStatus {
-    Idle = 'idle',
-    Working = 'working',
-    Breaking = 'breaking',
-    Dashboard = 'dashboard',
-}
-
-let currentStatus = AppStatus.Idle
-
-export function setAppStatus(status: AppStatus) {
-    currentStatus = status
-}
 
 // Stats Management
 export function updateBreakStats(skipped: boolean) {
@@ -93,33 +80,30 @@ function createWindow(options: Electron.BrowserWindowConstructorOptions, filePat
 // Simplified IPC handlers - Single source of truth
 ipcMain.on('start-break-countdown', () => {
     if (isRunning()) {
-        showBreak()
+        showBreakView()
     }
 })
 
 ipcMain.on('break-skip', () => {
-    setAppStatus(AppStatus.Working)
     updateBreakStats(true)
-    closeBreakWindows()
+    closeBreakView()
     startWorkTimer()
 })
 
 ipcMain.on('break-complete', () => {
-    setAppStatus(AppStatus.Dashboard)
     updateBreakStats(false)
-    showDashboard()
+    showSummaryView()
 })
 
-ipcMain.on('dashboard-dismissed', () => {
-    dismissDashboard()
-    closeDashboardWindows()
+ipcMain.on('summary-dismissed', () => {
     startWorkTimer()
+    closeSummaryView()
 })
 
 // Data access handlers
 ipcMain.handle('get-stats', () => store.get('stats'))
 ipcMain.handle('get-settings', () => store.get('settings'))
-ipcMain.handle('get-dashboard-duration', () => store.get('settings')?.dashboardDuration)
+ipcMain.handle('get-summary-duration', () => store.get('settings')?.summaryDuration)
 
 // IPC Handler - get app info from package.json
 ipcMain.handle('get-app-info', () => {
@@ -190,7 +174,7 @@ app.on('window-all-closed', () => {
 
 // Gracefully handle app quitting
 app.on('before-quit', () => {
-    pauseTimer()
-    closeBreakWindows()
-    closeDashboardWindows()
+    clearTimer()
+    closeBreakView()
+    closeSummaryView()
 })
