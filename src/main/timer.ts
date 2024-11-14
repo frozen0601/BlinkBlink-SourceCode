@@ -1,6 +1,8 @@
 import { ipcMain } from 'electron'
 import { DURATIONS } from './constants'
-import { appState, AppStatus } from './state'
+
+// Import setAppStatus and AppStatus from main
+import { setAppStatus, AppStatus, updateBreakStats } from './main'
 
 class TimerManager {
     private static instance: TimerManager
@@ -31,10 +33,10 @@ class TimerManager {
         }
 
         this.clearTimer()
-        appState.setStatus(AppStatus.Working)
+        setAppStatus(AppStatus.Working)
 
         this.currentTimer = setTimeout(() => {
-            appState.setStatus(AppStatus.Breaking)
+            setAppStatus(AppStatus.Breaking)
             ipcMain.emit('start-break-countdown')
         }, DURATIONS.WORK_DURATION)
         this.isTimerRunning = true
@@ -42,7 +44,7 @@ class TimerManager {
 
     skipBreaksFor(minutes: number) {
         this.skipUntil = new Date(Date.now() + minutes * 60 * 1000)
-        appState.resetStreak()
+        updateBreakStats(true)
         this.startWorkTimer()
     }
 
@@ -50,7 +52,7 @@ class TimerManager {
         const endOfDay = new Date()
         endOfDay.setHours(23, 59, 59, 999)
         this.skipUntil = endOfDay
-        appState.resetStreak()
+        updateBreakStats(true)
         this.startWorkTimer()
     }
 
@@ -59,23 +61,22 @@ class TimerManager {
             return
         }
         this.clearTimer()
-        appState.setStatus(AppStatus.Working)
         this.startWorkTimer()
     }
 
     completeBreak() {
         this.clearTimer()
-        appState.setStatus(AppStatus.Dashboard)
+        setAppStatus(AppStatus.Dashboard)
     }
 
     dismissDashboard() {
-        appState.setStatus(AppStatus.Working)
+        setAppStatus(AppStatus.Working)
         this.startWorkTimer()
     }
 
     pause() {
         this.clearTimer()
-        appState.setStatus(AppStatus.Idle)
+        setAppStatus(AppStatus.Idle)
     }
 
     isRunning() {

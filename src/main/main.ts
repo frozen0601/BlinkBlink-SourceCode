@@ -1,6 +1,6 @@
 import { app, BrowserWindow, Tray, Menu, MenuItem, ipcMain, screen, nativeTheme } from 'electron'
 import * as path from 'path'
-import Store from 'electron-store'
+import { store } from './store'
 import { StoreSchema, Settings } from './storeTypes'
 import * as fs from 'fs'
 import {
@@ -22,60 +22,44 @@ let settingsWindow: BrowserWindow | null = null
 let aboutWindow: BrowserWindow | null = null
 let tray: Tray | null = null
 
-const store = new Store<StoreSchema>({
-    defaults: {
-        stats: {
-            breakStreakCount: 0,
-            breakStreakDuration: 0,
-            streakStartTime: Date.now(),
-            highestStreakCount: 0,
-            highestStreakDuration: 0,
-            highestStreakStartTime: Date.now(),
-            highestStreakEndTime: Date.now(),
-        },
-        lastBreakEndTime: Date.now(),
-        currentWorkStreakStartTime: Date.now(),
-        settings: {
-            startOnBoot: false,
-            enableAnimations: true,
-            language: 'en',
-            enableAutoDismiss: true,
-            dashboardDuration: 5000,
-        },
-    },
-})
+export enum AppStatus {
+    Idle = 'idle',
+    Working = 'working',
+    Breaking = 'breaking',
+    Dashboard = 'dashboard',
+}
+
+let currentStatus = AppStatus.Idle
+
+export function setAppStatus(status: AppStatus) {
+    currentStatus = status
+}
 
 // Stats Management
-function updateBreakStats(skipped: boolean) {
+export function updateBreakStats(skipped: boolean) {
     const stats = store.get('stats')
     const currentTime = Date.now()
-    if (stats.highestStreakCount === undefined) stats.highestStreakCount = 0
-    if (stats.highestStreakDuration === undefined) stats.highestStreakDuration = 0
-    if (stats.highestStreakStartTime === undefined) stats.highestStreakStartTime = Date.now()
-    if (stats.highestStreakEndTime === undefined) stats.highestStreakEndTime = Date.now()
 
     if (skipped) {
-        // Just reset current streak but preserve highest
+        // Reset current streak but preserve highest
         store.set('stats', {
             ...stats,
             breakStreakCount: 0,
             breakStreakDuration: 0,
             streakStartTime: currentTime,
         })
-        store.set('lastBreakEndTime', currentTime)
     } else {
         // Completing a break successfully
         const newCount = stats.breakStreakCount + 1
-        const newDuration = stats.breakStreakDuration + DURATIONS.BREAK_DURATION
+        const newDuration = stats.breakStreakDuration + DURATIONS.WORK_DURATION
 
-        // Update current streak
         const updatedStats = {
             ...stats,
             breakStreakCount: newCount,
             breakStreakDuration: newDuration,
         }
 
-        // Update highest streak
+        // Update highest streak if current is higher
         if (newCount > stats.highestStreakCount) {
             updatedStats.highestStreakCount = newCount
             updatedStats.highestStreakDuration = newDuration
@@ -84,8 +68,8 @@ function updateBreakStats(skipped: boolean) {
         }
 
         store.set('stats', updatedStats)
-        store.set('lastBreakEndTime', currentTime)
     }
+    store.set('lastBreakEndTime', currentTime)
 }
 
 function getIconPath() {
@@ -253,14 +237,14 @@ ipcMain.on('start-break-countdown', () => {
 })
 
 ipcMain.on('break-skip', () => {
-    skipBreak()
-    closeOverlayWindows()
+    setAppStatus(AppStatus.Working)
     updateBreakStats(true)
+    closeOverlayWindows()
     startWorkTimer()
 })
 
 ipcMain.on('break-complete', () => {
-    completeBreak()
+    setAppStatus(AppStatus.Dashboard)
     updateBreakStats(false)
     showDashboard()
 })
