@@ -16,6 +16,7 @@ import {
 import { showOverlay, closeOverlayWindows, showDashboard, closeDashboardWindows } from './windows'
 import { DURATIONS } from './constants'
 import { autoUpdater } from 'electron-updater'
+import { eventBus, AppEvents } from './events'
 
 let statsWindow: BrowserWindow | null = null
 let settingsWindow: BrowserWindow | null = null
@@ -248,6 +249,7 @@ function createTray() {
 // IPC Handlers - Timer Events
 ipcMain.on('start-break-countdown', () => {
     if (isRunning()) {
+        eventBus.emit(AppEvents.BREAK_START)
         showOverlay()
     }
 })
@@ -267,8 +269,8 @@ ipcMain.on('break-complete', () => {
 
 ipcMain.on('dashboard-dismissed', () => {
     dismissDashboard()
-    startWorkTimer()
     closeDashboardWindows()
+    startWorkTimer()
 })
 
 // IPC Handlers - Data Access
