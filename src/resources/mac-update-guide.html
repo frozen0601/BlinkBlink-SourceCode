@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>BlinkBlink Mac Update Guide</title>
+        <style>
+            :root {
+                color-scheme: light dark;
+            }
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+                max-width: 800px;
+                margin: 2rem auto;
+                padding: 0 1rem;
+                line-height: 1.6;
+                font-size: 16px;
+            }
+            .container {
+                background: var(--bg-color, #ffffff);
+                padding: 2rem;
+                border-radius: 8px;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            }
+            .step {
+                margin-bottom: 2rem;
+                padding: 1rem;
+                border: 1px solid var(--border-color, #e1e1e1);
+                border-radius: 6px;
+            }
+            .command-box {
+                background: var(--code-bg, #f5f5f5);
+                padding: 1rem;
+                border-radius: 4px;
+                font-family: monospace;
+                position: relative;
+                margin: 1rem 0;
+            }
+            .copy-button {
+                position: absolute;
+                right: 10px;
+                top: 50%;
+                transform: translateY(-50%);
+                padding: 6px 12px;
+                background: var(--button-bg, #007aff);
+                color: white;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 14px;
+            }
+            .copy-button:hover {
+                opacity: 0.9;
+            }
+            .important {
+                background: var(--warning-bg, #fff3cd);
+                border-left: 4px solid var(--warning-border, #ffeeba);
+                padding: 1rem;
+                margin: 1rem 0;
+            }
+            .explanation-box {
+                margin-top: 1.5rem;
+                font-size: 0.9em;
+                background: var(--code-bg, #f5f5f5);
+                padding: 1.2rem;
+                border-radius: 6px;
+                border-left: 4px solid var(--button-bg, #007aff);
+            }
+            h1 {
+                color: var(--heading-color, #007aff);
+            }
+            h2 {
+                color: var(--subheading-color, #333);
+            }
+
+            @media (prefers-color-scheme: dark) {
+                :root {
+                    --bg-color: #1a1a1a;
+                    --border-color: #333;
+                    --code-bg: #2d2d2d;
+                    --button-bg: #0a84ff;
+                    --heading-color: #0a84ff;
+                    --subheading-color: #fff;
+                    --warning-bg: #332701;
+                    --warning-border: #856404;
+                }
+                body {
+                    color: #fff;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>Updating BlinkBlink on Mac</h1>
+
+            <div class="important"><strong>Important:</strong> Please follow these steps in order to properly update BlinkBlink.</div>
+
+            <div class="step">
+                <h2>Step 1: Quit BlinkBlink</h2>
+                <p>1. Click the BlinkBlink icon in your menu bar</p>
+                <p>2. Select "Quit" from the menu</p>
+                <p>3. Wait a few seconds for the app to close completely</p>
+            </div>
+
+            <div class="step">
+                <h2>Step 2: Install the New Version</h2>
+                <p>1. Double-click the downloaded DMG file (named BlinkBlink.Setup.x.x.x.dmg)</p>
+                <p>2. Drag BlinkBlink.app to your Applications folder</p>
+                <p>3. Click "Replace" if prompted</p>
+            </div>
+
+            <div class="step">
+                <h2>Step 3: Remove Security Restrictions</h2>
+                <p>1. Open Terminal (press Cmd+Space and type "Terminal")</p>
+                <p>2. Copy and paste this command:</p>
+                <div class="command-box">
+                    xattr -c /Applications/BlinkBlink.app
+                    <button class="copy-button" onclick="copyCommand()">Copy</button>
+                </div>
+                <p>3. Press Enter to run the command</p>
+                <p class="explanation-box">
+                    <strong>Why is this needed?</strong> Apple has strict security measures for apps, which is great for safety but can be a
+                    challenge for smaller developers. The baseline requirement for bypassing these warnings is paying Apple's
+                    <a href="https://developer.apple.com/support/compare-memberships/" target="_blank">$99 annual fee</a>. Since I don't
+                    have the resources for that yet, installing the app might take you an extra step. 😞 But don't worry, it's totally worth
+                    it! If you have further questions, feel free to reach out to <a href="mailto:theblinkblinkapp@gmail.com" target="_blank">me</a>. You can learn more about Apple's
+                    security measures
+                    <a href="https://support.apple.com/guide/security/protecting-against-malware-sec469d47bd8/web" target="_blank">here</a>.
+                </p>
+            </div>
+
+            <div class="step">
+                <h2>Step 4: Start BlinkBlink</h2>
+                <p>1. Open BlinkBlink from your Applications folder</p>
+                <p>2. If you see a security warning, open System Settings → Privacy & Security and click "Open Anyway"</p>
+            </div>
+
+            <div class="important">
+                <strong>Need help?</strong> If you encounter any issues, please contact support at theblinkblinkapp@gmail.com
+            </div>
+        </div>
+
+        <script>
+            function copyCommand() {
+                navigator.clipboard.writeText('xattr -c /Applications/BlinkBlink.app')
+                const button = document.querySelector('.copy-button')
+                button.textContent = 'Copied!'
+                setTimeout(() => {
+                    button.textContent = 'Copy'
+                }, 2000)
+            }
+        </script>
+    </body>
+</html>

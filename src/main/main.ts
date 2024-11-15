@@ -358,7 +358,7 @@ app.whenReady().then(() => {
     updateTooltip()
 
     // Automatically check for updates on startup
-    checkForUpdates(false)
+    checkForUpdates(true)
 
     // Initialize auto-start setting based on stored preference
     const settings = store.get('settings')
