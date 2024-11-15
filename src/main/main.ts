@@ -77,7 +77,7 @@ function createWindow(options: Electron.BrowserWindowConstructorOptions, filePat
     return window
 }
 
-// Simplified IPC handlers - Single source of truth
+// Simplified IPC handlers
 ipcMain.on('start-break-countdown', () => {
     if (isRunning()) {
         showBreakView()

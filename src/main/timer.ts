@@ -1,7 +1,6 @@
 import { ipcMain } from 'electron'
 import { DURATIONS } from './constants'
-
-// Import setAppStatus and AppStatus from main
+import { closeAllWindows } from './windows'
 import { updateBreakStats } from './main'
 
 class TimerManager {
@@ -44,6 +43,7 @@ class TimerManager {
         this.skipUntil = new Date(Date.now() + minutes * 60 * 1000)
         updateBreakStats(true)
         this.startWorkTimer()
+        closeAllWindows()
     }
 
     skipBreaksUntilEndOfDay() {
@@ -52,6 +52,7 @@ class TimerManager {
         this.skipUntil = endOfDay
         updateBreakStats(true)
         this.startWorkTimer()
+        closeAllWindows()
     }
 
     isRunning() {
