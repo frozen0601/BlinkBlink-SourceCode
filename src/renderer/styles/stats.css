@@ -1,34 +1,22 @@
+@import 'shared.css';
+
 :root {
-    --background-color: #f5f5f5;
     --text-color: #333;
     --heading-color: #1a1a1a;
-    --accent-color: #66bb6a; /* Keep accent color as green */
+    --accent-color: #1a73e8;
     --scrollbar-bg: #e0e0e0;
     --scrollbar-thumb: #888;
     --border-radius: 8px;
-    --box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    --hover-bg: rgba(0, 0, 0, 0.05);
-    --hover-gradient-bg: linear-gradient(135deg, rgba(102, 187, 106, 0.2), rgba(102, 187, 106, 0.2)); /* Keep hover gradient */
-    --border-color: rgba(102, 187, 106, 0.1); /* Keep border color */
     --shallow-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-    --stat-group-bg: #e0e0e0; /* Light theme background color */
-    --stat-item-bg: #f0f0f0; /* Light theme background color for stat-item */
-    --raised-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
 }
 
 @media (prefers-color-scheme: dark) {
     :root {
-        --background-color: #1a1a1a;
         --text-color: #f5f5f5;
         --heading-color: #ffffff;
-        --accent-color: #66bb6a; /* Keep accent color as green */
+        --accent-color: #4285f4;
         --scrollbar-bg: #333;
         --scrollbar-thumb: #555;
-        --hover-bg: rgba(255, 255, 255, 0.1);
-        --hover-gradient-bg: linear-gradient(135deg, rgba(102, 187, 106, 0.2), rgba(102, 187, 106, 0.2)); /* Adjust hover gradient for dark mode */
-        --border-color: rgba(102, 187, 106, 0.1); /* Keep border color for dark mode */
-        --stat-group-bg: #2c2c2c; /* Dark theme background color */
-        --stat-item-bg: #3c3c3c; /* Dark theme background color for stat-item */
     }
 }
 
@@ -60,19 +48,16 @@ p {
 }
 
 .stats-container {
-    background: var(--gradient-bg);
     padding: 15px;
     width: 100%;
-    box-shadow: none; /* Remove box-shadow */
     border-radius: var(--border-radius);
     max-width: 800px;
     margin: 0 auto;
     display: flex;
     flex-direction: column;
     gap: 20px;
-    flex-wrap: wrap;
     animation: fadeIn 1s ease-in-out;
-    align-items: center; /* Center stat-groups horizontally */
+    align-items: center;
 }
 
 @keyframes fadeIn {
@@ -85,58 +70,58 @@ p {
 }
 
 .stat-group {
-    background: var(--stat-group-bg); /* Update background color */
+    background: var(--surface-color);
     padding: 15px;
     border-radius: var(--border-radius);
-    box-shadow: var(--shallow-shadow); /* Add shallower shadow */
-    transition: background 0.5s ease, box-shadow 0.5s ease, transform 0.5s ease; /* Increase transition duration */
-    width: 100%; /* Ensure stat-groups take full width */
-    max-width: 600px; /* Optional: limit the max width */
-    border: none; /* Remove border */
+    box-shadow: var(--shallow-shadow);
+    transition: background-color var(--transition-speed);
+    width: 100%;
+    max-width: 600px;
+    margin-bottom: var(--spacing-unit);
 }
 
 .stat-group:hover {
-    background: var(--hover-gradient-bg); /* Update hover background color */
-    box-shadow: var(--raised-shadow); /* Add raised shadow on hover */
-    transform: translateY(-5px); /* Slight lift on hover */
-}
-
-.stat-group:hover .stat-item {
-    background: var(--hover-gradient-bg); /* Update hover background color */
-    transform: translateY(-3px); /* Slight lift on hover */
-    transition: background 0.5s ease, transform 0.5s ease; /* Increase transition duration */
-}
-
-.stat-group:not(:hover) {
-    background: var(--stat-group-bg); /* Ensure smooth transition back to original color */
-    transition: background 0.5s ease, box-shadow 0.5s ease, transform 0.5s ease; /* Increase transition duration */
-}
-
-.stat-group:not(:hover) .stat-item {
-    background: var(--stat-item-bg); /* Ensure smooth transition back to original color */
-    transition: background 0.5s ease, transform 0.5s ease; /* Increase transition duration */
+    background: color-mix(in srgb, var(--surface-color) 95%, var(--primary-color) 5%);
 }
 
 .stat-group h2 {
-    text-align: center; /* Center the h2 elements */
+    text-align: center;
 }
 
 .stat-item {
-    background: var(--stat-item-bg); /* Update background color */
     padding: 15px;
     width: 100%;
-    box-shadow: none; /* Remove box-shadow */
-    border-radius: var(--border-radius);
-    transition: background 0.3s, transform 0.3s;
+    border-radius: calc(var(--border-radius) * 0.75);
+    display: table;
+    margin-top: calc(var(--spacing-unit) * 0.5);
 }
 
 .stat-item p {
-    margin-bottom: 10px;
+    display: table-row;
+    margin: 0;
+    font-size: 1em;
+}
+
+.stat-item p::before {
+    content: attr(data-label);
+    display: table-cell;
+    width: 150px;
+    padding-right: 10px;
+    text-align: right;
+    vertical-align: top;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    color: var(--text-secondary);
 }
 
 .stat-item span {
+    display: table-cell;
+    text-align: left;
+    vertical-align: top;
     font-weight: bold;
-    color: var(--accent-color); /* Keep accent color */
+    color: var(--accent-color);
+    padding-top: 5px;
+    padding-bottom: 5px;
 }
 
 @media (min-width: 768px) {
@@ -168,9 +153,3 @@ p {
     border-radius: 10px;
     border: 3px solid var(--scrollbar-bg);
 }
-
-/* Add glossy effect */
-/* .stat-group, .stat-item {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1)), var(--stat-group-bg);
-    background-blend-mode: break;
-} */

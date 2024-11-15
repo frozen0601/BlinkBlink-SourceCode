@@ -1,3 +1,5 @@
+@import 'shared.css';
+
 /* Define CSS variables */
 :root {
     --background-color: #f5f5f5;
@@ -6,6 +8,7 @@
     --accent-color: #1a73e8;
     --scrollbar-bg: #e0e0e0;
     --scrollbar-thumb: #888;
+    --disabled-color: #666;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -16,13 +19,14 @@
         --accent-color: #4285f4;
         --scrollbar-bg: #333;
         --scrollbar-thumb: #555;
+        --disabled-color: #999;
     }
 }
 
 html,
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-    padding: 20px;
+    padding: 1.25rem;
     background: var(--background-color);
     margin: 0;
     color: var(--text-color);
@@ -30,26 +34,73 @@ body {
 
 .container {
     background: var(--background-color);
-    padding: 20px;
+    padding: 1rem; /* Reduce padding */
     border-radius: 0;
     box-shadow: none;
-    max-width: 800px;
-    width: 90%;
+    max-width: 32rem; /* ~512px */
+    width: 100%;
     margin: 0 auto;
+    user-select: none;
 }
 
 h1 {
     margin-top: 0;
-    margin-bottom: 24px;
-    font-size: 24px;
+    margin-bottom: 1.25rem;
+    font-size: 2rem;
     font-weight: 500;
     color: var(--heading-color);
 }
 
 .setting-item {
-    margin-bottom: 20px;
     display: flex;
     align-items: center;
+    justify-content: space-between;
+    padding: calc(var(--spacing-unit) * 0.75);
+    transition: opacity 0.2s ease;
+    min-height: 2.25rem;
+    gap: 1.25rem;
+    margin-bottom: calc(var(--spacing-unit) * 0.75);
+    background: var(--surface-color);
+    border-radius: var(--border-radius);
+    transition: background-color var(--transition-speed);
+}
+
+.setting-item:hover {
+    background: color-mix(in srgb, var(--surface-color) 95%, var(--primary-color) 5%);
+}
+
+.setting-item.disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.setting-item.disabled input {
+    cursor: not-allowed;
+}
+
+.setting-item.disabled .setting-label {
+    color: var(--disabled-color);
+}
+
+.setting-label {
+    font-size: 0.9375rem;
+    color: var(--text-color);
+    transition: color 0.2s ease;
+    flex: 1;
+    line-height: 1.4;
+    padding-right: 0.5rem; /* Reduce padding-right */
+    white-space: normal; /* Allow wrapping */
+    overflow: visible; /* Ensure full visibility */
+    text-overflow: clip; /* Remove ellipsis */
+}
+
+.setting-control {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 5rem;
+    justify-content: flex-end;
+    flex-shrink: 0;
 }
 
 label {
@@ -60,21 +111,56 @@ label {
 }
 
 input[type='checkbox'] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 40px;
+    height: 20px;
+    border-radius: 10px;
+    background: var(--text-secondary);
+    position: relative;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+input[type='checkbox']:checked {
+    background: var(--primary-color);
+}
+
+input[type='checkbox']::before {
+    content: '';
+    position: absolute;
     width: 16px;
     height: 16px;
-    cursor: pointer;
-    color: var(--text-color);
+    border-radius: 50%;
+    top: 2px;
+    left: 2px;
+    background: white;
+    transition: transform 0.3s;
+}
+
+input[type='checkbox']:checked::before {
+    transform: translateX(20px);
+}
+
+input[type='number'] {
+    width: 3.5rem;
+    padding: 0.25rem 0.375rem;
+    font-size: 0.9375rem;
+    text-align: right;
+    border: 1px solid var(--text-secondary);
+    border-radius: calc(var(--border-radius) * 0.5);
     background: var(--background-color);
+    color: var(--text-primary);
 }
 
 select {
-    padding: 8px;
-    border-radius: 4px;
-    border: 1px solid #ddd;
-    font-size: 14px;
+    padding: 0.25rem 0.375rem;
+    min-width: 5rem;
+    font-size: 0.9375rem;
+    border: 1px solid var(--text-secondary);
+    border-radius: calc(var(--border-radius) * 0.5);
     background: var(--background-color);
-    cursor: pointer;
-    color: var(--text-color);
+    color: var(--text-primary);
 }
 
 /* Custom scrollbar styles */

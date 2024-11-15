@@ -4,6 +4,7 @@
     <head>
         <meta charset="UTF-8" />
         <title>Break Stats</title>
+        <link rel="stylesheet" href="shared.css" />
         <link rel="stylesheet" href="stats.css" />
     </head>
     <body>
@@ -11,19 +12,19 @@
             <div class="stat-group">
                 <h2>Current Consecutive Streak</h2>
                 <div class="stat-item">
-                    <p>Count: <span id="break-streak-count"></span></p>
-                    <p>Total Protection: <span id="break-streak-duration"></span></p>
-                    <p>Started at: <span id="current-work-streak-start-time"></span></p>
+                    <p data-label="Count"><span id="break-streak-count"></span></p>
+                    <p data-label="Duration"><span id="break-streak-duration"></span></p>
+                    <p data-label="Started at"><span id="current-work-streak-start-time"></span></p>
                 </div>
             </div>
 
             <div class="stat-group">
                 <h2>Longest Consecutive Streak</h2>
                 <div class="stat-item">
-                    <p>Count: <span id="highest-streak-count"></span></p>
-                    <p>Total Protection: <span id="highest-streak-duration"></span></p>
-                    <p>Started at: <span id="highest-streak-start-time"></span></p>
-                    <p>Ended at: <span id="highest-streak-end-time"></span></p>
+                    <p data-label="Count"><span id="highest-streak-count"></span></p>
+                    <p data-label="Duration"><span id="highest-streak-duration"></span></p>
+                    <p data-label="Started at"><span id="highest-streak-start-time"></span></p>
+                    <p data-label="Ended at"><span id="highest-streak-end-time"></span></p>
                 </div>
             </div>
         </div>
@@ -53,23 +54,24 @@
             function formatTime(ms) {
                 if (!ms) return '0 seconds'
                 const duration = intervalToDuration({ start: 0, end: ms })
-                if (duration.days > 0) {
-                    return `${duration.days} ${duration.days === 1 ? 'day' : 'days'}${
-                        duration.hours ? ` ${duration.hours} ${duration.hours === 1 ? 'hour' : 'hours'}` : ''
-                    }${duration.minutes ? ` ${duration.minutes} ${duration.minutes === 1 ? 'minute' : 'minutes'}` : ''}`
+
+                const parts = []
+
+                if (duration.days) {
+                    parts.push(`${duration.days} ${duration.days === 1 ? 'day' : 'days'}`)
+                }
+                if (duration.hours) {
+                    parts.push(`${duration.hours} ${duration.hours === 1 ? 'hour' : 'hours'}`)
+                }
+                if (duration.minutes) {
+                    parts.push(`${duration.minutes} ${duration.minutes === 1 ? 'minute' : 'minutes'}`)
+                }
+                // Only show seconds if no larger units exist
+                if (!parts.length) {
+                    parts.push(`${duration.seconds} ${duration.seconds === 1 ? 'second' : 'seconds'}`)
                 }
 
-                if (duration.hours > 0) {
-                    return `${duration.hours} ${duration.hours === 1 ? 'hour' : 'hours'}${
-                        duration.minutes ? ` ${duration.minutes} ${duration.minutes === 1 ? 'minute' : 'minutes'}` : ''
-                    }`
-                }
-
-                if (duration.minutes > 0) {
-                    return `${duration.minutes} ${duration.minutes === 1 ? 'minute' : 'minutes'}`
-                }
-
-                return `${duration.seconds} ${duration.seconds === 1 ? 'second' : 'seconds'}`
+                return parts.join(' ')
             }
         </script>
     </body>

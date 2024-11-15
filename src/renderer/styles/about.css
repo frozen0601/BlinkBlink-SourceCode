@@ -26,6 +26,7 @@ body {
     background: var(--background-color);
     margin: 0;
     color: var(--text-color);
+    user-select: none;
 }
 
 h1 {
@@ -66,11 +67,14 @@ body {
 }
 
 .logo {
-    width: 15%; /* Reduce logo size */
-    max-width: 120px; /* Reduce max-width */
-    height: auto;
-    margin-top: 1vh;
-    object-fit: contain;
+    width: 120px;
+    height: 120px;
+    margin: var(--spacing-unit) auto;
+    transition: transform var(--transition-speed);
+}
+
+.logo:hover {
+    transform: scale(1.05);
 }
 
 .author {
@@ -101,7 +105,8 @@ body {
     text-align: left;
     display: table;
     width: 80%; /* Match the width of the separator */
-    margin: 0 auto; /* Center the content */
+    margin: calc(var(--spacing-unit) * 2) auto;
+    max-width: 600px;
 }
 
 .info-container p {
@@ -150,9 +155,9 @@ body {
 }
 
 .separator {
-    border-top: 1px solid rgba(51, 51, 51, 0.2); /* Fine line color for light theme */
-    margin: 15px auto; /* Reduce margin */
-    width: 80%; /* Match the width of the content */
+    border-top: 1px solid color-mix(in srgb, var(--text-secondary) 20%, transparent);
+    margin: 20px auto; /* Adjust top and bottom margins */
+    width: 90%; /* Modify width for better alignment */
 }
 
 @media (prefers-color-scheme: dark) {
@@ -255,9 +260,7 @@ body {
     }
 }
 
-.buy-me-coffee,
-.ko-fi,
-.paypal {
+.buy-me-coffee {
     background-color: #ffdd00;
     color: #000;
     font-size: 14px;
@@ -269,12 +272,40 @@ body {
     display: inline-block;
     margin-top: 20px;
     transition: transform 0.2s;
-    animation: move 1s infinite;
+}
+
+.ko-fi {
+    background-color: #29abe0;
+    color: #fff;
+    font-size: 14px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    margin-top: 20px;
+    transition: transform 0.2s;
+}
+
+.paypal {
+    background-color: #003087;
+    color: #fff;
+    font-size: 14px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    margin-top: 20px;
+    transition: transform 0.2s;
 }
 
 .buy-me-coffee:hover,
 .ko-fi:hover,
 .paypal:hover {
-    background-color: #ffcc00;
-    animation: shake-maniacally 0.05s infinite;
+    animation: shake-maniacally 0.1s infinite;
 }
+
+@import 'shared.css';

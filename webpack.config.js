@@ -44,6 +44,7 @@ const rendererConfig = {
     plugins: [
         new CopyPlugin({
             patterns: [
+                { from: 'src/renderer/styles/shared.css', to: 'shared.css' },
                 { from: 'src/renderer/overlay.html', to: 'overlay.html' },
                 { from: 'src/renderer/styles/overlay.css', to: 'overlay.css' },
                 { from: 'src/renderer/settings.html', to: 'settings.html' },

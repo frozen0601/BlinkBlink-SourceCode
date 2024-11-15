@@ -41,7 +41,7 @@ export function createStatsWindow() {
             height: Math.min(650, height * 0.8),
             x: windowBounds.x,
             y: windowBounds.y,
-            resizable: true,
+            resizable: false,
             center: windowBounds.x === undefined || windowBounds.y === undefined,
             autoHideMenuBar: true,
         },
@@ -58,9 +58,9 @@ export function createSettingsWindow() {
     const { width, height } = screen.getPrimaryDisplay().workAreaSize
     settingsWindow = createWindow(
         {
-            width: Math.min(500, width * 0.5),
-            height: Math.min(470, height * 0.5),
-            resizable: true,
+            width: 400,
+            height: 450,
+            resizable: false,
             center: true,
             autoHideMenuBar: true,
         },
@@ -74,11 +74,10 @@ export function createAboutWindow() {
         aboutWindow.focus()
         return
     }
-    const { width, height } = screen.getPrimaryDisplay().workAreaSize
     aboutWindow = createWindow(
         {
-            width: Math.min(430),
-            height: Math.min(650),
+            width: 430,
+            height: 750,
             resizable: false,
             center: true,
             autoHideMenuBar: true,
@@ -89,10 +88,10 @@ export function createAboutWindow() {
 }
 
 function createSkipBreaksSubmenu() {
-    const durations = [5, 10, 30]
+    const durations = [10, 30, 60, 120]
     return durations
         .map((duration) => ({
-            label: `${duration} minutes`,
+            label: duration >= 60 ? `${duration / 60} hr${duration > 60 ? 's' : ''}` : `${duration} mins`,
             click: () => skipBreaksFor(duration),
         }))
         .concat([

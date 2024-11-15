@@ -4,34 +4,38 @@
     <head>
         <meta charset="UTF-8" />
         <title>Settings</title>
+        <link rel="stylesheet" href="shared.css" />
         <link rel="stylesheet" href="settings.css" />
     </head>
     <body>
         <div class="container">
             <h1>Settings</h1>
             <div class="setting-item">
-                <label><input type="checkbox" id="startOnBoot" />Start on system startup</label>
+                <span class="setting-label">Start on system startup</span>
+                <div class="setting-control">
+                    <input type="checkbox" id="startOnBoot" />
+                </div>
             </div>
             <div class="setting-item">
-                <label><input type="checkbox" id="enableAnimations" />Enable break animations</label>
+                <span class="setting-label">Auto dismiss Summary View</span>
+                <div class="setting-control">
+                    <input type="checkbox" id="enableAutoDismiss" />
+                </div>
             </div>
             <div class="setting-item">
-                <label><input type="checkbox" id="enableAutoDismiss" />Auto dismiss Summary View</label>
+                <span class="setting-label">Summary duration (seconds)</span>
+                <div class="setting-control">
+                    <input type="number" id="summaryDuration" min="1" max="60" />
+                </div>
             </div>
             <div class="setting-item">
-                <label>
-                    Dashboard duration (seconds):
-                    <input type="number" id="summaryDuration" min="1" max="60" style="width: 60px; padding: 4px" />
-                </label>
-            </div>
-            <div class="setting-item">
-                <label>
-                    Language:
+                <span class="setting-label">Language</span>
+                <div class="setting-control">
                     <select id="languageSelect">
                         <option value="en">English</option>
                         <!-- Add more languages -->
                     </select>
-                </label>
+                </div>
             </div>
         </div>
 
@@ -48,7 +52,6 @@
             // Load initial settings
             ipcRenderer.invoke('get-settings').then((settings) => {
                 document.getElementById('startOnBoot').checked = settings.startOnBoot
-                document.getElementById('enableAnimations').checked = settings.enableAnimations
                 document.getElementById('enableAutoDismiss').checked = settings.enableAutoDismiss
                 document.getElementById('summaryDuration').value = settings.summaryDuration / 1000
                 document.getElementById('languageSelect').value = settings.language
@@ -57,7 +60,9 @@
 
             function updateDashboardDurationState(enableAutoDismiss) {
                 const durationInput = document.getElementById('summaryDuration')
+                const durationContainer = durationInput.closest('.setting-item')
                 durationInput.disabled = !enableAutoDismiss
+                durationContainer.classList.toggle('disabled', !enableAutoDismiss)
             }
 
             document.getElementById('enableAutoDismiss').addEventListener('change', (e) => {
@@ -68,7 +73,6 @@
             function saveSettings() {
                 const settings = {
                     startOnBoot: document.getElementById('startOnBoot').checked,
-                    enableAnimations: document.getElementById('enableAnimations').checked,
                     enableAutoDismiss: document.getElementById('enableAutoDismiss').checked,
                     language: document.getElementById('languageSelect').value,
                     summaryDuration: document.getElementById('summaryDuration').value * 1000,

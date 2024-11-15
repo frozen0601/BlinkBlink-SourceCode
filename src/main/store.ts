@@ -17,7 +17,6 @@ export const STORE_DEFAULTS: StoreSchema = {
     currentWorkStreakStartTime: Date.now(),
     settings: {
         startOnBoot: false,
-        enableAnimations: true,
         language: 'en',
         enableAutoDismiss: true,
         summaryDuration: 5000,
