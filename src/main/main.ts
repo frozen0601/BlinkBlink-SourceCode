@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, nativeTheme, powerMonitor } from 'electron'
+import { app, BrowserWindow, ipcMain, nativeTheme, powerMonitor, dialog, shell, clipboard } from 'electron'
 import * as path from 'path'
 import { store } from './store'
 import { Settings } from './storeTypes'
@@ -8,6 +8,25 @@ import { showBreakView, showSummaryView, closeAllWindows } from './windows'
 import { DURATIONS } from './constants'
 import { autoUpdater } from 'electron-updater'
 import { createTray, destroyTray, updateTooltip } from './tray'
+import { download } from 'electron-dl'
+import fetch from 'node-fetch'
+
+// Add these interfaces at the top of the file with other imports
+interface GitHubAsset {
+    name: string
+    browser_download_url: string
+}
+
+interface GitHubRelease {
+    tag_name: string
+    assets: GitHubAsset[]
+}
+
+// Alternative: Create a local HTML file and use file:// URL
+
+function getUpdateGuidePath(): string {
+    return path.join(__dirname, 'update-guide.html')
+}
 
 // Stats Management
 export function updateBreakStats(skipped: boolean) {
@@ -119,20 +138,201 @@ ipcMain.handle('get-app-info', () => {
     }
 })
 
-// IPC Handler - Check for updates
-ipcMain.handle('check-for-updates', async () => {
-    if (process.env.NODE_ENV === 'development') {
-        console.log('Simulating update check in development mode.')
-        return new Promise<void>((resolve) => {
-            setTimeout(() => {
-                console.log('Simulated update check complete.')
-                resolve()
-            }, 2000)
-        })
-    } else {
-        return autoUpdater.checkForUpdatesAndNotify()
+// Helper function for showing dialogs
+async function showDialog(options: Electron.MessageBoxOptions): Promise<Electron.MessageBoxReturnValue> {
+    const win = BrowserWindow.getFocusedWindow() || BrowserWindow.getAllWindows()[0]
+    return dialog.showMessageBox(win, options)
+}
+
+const XATTR_COMMAND = 'xattr -c /Applications/BlinkBlink.app'
+
+async function showInstallSteps(): Promise<void> {
+    // Step 1: Installation
+    const { response: installResponse } = await showDialog({
+        type: 'info',
+        buttons: ['Next', 'Exit'],
+        defaultId: 0,
+        cancelId: 1,
+        title: 'Installation - Step 1',
+        message: 'Please drag BlinkBlink.app to your Applications folder.',
+        detail: 'Click "Next" after you have completed this step.',
+    })
+
+    if (installResponse === 1) {
+        app.quit()
+        return
     }
-})
+
+    // Step 2: Terminal command
+    const { response: terminalResponse } = await showDialog({
+        type: 'info',
+        buttons: ['Copy Command & Open Terminal', 'Copy Command', 'Exit'],
+        defaultId: 0,
+        cancelId: 2,
+        title: 'Installation - Step 2',
+        message: 'Final step: Run this command in Terminal to complete installation:',
+        detail: `${XATTR_COMMAND}\n\nThis removes the quarantine attribute and allows the app to run.`,
+    })
+
+    clipboard.writeText(XATTR_COMMAND)
+
+    if (terminalResponse === 0) {
+        // Open Terminal app
+        await shell.openPath('/System/Applications/Utilities/Terminal.app')
+    }
+
+    // Give user time to run the command before exiting
+    const { response: finalResponse } = await showDialog({
+        type: 'info',
+        buttons: ['Exit'],
+        defaultId: 0,
+        title: 'Installation Complete',
+        message: 'After running the command in Terminal, you can restart BlinkBlink.',
+        detail: 'The app will now close. Please relaunch it to use the new version.',
+    })
+
+    app.quit()
+}
+
+async function showUpdateInstructions(): Promise<void> {
+    const { response } = await showDialog({
+        type: 'info',
+        buttons: ['View Installation Guide', 'Later'],
+        defaultId: 0,
+        cancelId: 1,
+        title: 'Update Downloaded',
+        message: 'The update has been downloaded to your Downloads folder.',
+        detail: 'Click "View Installation Guide" to see step-by-step instructions.\n\nYou can complete the installation when you\'re ready to restart the app.',
+    })
+
+    if (response === 0) {
+        await shell.openPath(getUpdateGuidePath())
+    }
+}
+
+async function downloadMacOSUpdate(dmgAsset: GitHubAsset) {
+    let win = BrowserWindow.getFocusedWindow() || BrowserWindow.getAllWindows()[0]
+    let tempWindow: BrowserWindow | null = null
+
+    if (!win) {
+        tempWindow = new BrowserWindow({ show: false })
+        win = tempWindow
+    }
+
+    try {
+        await download(win, dmgAsset.browser_download_url)
+        const dmgPath = path.join(app.getPath('downloads'), dmgAsset.name)
+        await shell.openPath(dmgPath)
+        if (tempWindow) tempWindow.destroy()
+        await showUpdateInstructions()
+    } catch (error) {
+        if (tempWindow) tempWindow.destroy()
+        await showDialog({
+            type: 'error',
+            title: 'Download Failed',
+            message: 'Failed to download the update. Please try again later.',
+        })
+    }
+}
+
+async function checkMacOSUpdate() {
+    const currentVersion = app.getVersion()
+    const latestRelease = await getLatestReleaseFromGitHub()
+    const latestVersion = latestRelease.tag_name.replace('v', '')
+
+    if (latestVersion <= currentVersion) {
+        await showDialog({
+            type: 'info',
+            title: 'No Updates',
+            message: 'You are using the latest version.',
+        })
+        return
+    }
+
+    const { response } = await showDialog({
+        type: 'info',
+        buttons: ['Download', 'Later'],
+        defaultId: 0,
+        cancelId: 1,
+        title: 'Update Available',
+        message: `A new version (${latestVersion}) is available. Do you want to download it?`,
+    })
+
+    if (response !== 0) return
+
+    const dmgAsset = latestRelease.assets.find((asset) => asset.name.endsWith('.dmg'))
+    if (!dmgAsset) {
+        await showDialog({
+            type: 'error',
+            title: 'Error',
+            message: 'DMG file not found in the latest release.',
+        })
+        return
+    }
+
+    await downloadMacOSUpdate(dmgAsset)
+}
+
+async function checkForUpdates(silent = false) {
+    // if (process.env.NODE_ENV === 'development') {
+    //     console.log('Simulating update check...')
+    //     return
+    // }
+
+    try {
+        if (process.platform === 'darwin') {
+            const currentVersion = app.getVersion()
+            const latestRelease = await getLatestReleaseFromGitHub()
+            const latestVersion = latestRelease.tag_name.replace('v', '')
+
+            if (latestVersion <= currentVersion) {
+                if (!silent) {
+                    await showDialog({
+                        type: 'info',
+                        title: 'No Updates',
+                        message: 'You are using the latest version.',
+                    })
+                }
+                return
+            }
+
+            if (silent) {
+                // On startup, just show the download prompt without the "No Updates" message
+                const { response } = await showDialog({
+                    type: 'info',
+                    buttons: ['Download', 'Later'],
+                    defaultId: 0,
+                    cancelId: 1,
+                    title: 'Update Available',
+                    message: `A new version (${latestVersion}) is available. Do you want to download it?`,
+                })
+
+                if (response === 0) {
+                    const dmgAsset = latestRelease.assets.find((asset) => asset.name.endsWith('.dmg'))
+                    if (dmgAsset) {
+                        await downloadMacOSUpdate(dmgAsset)
+                    }
+                }
+            } else {
+                await checkMacOSUpdate() // Use existing detailed update flow for manual checks
+            }
+        } else {
+            await autoUpdater.checkForUpdatesAndNotify()
+        }
+    } catch (error) {
+        console.error('Error checking for updates:', error)
+        if (!silent) {
+            await showDialog({
+                type: 'error',
+                title: 'Update Check Failed',
+                message: 'Failed to check for updates. Please try again later.',
+            })
+        }
+    }
+}
+
+// IPC Handler - Check for updates (manual check)
+ipcMain.handle('check-for-updates', () => checkForUpdates(false))
 
 // IPC Handlers - Settings
 ipcMain.on('save-settings', (event, settings: Settings) => {
@@ -158,7 +358,7 @@ app.whenReady().then(() => {
     updateTooltip()
 
     // Automatically check for updates on startup
-    autoUpdater.checkForUpdatesAndNotify()
+    checkForUpdates(false)
 
     // Initialize auto-start setting based on stored preference
     const settings = store.get('settings')
@@ -170,11 +370,11 @@ app.whenReady().then(() => {
 
     // Handle system resume events
     powerMonitor.on('resume', () => {
-        startWorkTimer() // Timer manager will now handle skip settings internally
+        startWorkTimer()
     })
 
     powerMonitor.on('unlock-screen', () => {
-        startWorkTimer() // Timer manager will now handle skip settings internally
+        startWorkTimer()
     })
 })
 
@@ -188,3 +388,11 @@ app.on('before-quit', () => {
     closeAllWindows()
     destroyTray()
 })
+
+async function getLatestReleaseFromGitHub(): Promise<GitHubRelease> {
+    const response = await fetch('https://api.github.com/repos/frozen0601/BlinkBlink-Releases/releases/latest')
+    if (!response.ok) {
+        throw new Error('Failed to fetch latest release info')
+    }
+    return response.json() as Promise<GitHubRelease>
+}

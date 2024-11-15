@@ -167,7 +167,7 @@ export function createTray() {
         { label: 'Statistics', click: createStatsWindow },
         { label: 'Settings', click: createSettingsWindow },
         { label: 'About', click: createAboutWindow },
-        { label: 'Exit', click: () => app.quit() },
+        { label: 'Quit', click: () => app.quit() },
     ])
     tray.setToolTip('BlinkBlink')
     tray.setContextMenu(contextMenu)
