@@ -44,23 +44,28 @@ class TimerManager {
         }, timeoutDuration)
     }
 
-    private getRemainingTimeInMinutes(): number {
+    getRemainingTimeInMinutes(): number {
         if (!this.#nextBreakTime) return 0
-        return Math.max(0, (this.#nextBreakTime.getTime() - Date.now()) / (60 * 1000))
+        const remaining = (this.#nextBreakTime.getTime() - Date.now()) / (60 * 1000)
+        return Math.ceil(Math.max(0, remaining))
     }
 
     // Public timer operations
     startWorkTimer(): void {
-        if (this.#skipUntil && this.#skipUntil > new Date()) {
+        // Only honor skip if more than 20 minutes remaining
+        if (this.#skipUntil && this.#skipUntil > new Date() && this.#skipUntil.getTime() - Date.now() > 20 * 60 * 1000) {
+            this.setNextBreakTime(this.#skipUntil)
             return
         }
 
+        this.#skipUntil = undefined
         const nextBreak = new Date(Date.now() + DURATIONS.WORK_DURATION)
         this.setNextBreakTime(nextBreak)
     }
 
     skipBreaksFor(minutes: number): void {
         const nextBreak = new Date(Date.now() + minutes * 60 * 1000)
+        this.#skipUntil = nextBreak
         this.setNextBreakTime(nextBreak)
         closeAllWindows()
     }
@@ -73,16 +78,12 @@ class TimerManager {
         closeAllWindows()
     }
 
-    getTimeUntilNextBreak(): string {
-        if (!this.#nextBreakTime) return 'Break timer not running'
-
-        const minutes = this.getRemainingTimeInMinutes()
-        if (minutes <= 0) return 'Break time!'
-
-        const hours = Math.floor(minutes / 60)
-        const mins = Math.floor(minutes % 60)
-
-        return hours > 0 ? `Next break in ${hours}h ${mins}m` : `Next break in ${mins}m`
+    isSkippedUntilEndOfDay(): boolean {
+        if (!this.#skipUntil) return false;
+        const now = new Date();
+        const endOfDay = new Date();
+        endOfDay.setHours(23, 59, 59, 999);
+        return this.#skipUntil.getTime() === endOfDay.getTime();
     }
 }
 
@@ -93,4 +94,5 @@ export const clearTimer = () => timerManager.clearTimer()
 export const isRunning = () => timerManager.isRunning()
 export const skipBreaksFor = (minutes: number) => timerManager.skipBreaksFor(minutes)
 export const skipBreaksUntilEndOfDay = () => timerManager.skipBreaksUntilEndOfDay()
-export const getTimeUntilNextBreak = () => timerManager.getTimeUntilNextBreak()
+export const getRemainingTimeInMinutes = () => timerManager.getRemainingTimeInMinutes()
+export const isSkippedUntilEndOfDay = () => timerManager.isSkippedUntilEndOfDay()

@@ -2,7 +2,7 @@ import { BrowserWindow, screen, Tray, Menu, nativeTheme, app, MenuItem } from 'e
 import { autoUpdater } from 'electron-updater'
 import { store } from './store'
 import path from 'path'
-import { skipBreaksFor, skipBreaksUntilEndOfDay, getTimeUntilNextBreak } from './timer'
+import { skipBreaksFor, skipBreaksUntilEndOfDay, getRemainingTimeInMinutes, isSkippedUntilEndOfDay } from './timer'
 
 let statsWindow: BrowserWindow | null = null
 let settingsWindow: BrowserWindow | null = null
@@ -117,9 +117,29 @@ function getIconPath() {
         : path.join(__dirname, 'icon.png')
 }
 
+function formatDuration(mins: number): string {
+    if (mins < 60) {
+        return `${mins} min${mins !== 1 ? 's' : ''}`
+    }
+
+    const hours = Math.floor(mins / 60)
+    const remainingMins = mins % 60
+    const hourText = `${hours} hr${hours > 1 ? 's' : ''}`
+    return remainingMins > 0 ? `${hourText} ${remainingMins} min` : hourText
+}
+
 export function updateTooltip() {
-    if (tray) {
-        tray.setToolTip(`BlinkBlink - ${getTimeUntilNextBreak()}`)
+    if (!tray) return
+
+    const mins = getRemainingTimeInMinutes()
+    const isRestOfDay = isSkippedUntilEndOfDay()
+
+    const timeText = isRestOfDay ? 'Zzz' : formatDuration(mins)
+    const tooltipText = `BlinkBlink - ${isRestOfDay ? 'Rest of day' : timeText}`
+    tray.setToolTip(tooltipText)
+
+    if (process.platform === 'darwin') {
+        tray.setTitle(timeText)
     }
 }
 

@@ -170,11 +170,11 @@ app.whenReady().then(() => {
 
     // Handle system resume events
     powerMonitor.on('resume', () => {
-        startWorkTimer()
+        startWorkTimer() // Timer manager will now handle skip settings internally
     })
 
     powerMonitor.on('unlock-screen', () => {
-        startWorkTimer()
+        startWorkTimer() // Timer manager will now handle skip settings internally
     })
 })
 
