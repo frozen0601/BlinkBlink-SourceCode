@@ -26,18 +26,16 @@ class WindowManager {
 
     private createOrUpdateWindow(config: WindowConfig): BrowserWindow {
         const { type, display } = config
-        console.log(`${this.windowsByDisplay.has(display.id) ? 'Updating' : 'Creating'} window for display:`, display.id)
-
         let window = this.windowsByDisplay.get(display.id)
         let isNewWindow = false
 
         if (!window) {
             isNewWindow = true
             window = new BrowserWindow({
-                x: display.bounds.x,
-                y: display.bounds.y,
-                width: display.bounds.width,
-                height: display.bounds.height,
+                x: display.workArea.x,
+                y: display.workArea.y,
+                width: display.workArea.width,
+                height: display.workArea.height,
                 closable: false,
                 show: false,
                 transparent: process.platform === 'darwin',
@@ -55,16 +53,15 @@ class WindowManager {
                 backgroundMaterial: 'acrylic',
             })
 
-            window.loadFile(path.join(__dirname, 'unified.html'))
+            window.loadFile(path.join(__dirname, 'overlay.html'))
             window.setAlwaysOnTop(true, 'screen-saver')
 
             if (process.platform === 'darwin') {
                 window.setWindowButtonVisibility(false)
                 window.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
-                window.setPosition(display.bounds.x, display.bounds.y)
-                window.setSize(display.bounds.width, display.bounds.height)
             }
-
+            window.setPosition(display.workArea.x, display.workArea.y)
+            window.setSize(display.workArea.width, display.workArea.height)
             this.setupWindowEvents(window, display.id)
             this.windowsByDisplay.set(display.id, window)
         }
@@ -72,7 +69,6 @@ class WindowManager {
         if (isNewWindow) {
             // For new windows, wait for ready-to-show
             window.once('ready-to-show', () => {
-                console.log(`New window ready on display ${display.id}, showing ${type} view`)
                 window.show()
                 window.setFocusable(false)
                 window.webContents.send('show-view', type)
@@ -80,7 +76,6 @@ class WindowManager {
             })
         } else {
             // For existing windows, update view immediately
-            console.log(`Updating existing window on display ${display.id} to ${type} view`)
             window.webContents.send('show-view', type)
             this.startCountdown(window, type, config)
         }
@@ -149,12 +144,6 @@ class WindowManager {
         }
     }
 
-    private closeWindow(window: BrowserWindow) {
-        // Set closable flag to true before closing
-        window.closable = true
-        window.close()
-    }
-
     showBreakView() {
         const displays = screen.getAllDisplays()
         displays.forEach((display) => {
@@ -177,8 +166,6 @@ class WindowManager {
         // Clear existing intervals before updating views
         this.activeIntervals.forEach(({ interval }) => clearInterval(interval))
         this.activeIntervals = []
-
-        console.log(`Updating windows to dashboard view for ${displays.length} displays`)
         displays.forEach((display) => {
             this.createOrUpdateWindow({
                 type: 'summary',
@@ -202,10 +189,6 @@ class WindowManager {
         }
         this.windowsByDisplay.clear()
     }
-
-    // Replace both closeBreakView and closeSummaryView with closeAllWindows
-    closeBreakView = this.closeAllWindows.bind(this)
-    closeSummaryView = this.closeAllWindows.bind(this)
 }
 
 // Create singleton instance
@@ -216,6 +199,5 @@ nativeTheme.themeSource = 'system'
 
 // Export methods
 export const showBreakView = () => windowManager.showBreakView()
-export const closeBreakView = () => windowManager.closeBreakView()
 export const showSummaryView = () => windowManager.showSummaryView()
-export const closeSummaryView = () => windowManager.closeSummaryView()
+export const closeAllWindows = () => windowManager.closeAllWindows()

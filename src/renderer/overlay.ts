@@ -63,7 +63,6 @@ class UnifiedUI {
 
     private initializeViewSwitching() {
         this.ipc.on('show-view', (_, view: View) => {
-            console.log(`Showing view: ${view}`)
             document.body.className = `ready show-${view}`
 
             if (view === View.Summary) {
@@ -105,8 +104,10 @@ class UnifiedUI {
         requestAnimationFrame(() => (progressBar.style.transform = 'scaleX(1)'))
     }
 
-    private handleSkipClick() {
+    private async handleSkipClick() {
         if (!this.skipConfirmed) {
+            const stats = (await this.ipc.invoke('get-stats')) as Stats
+            this.elements.warningText.textContent = `You're on a streak of ${stats.breakStreakCount} breaks. Skipping will reset it. Continue?`
             this.elements.warningText.style.display = 'block'
             this.elements.skipButton.textContent = 'Confirm'
             this.skipConfirmed = true
@@ -205,6 +206,7 @@ class UnifiedUI {
         if (numberElement) numberElement.textContent = count.toString()
 
         if (count === nextMilestone) {
+            console.log('Milestone reached:', count)
             this.elements.centralCircle.classList.add('milestone-reached')
             setTimeout(() => {
                 this.elements.centralCircle.classList.remove('milestone-reached')

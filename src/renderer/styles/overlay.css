@@ -1,0 +1,401 @@
+/* Theme Variables */
+:root {
+    /* Colors */
+    --text-primary: #ffffff;
+    --text-secondary: rgba(255, 255, 255, 0.7);
+    --bg-overlay: rgba(0, 0, 0, 0.2);
+    --bg-element: rgba(255, 255, 255, 0.1);
+    --bg-element-hover: rgba(255, 255, 255, 0.2);
+    --accent-color: #4caf50;
+    --warning-color: darkred;
+    --progress-bg: rgba(255, 255, 255, 0.2);
+    --milestone-color: #ccc;
+
+    /* Spacing */
+    --spacing-sm: 0.5vh;
+    --spacing-md: 2vh;
+    --spacing-lg: 3vh;
+    --spacing-xl: 4vh;
+
+    /* Sizes */
+    --circle-size: 10vh;
+    --icon-size: 4vw;
+    --border-radius: 5px;
+
+    /* Add new size variables */
+    --heading-size-large: 6vh;
+    --heading-size-medium: 3vh;
+    --eye-animation-size: 6vh;
+}
+
+/* Theme Variants */
+@media (prefers-color-scheme: light) {
+    :root {
+        --text-primary: #000000;
+        --text-secondary: rgba(0, 0, 0, 0.7);
+        --bg-overlay: rgba(255, 255, 255, 0.2);
+        --bg-element: rgba(0, 0, 0, 0.1);
+        --bg-element-hover: rgba(0, 0, 0, 0.2);
+        --milestone-color: #666;
+    }
+}
+
+/* Reset & Base Styles */
+html,
+body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background: transparent;
+    color: var(--text-primary);
+    font-family: Arial, sans-serif;
+    user-select: none;
+}
+
+body {
+    opacity: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    background-color: var(--bg-overlay);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+}
+
+body.ready {
+    opacity: 1;
+}
+
+/* Layout Components */
+.content-container {
+    max-width: 800px;
+    width: 90%;
+    margin: 0 auto;
+    padding: var(--spacing-md) 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    opacity: 0;
+    transition: opacity 0.3s ease-out;
+}
+
+.ready .content-container {
+    opacity: 1;
+}
+
+/* View Components */
+.view {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+}
+
+.show-break #break-view,
+.show-summary #summary-view {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Break View Components */
+.break-view {
+    --break-spacing: 30vh;
+}
+
+.break-view h1 {
+    font-size: var(--heading-size-large);
+    margin: var(--break-spacing) 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2vh;
+}
+
+/* Summary View Components */
+.summary-view h1 {
+    font-size: var(--heading-size-large);
+}
+
+/* Common Elements */
+h1 {
+    font-size: var(--heading-size-large);
+    margin: var(--spacing-md) 0;
+    line-height: 1.2;
+    user-select: none;
+}
+
+h1,
+button,
+#warning-text,
+.central-circle .text {
+    user-select: none;
+}
+
+/* Warning & Controls */
+#warning-text {
+    display: none;
+    color: var(--text-primary); /* Changed to primary text color */
+    background: var(--warning-color); /* Changed to warning color */
+    padding: var(--spacing-sm) 1vw;
+    border-radius: var(--border-radius);
+    font-size: 1vw;
+    text-align: center;
+    position: absolute;
+    bottom: 10vh;
+    user-select: none;
+}
+
+#skip-button {
+    position: absolute;
+    bottom: 5vh;
+    padding: var(--spacing-sm) 1vw;
+    font-size: 0.8vw;
+    cursor: pointer;
+    background: var(--bg-element);
+    color: var(--text-secondary);
+    border: none;
+    border-radius: var(--border-radius);
+    transition: background 0.3s, color 0.3s;
+}
+
+#skip-button:hover {
+    background: var(--bg-element-hover);
+    color: var(--text-primary);
+}
+
+/* Progress Components */
+#progress-tracker {
+    width: 100%;
+    position: relative;
+    margin: 40px auto;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background: var(--progress-bg);
+    border-radius: 4px;
+    position: relative;
+    overflow: visible;
+}
+
+.progress-fill {
+    height: 100%;
+    background: var(--accent-color);
+    transition: width 0.3s ease;
+    border-radius: 4px;
+}
+
+/* Milestone Components */
+.milestone-markers {
+    position: absolute;
+    width: 100%;
+    top: -25px;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-between;
+}
+
+.milestone-marker {
+    position: relative;
+    color: var(--milestone-color);
+    font-size: 0.9rem;
+    transform: translateX(50%);
+    margin-right: -100%;
+}
+
+.milestone-marker:last-child {
+    transform: translateX(0);
+    margin-right: 0;
+}
+
+.milestone-marker.reached {
+    color: var(--accent-color);
+}
+
+.milestone-marker.current {
+    color: var(--accent-color);
+    font-weight: bold;
+}
+
+/* Circle Components */
+.central-circle-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: var(--spacing-lg);
+}
+
+.central-circle {
+    width: var(--circle-size);
+    height: var(--circle-size);
+    border: 3px solid var(--accent-color);
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 2.4rem;
+    font-weight: bold;
+    color: var(--accent-color);
+    background-color: var(--bg-overlay);
+    position: relative;
+    cursor: pointer;
+}
+
+.central-circle .number {
+    transition: opacity 0.3s ease-in-out;
+}
+
+.central-circle .text {
+    position: absolute;
+    font-size: 1.2rem;
+    color: var(--text-primary);
+    text-align: center;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+    pointer-events: none;
+    user-select: none;
+}
+
+.central-circle:hover .number {
+    opacity: 0;
+}
+
+.central-circle:hover .text {
+    opacity: 1;
+}
+
+/* Button Components */
+.button-base,
+.dismiss-button,
+#dismiss-button {
+    padding: 10px 20px;
+    font-size: 16px;
+    background: var(--bg-element);
+    border: none;
+    color: var(--text-primary);
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.button-base:hover,
+.dismiss-button:hover,
+#dismiss-button:hover {
+    background: var(--bg-element-hover);
+}
+
+.dismiss-button,
+#dismiss-button {
+    position: relative;
+    overflow: hidden;
+}
+
+.dismiss-button .progress-bar,
+#dismiss-button .progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: var(--accent-color);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform linear;
+}
+
+/* Animations */
+@keyframes milestone-hit {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.3);
+        background-color: var(--accent-color);
+        border-color: var(--accent-color);
+        color: var(--text-primary);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+@keyframes next-milestone-blink {
+    0% {
+        border-color: var(--milestone-color);
+    }
+    50% {
+        border-color: var(--accent-color);
+        color: var(--accent-color);
+    }
+    100% {
+        border-color: var(--milestone-color);
+    }
+}
+
+.circle.milestone-hit {
+    animation: milestone-hit 1s ease-in-out infinite;
+}
+
+.circle.next-milestone {
+    animation: next-milestone-blink 2s ease-in-out infinite;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 1200px) {
+    :root {
+        --heading-size-large: 7vh;
+        --heading-size-medium: 5vh;
+        --eye-animation-size: 5vh;
+    }
+}
+
+@media (max-width: 800px) {
+    :root {
+        --heading-size-large: 6vh;
+        --heading-size-medium: 4vh;
+        --eye-animation-size: 4vh;
+    }
+}
+
+@media (max-width: 600px) {
+    :root {
+        --heading-size-large: 5vh;
+        --heading-size-medium: 3vh;
+        --eye-animation-size: 3vh;
+        --circle-size: 60px;
+        --icon-size: 40px;
+    }
+
+    .circle {
+        width: var(--icon-size);
+        height: var(--icon-size);
+        font-size: 1rem;
+    }
+
+    .central-circle {
+        width: var(--circle-size);
+        height: var(--circle-size);
+        font-size: 3rem;
+        top: -30px;
+    }
+
+    h1 {
+        font-size: var(--heading-size-large);
+    }
+}
+
+#eye-animation {
+    width: var(--eye-animation-size);
+    height: var(--eye-animation-size);
+    vertical-align: middle;
+}

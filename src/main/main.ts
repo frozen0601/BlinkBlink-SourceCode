@@ -4,7 +4,7 @@ import { store } from './store'
 import { Settings } from './storeTypes'
 import * as fs from 'fs'
 import { startWorkTimer, clearTimer, isRunning } from './timer'
-import { showBreakView, closeBreakView, showSummaryView, closeSummaryView } from './windows'
+import { showBreakView, showSummaryView, closeAllWindows } from './windows'
 import { DURATIONS } from './constants'
 import { autoUpdater } from 'electron-updater'
 import { createTray } from './tray'
@@ -86,7 +86,7 @@ ipcMain.on('start-break-countdown', () => {
 
 ipcMain.on('break-skip', () => {
     updateBreakStats(true)
-    closeBreakView()
+    closeAllWindows()
     startWorkTimer()
 })
 
@@ -97,7 +97,7 @@ ipcMain.on('break-complete', () => {
 
 ipcMain.on('summary-dismissed', () => {
     startWorkTimer()
-    closeSummaryView()
+    closeAllWindows()
 })
 
 // Data access handlers
@@ -175,6 +175,5 @@ app.on('window-all-closed', () => {
 // Gracefully handle app quitting
 app.on('before-quit', () => {
     clearTimer()
-    closeBreakView()
-    closeSummaryView()
+    closeAllWindows()
 })

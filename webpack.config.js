@@ -34,18 +34,24 @@ const mainConfig = {
 const rendererConfig = {
     ...commonConfig,
     entry: {
-        unified: './src/renderer/unified.ts', // We only need unified now
+        overlay: './src/renderer/overlay.ts',
     },
     target: 'electron-renderer',
     output: {
         path: path.resolve(__dirname, 'dist'),
-        filename: 'unified.js',
+        filename: 'overlay.js',
     },
     plugins: [
         new CopyPlugin({
             patterns: [
-                { from: 'src/renderer/unified.html', to: 'unified.html' },
-                { from: 'src/renderer/styles/unified.css', to: 'unified.css' },
+                { from: 'src/renderer/overlay.html', to: 'overlay.html' },
+                { from: 'src/renderer/styles/overlay.css', to: 'overlay.css' },
+                { from: 'src/renderer/settings.html', to: 'settings.html' },
+                { from: 'src/renderer/styles/settings.css', to: 'settings.css' },
+                { from: 'src/renderer/about.html', to: 'about.html' },
+                { from: 'src/renderer/styles/about.css', to: 'about.css' },
+                { from: 'src/renderer/stats.html', to: 'stats.html' },
+                { from: 'src/renderer/styles/stats.css', to: 'stats.css' },
                 { from: 'assets/icon.png', to: 'icon.png' },
                 { from: 'assets/rolling_eyes.gif', to: 'rolling_eyes.gif' },
             ],
