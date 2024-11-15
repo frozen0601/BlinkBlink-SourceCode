@@ -140,8 +140,8 @@ button,
 /* Warning & Controls */
 #warning-text {
     display: none;
-    color: var(--text-primary); /* Changed to primary text color */
-    background: var(--warning-color); /* Changed to warning color */
+    color: var(--text-primary);
+    background: var(--warning-color);
     padding: var(--spacing-sm) 1vw;
     border-radius: var(--border-radius);
     font-size: 1vw;
@@ -225,6 +225,15 @@ button,
 .milestone-marker.current {
     color: var(--accent-color);
     font-weight: bold;
+}
+
+.milestone-marker.milestone-hit {
+    animation: milestone-hit 1s ease-in-out infinite;
+}
+
+.milestone-marker.next-milestone {
+    animation: next-milestone-blink 2s ease-in-out infinite;
+    color: var(--milestone-color);
 }
 
 /* Circle Components */
@@ -320,7 +329,6 @@ button,
     }
     50% {
         transform: scale(1.3);
-        background-color: var(--accent-color);
         border-color: var(--accent-color);
         color: var(--text-primary);
     }
@@ -331,14 +339,13 @@ button,
 
 @keyframes next-milestone-blink {
     0% {
-        border-color: var(--milestone-color);
+        color: var(--milestone-color);
     }
     50% {
-        border-color: var(--accent-color);
         color: var(--accent-color);
     }
     100% {
-        border-color: var(--milestone-color);
+        color: var(--milestone-color);
     }
 }
 

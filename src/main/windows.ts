@@ -32,10 +32,10 @@ class WindowManager {
         if (!window) {
             isNewWindow = true
             window = new BrowserWindow({
-                x: display.workArea.x,
-                y: display.workArea.y,
-                width: display.workArea.width,
-                height: display.workArea.height,
+                x: display.bounds.x,
+                y: display.bounds.y,
+                width: display.bounds.width,
+                height: display.bounds.height,
                 closable: false,
                 show: false,
                 transparent: process.platform === 'darwin',
@@ -60,8 +60,8 @@ class WindowManager {
                 window.setWindowButtonVisibility(false)
                 window.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
             }
-            window.setPosition(display.workArea.x, display.workArea.y)
-            window.setSize(display.workArea.width, display.workArea.height)
+            window.setPosition(display.bounds.x, display.bounds.y)
+            window.setSize(display.bounds.width, display.bounds.height)
             this.setupWindowEvents(window, display.id)
             this.windowsByDisplay.set(display.id, window)
         }
@@ -69,13 +69,12 @@ class WindowManager {
         if (isNewWindow) {
             // For new windows, wait for ready-to-show
             window.once('ready-to-show', () => {
+                window.webContents.send('show-view', type)
                 window.show()
                 window.setFocusable(false)
-                window.webContents.send('show-view', type)
                 this.startCountdown(window, type, config)
             })
         } else {
-            // For existing windows, update view immediately
             window.webContents.send('show-view', type)
             this.startCountdown(window, type, config)
         }

@@ -157,19 +157,24 @@ class UnifiedUI {
     private updateMilestoneMarkers(count: number, milestones: number[]): void {
         const container = this.elements.progressTracker
         const fullMilestones = [0, ...milestones]
+        const hitMilestone = milestones.some((m) => m === count)
+        const nextMilestone = !hitMilestone ? milestones.find((m) => m > count) : null
 
         container.innerHTML = `
             <div class="milestone-markers">
                 ${fullMilestones
-                    .map(
-                        (milestone) => `
-                    <div class="milestone-marker ${count >= milestone ? 'reached' : ''} ${
-                            count < milestone && count >= (fullMilestones[fullMilestones.indexOf(milestone) - 1] || 0) ? 'current' : ''
-                        } ${milestone === Math.max(...fullMilestones) && count >= milestone ? 'reached' : ''}">
-                        ${milestone}
-                    </div>
-                `
-                    )
+                    .map((milestone) => {
+                        const isHit = count === milestone
+                        const isNext = milestone === nextMilestone
+                        return `
+                            <div class="milestone-marker
+                                ${count >= milestone ? 'reached' : ''}
+                                ${isHit ? 'milestone-hit' : ''}
+                                ${isNext ? 'next-milestone' : ''}">
+                                ${milestone}
+                            </div>
+                        `
+                    })
                     .join('')}
             </div>
             <div class="progress-bar">
@@ -204,14 +209,6 @@ class UnifiedUI {
     private updateCentralCircle(count: number, prevMilestone: number, nextMilestone: number): void {
         const numberElement = this.elements.centralCircle.querySelector('.number')
         if (numberElement) numberElement.textContent = count.toString()
-
-        if (count === nextMilestone) {
-            console.log('Milestone reached:', count)
-            this.elements.centralCircle.classList.add('milestone-reached')
-            setTimeout(() => {
-                this.elements.centralCircle.classList.remove('milestone-reached')
-            }, 1000)
-        }
     }
 
     private calculateMilestones(currentStreak: number): number[] {
