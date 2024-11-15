@@ -25,7 +25,7 @@ interface GitHubRelease {
 // Alternative: Create a local HTML file and use file:// URL
 
 function getUpdateGuidePath(): string {
-    return path.join(__dirname, 'update-guide.html')
+    return path.join(__dirname, 'mac-update-guide.html')
 }
 
 // Stats Management
@@ -141,14 +141,17 @@ ipcMain.handle('get-app-info', () => {
 // Helper function for showing dialogs
 async function showDialog(options: Electron.MessageBoxOptions): Promise<Electron.MessageBoxReturnValue> {
     const win = BrowserWindow.getFocusedWindow() || BrowserWindow.getAllWindows()[0]
-    return dialog.showMessageBox(win, options)
+    return dialog.showMessageBox(win, {
+        ...options,
+        icon: path.join(__dirname, 'icon.png'),  // Add custom icon to all dialogs
+    })
 }
 
 const XATTR_COMMAND = 'xattr -c /Applications/BlinkBlink.app'
 
 async function showInstallSteps(): Promise<void> {
     // Step 1: Installation
-    const { response: installResponse } = await showDialog({
+    const { response: installResponse } = await dialog.showMessageBox({
         type: 'info',
         buttons: ['Next', 'Exit'],
         defaultId: 0,
@@ -156,6 +159,7 @@ async function showInstallSteps(): Promise<void> {
         title: 'Installation - Step 1',
         message: 'Please drag BlinkBlink.app to your Applications folder.',
         detail: 'Click "Next" after you have completed this step.',
+        icon: path.join(__dirname, 'icon.png'),  // Add custom icon
     })
 
     if (installResponse === 1) {

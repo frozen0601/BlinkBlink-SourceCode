@@ -19,8 +19,8 @@
             "!**/node_modules/*/{test,__tests__,tests,powered-test,example,examples}",
             "!**/node_modules/.bin",
             "!**/*.{map,ts}",
-            "src/resources/update-guide.html",
-            "dist/update-guide.html"
+            "src/resources/mac-update-guide.html",
+            "dist/mac-update-guide.html"
         ],
         "extraResources": [
             {
