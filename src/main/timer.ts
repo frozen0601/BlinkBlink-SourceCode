@@ -1,13 +1,12 @@
 import { ipcMain } from 'electron'
 import { DURATIONS } from './constants'
 import { closeAllWindows } from './windows'
-import { updateBreakStats } from './main'
 
 class TimerManager {
     private static instance: TimerManager
-    private currentTimer?: NodeJS.Timeout
-    private skipUntil?: Date
-    private isTimerRunning = false
+    #currentTimer?: NodeJS.Timeout
+    #nextBreakTime?: Date
+    #skipUntil?: Date
 
     private constructor() {}
 
@@ -18,52 +17,80 @@ class TimerManager {
         return TimerManager.instance
     }
 
-    clearTimer() {
-        if (this.currentTimer) {
-            clearTimeout(this.currentTimer)
-            this.currentTimer = undefined
-        }
-        this.isTimerRunning = false
+    // Timer state management
+    isRunning(): boolean {
+        return !!this.#currentTimer
     }
 
-    startWorkTimer() {
-        if (this.skipUntil && this.skipUntil > new Date()) {
+    clearTimer(): void {
+        if (this.#currentTimer) {
+            clearTimeout(this.#currentTimer)
+            this.#currentTimer = undefined
+        }
+    }
+
+    // Timer calculations
+    private setNextBreakTime(date: Date): void {
+        this.#nextBreakTime = date
+        const timeoutDuration = date.getTime() - Date.now()
+
+        this.clearTimer()
+        this.#currentTimer = setTimeout(async () => {
+            try {
+                ipcMain.emit('start-break-countdown')
+            } catch (error) {
+                console.error('Error during break countdown:', error)
+            }
+        }, timeoutDuration)
+    }
+
+    private getRemainingTimeInMinutes(): number {
+        if (!this.#nextBreakTime) return 0
+        return Math.max(0, (this.#nextBreakTime.getTime() - Date.now()) / (60 * 1000))
+    }
+
+    // Public timer operations
+    startWorkTimer(): void {
+        if (this.#skipUntil && this.#skipUntil > new Date()) {
             return
         }
 
-        this.clearTimer()
-
-        this.currentTimer = setTimeout(() => {
-            ipcMain.emit('start-break-countdown')
-        }, DURATIONS.WORK_DURATION)
-        this.isTimerRunning = true
+        const nextBreak = new Date(Date.now() + DURATIONS.WORK_DURATION)
+        this.setNextBreakTime(nextBreak)
     }
 
-    skipBreaksFor(minutes: number) {
-        this.skipUntil = new Date(Date.now() + minutes * 60 * 1000)
-        updateBreakStats(true)
-        this.startWorkTimer()
+    skipBreaksFor(minutes: number): void {
+        const nextBreak = new Date(Date.now() + minutes * 60 * 1000)
+        this.setNextBreakTime(nextBreak)
         closeAllWindows()
     }
 
-    skipBreaksUntilEndOfDay() {
+    skipBreaksUntilEndOfDay(): void {
         const endOfDay = new Date()
         endOfDay.setHours(23, 59, 59, 999)
-        this.skipUntil = endOfDay
-        updateBreakStats(true)
-        this.startWorkTimer()
+        this.#skipUntil = endOfDay
+        this.setNextBreakTime(endOfDay)
         closeAllWindows()
     }
 
-    isRunning() {
-        return this.isTimerRunning
+    getTimeUntilNextBreak(): string {
+        if (!this.#nextBreakTime) return 'Break timer not running'
+
+        const minutes = this.getRemainingTimeInMinutes()
+        if (minutes <= 0) return 'Break time!'
+
+        const hours = Math.floor(minutes / 60)
+        const mins = Math.floor(minutes % 60)
+
+        return hours > 0 ? `Next break in ${hours}h ${mins}m` : `Next break in ${mins}m`
     }
 }
 
-// Export singleton methods
+// Export singleton interface
 const timerManager = TimerManager.getInstance()
 export const startWorkTimer = () => timerManager.startWorkTimer()
 export const clearTimer = () => timerManager.clearTimer()
 export const isRunning = () => timerManager.isRunning()
 export const skipBreaksFor = (minutes: number) => timerManager.skipBreaksFor(minutes)
 export const skipBreaksUntilEndOfDay = () => timerManager.skipBreaksUntilEndOfDay()
+export const getTimeUntilNextBreak = () => timerManager.getTimeUntilNextBreak()

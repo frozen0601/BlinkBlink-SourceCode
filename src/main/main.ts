@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, screen, nativeTheme } from 'electron'
+import { app, BrowserWindow, ipcMain, nativeTheme, powerMonitor } from 'electron'
 import * as path from 'path'
 import { store } from './store'
 import { Settings } from './storeTypes'
@@ -7,7 +7,7 @@ import { startWorkTimer, clearTimer, isRunning } from './timer'
 import { showBreakView, showSummaryView, closeAllWindows } from './windows'
 import { DURATIONS } from './constants'
 import { autoUpdater } from 'electron-updater'
-import { createTray } from './tray'
+import { createTray, destroyTray, updateTooltip } from './tray'
 
 // Stats Management
 export function updateBreakStats(skipped: boolean) {
@@ -155,6 +155,7 @@ app.whenReady().then(() => {
     if (process.platform === 'darwin') app.dock.hide()
     createTray()
     startWorkTimer()
+    updateTooltip()
 
     // Automatically check for updates on startup
     autoUpdater.checkForUpdatesAndNotify()
@@ -166,6 +167,15 @@ app.whenReady().then(() => {
         openAsHidden: true,
         path: app.getPath('exe'),
     })
+
+    // Handle system resume events
+    powerMonitor.on('resume', () => {
+        startWorkTimer()
+    })
+
+    powerMonitor.on('unlock-screen', () => {
+        startWorkTimer()
+    })
 })
 
 app.on('window-all-closed', () => {
@@ -176,4 +186,5 @@ app.on('window-all-closed', () => {
 app.on('before-quit', () => {
     clearTimer()
     closeAllWindows()
+    destroyTray()
 })

@@ -2,12 +2,13 @@ import { BrowserWindow, screen, Tray, Menu, nativeTheme, app, MenuItem } from 'e
 import { autoUpdater } from 'electron-updater'
 import { store } from './store'
 import path from 'path'
-import { skipBreaksFor, skipBreaksUntilEndOfDay } from './timer'
+import { skipBreaksFor, skipBreaksUntilEndOfDay, getTimeUntilNextBreak } from './timer'
 
 let statsWindow: BrowserWindow | null = null
 let settingsWindow: BrowserWindow | null = null
 let aboutWindow: BrowserWindow | null = null
 let tray: Tray | null = null
+let tooltipUpdateInterval: NodeJS.Timeout | null = null
 
 function createWindow(options: Electron.BrowserWindowConstructorOptions, filePath: string, onClose: () => void) {
     const window = new BrowserWindow({
@@ -88,16 +89,22 @@ export function createAboutWindow() {
 }
 
 function createSkipBreaksSubmenu() {
-    const durations = [10, 30, 60, 120]
+    const durations = [30, 60, 120, 180]
     return durations
         .map((duration) => ({
             label: duration >= 60 ? `${duration / 60} hr${duration > 60 ? 's' : ''}` : `${duration} mins`,
-            click: () => skipBreaksFor(duration),
+            click: () => {
+                skipBreaksFor(duration)
+                updateTooltip()
+            },
         }))
         .concat([
             {
                 label: 'Rest of the day',
-                click: () => skipBreaksUntilEndOfDay(),
+                click: () => {
+                    skipBreaksUntilEndOfDay()
+                    updateTooltip()
+                },
             },
         ])
 }
@@ -108,6 +115,12 @@ function getIconPath() {
         : process.platform === 'darwin'
         ? path.join(__dirname, 'icon.icns')
         : path.join(__dirname, 'icon.png')
+}
+
+export function updateTooltip() {
+    if (tray) {
+        tray.setToolTip(`BlinkBlink - ${getTimeUntilNextBreak()}`)
+    }
 }
 
 export function createTray() {
@@ -121,6 +134,11 @@ export function createTray() {
     if (process.platform === 'darwin') trayIcon = trayIcon.resize({ width: 16 })
     trayIcon.setTemplateImage(true)
     tray = new Tray(trayIcon)
+
+    // Set up tooltip update interval
+    updateTooltip()
+    tooltipUpdateInterval = setInterval(updateTooltip, 30000) // Update every 30 seconds
+
     let contextMenu = Menu.buildFromTemplate([
         {
             label: 'Skip Breaks',
@@ -143,4 +161,16 @@ export function createTray() {
         contextMenu = Menu.buildFromTemplate(updatedMenu)
         if (tray) tray.setContextMenu(contextMenu)
     })
+}
+
+// Add cleanup function
+export function destroyTray() {
+    if (tooltipUpdateInterval) {
+        clearInterval(tooltipUpdateInterval)
+        tooltipUpdateInterval = null
+    }
+    if (tray) {
+        tray.destroy()
+        tray = null
+    }
 }
