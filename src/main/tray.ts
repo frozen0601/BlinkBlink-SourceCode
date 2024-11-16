@@ -1,8 +1,9 @@
 import { BrowserWindow, screen, Tray, Menu, nativeTheme, app, MenuItem } from 'electron'
 import { autoUpdater } from 'electron-updater'
-import { store } from './store'
 import path from 'path'
+import { store } from './store'
 import { skipBreaksFor, skipBreaksUntilEndOfDay, getRemainingTimeInMinutes, isSkippedUntilEndOfDay } from './timer'
+import { getWindowPosition, saveWindowPosition } from './settings'
 
 let statsWindow: BrowserWindow | null = null
 let settingsWindow: BrowserWindow | null = null
@@ -10,7 +11,7 @@ let aboutWindow: BrowserWindow | null = null
 let tray: Tray | null = null
 let tooltipUpdateInterval: NodeJS.Timeout | null = null
 
-function createWindow(options: Electron.BrowserWindowConstructorOptions, filePath: string, onClose: () => void) {
+function createWindow(options: Electron.BrowserWindowConstructorOptions, filePath: string, onClose: () => void, windowName?: string) {
     const window = new BrowserWindow({
         ...options,
         show: false,
@@ -21,6 +22,11 @@ function createWindow(options: Electron.BrowserWindowConstructorOptions, filePat
             contextIsolation: false,
         },
     })
+
+    if (windowName) {
+        window.on('moved', () => saveWindowPosition(window, windowName))
+        window.on('close', () => saveWindowPosition(window, windowName))
+    }
 
     window.loadFile(path.join(__dirname, filePath))
     window.on('closed', onClose)
@@ -34,20 +40,20 @@ export function createStatsWindow() {
         statsWindow.focus()
         return
     }
-    const { width, height } = screen.getPrimaryDisplay().workAreaSize
-    const windowBounds = store.get('statsWindowBounds', { width, height, x: undefined, y: undefined })
+    const position = getWindowPosition('stats')
+
     statsWindow = createWindow(
         {
-            width: Math.min(600, width * 0.8),
-            height: Math.min(650, height * 0.8),
-            x: windowBounds.x,
-            y: windowBounds.y,
+            width: 600,
+            height: 650,
+            ...position,
             resizable: false,
-            center: windowBounds.x === undefined || windowBounds.y === undefined,
+            center: !position.x && !position.y,
             autoHideMenuBar: true,
         },
         'stats.html',
-        () => (statsWindow = null)
+        () => (statsWindow = null),
+        'stats'
     )
 }
 
@@ -56,17 +62,20 @@ export function createSettingsWindow() {
         settingsWindow.focus()
         return
     }
-    const { width, height } = screen.getPrimaryDisplay().workAreaSize
+    const position = getWindowPosition('settings')
+
     settingsWindow = createWindow(
         {
             width: 400,
             height: 450,
+            ...position,
             resizable: false,
-            center: true,
+            center: !position.x && !position.y,
             autoHideMenuBar: true,
         },
         'settings.html',
-        () => (settingsWindow = null)
+        () => (settingsWindow = null),
+        'settings'
     )
 }
 
@@ -75,16 +84,20 @@ export function createAboutWindow() {
         aboutWindow.focus()
         return
     }
+    const position = getWindowPosition('about')
+
     aboutWindow = createWindow(
         {
             width: 430,
             height: 750,
+            ...position,
             resizable: false,
-            center: true,
+            center: !position.x && !position.y,
             autoHideMenuBar: true,
         },
         'about.html',
-        () => (aboutWindow = null)
+        () => (aboutWindow = null),
+        'about'
     )
 }
 

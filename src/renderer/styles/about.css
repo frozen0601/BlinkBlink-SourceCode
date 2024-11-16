@@ -71,10 +71,7 @@ body {
     height: 120px;
     margin: var(--spacing-unit) auto;
     transition: transform var(--transition-speed);
-}
-
-.logo:hover {
-    transform: scale(1.05);
+    -webkit-user-drag: none;
 }
 
 .author {
@@ -191,7 +188,8 @@ body {
 }
 
 @keyframes shake {
-    0%, 100% {
+    0%,
+    100% {
         transform: translateX(0);
     }
     25% {

@@ -88,6 +88,7 @@
     "dependencies": {
         "date-fns": "^4.1.0",
         "electron-dl": "^4.0.0",
+        "electron-settings": "^4.0.4",
         "electron-store": "^8.2.0",
         "electron-updater": "^6.3.9",
         "node-fetch": "^3.3.2",
