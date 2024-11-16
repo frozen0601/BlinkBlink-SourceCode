@@ -1,9 +1,9 @@
-import { BrowserWindow, screen, Tray, Menu, nativeTheme, app, MenuItem } from 'electron'
+import { BrowserWindow, Tray, Menu, nativeTheme, app, MenuItem } from 'electron'
 import { autoUpdater } from 'electron-updater'
 import path from 'path'
-import { store } from './store'
 import { skipBreaksFor, skipBreaksUntilEndOfDay, getRemainingTimeInMinutes, isSkippedUntilEndOfDay } from './timer'
-import { getWindowPosition, saveWindowPosition } from './settings'
+import { getWindowPosition, saveWindowPosition } from './store'
+import { TrayWindowPosition } from './types'
 
 let statsWindow: BrowserWindow | null = null
 let settingsWindow: BrowserWindow | null = null
@@ -11,9 +11,11 @@ let aboutWindow: BrowserWindow | null = null
 let tray: Tray | null = null
 let tooltipUpdateInterval: NodeJS.Timeout | null = null
 
-function createWindow(options: Electron.BrowserWindowConstructorOptions, filePath: string, onClose: () => void, windowName?: string) {
+function createWindow(options: Electron.BrowserWindowConstructorOptions, filePath: string, onClose: () => void, windowName: string) {
+    const position = getWindowPosition(windowName)
     const window = new BrowserWindow({
         ...options,
+        ...(position.x && position.y ? position : {}),
         show: false,
         backgroundColor: nativeTheme.shouldUseDarkColors ? '#1a1a1a' : '#f5f5f5',
         icon: getIconPath(),
@@ -45,7 +47,7 @@ export function createStatsWindow() {
     statsWindow = createWindow(
         {
             width: 600,
-            height: 650,
+            height: 660,
             ...position,
             resizable: false,
             center: !position.x && !position.y,
@@ -67,7 +69,7 @@ export function createSettingsWindow() {
     settingsWindow = createWindow(
         {
             width: 400,
-            height: 450,
+            height: 500,
             ...position,
             resizable: false,
             center: !position.x && !position.y,

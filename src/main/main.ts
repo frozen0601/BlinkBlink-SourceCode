@@ -1,25 +1,22 @@
-import { app, BrowserWindow, ipcMain, nativeTheme, powerMonitor, dialog, shell, clipboard } from 'electron'
+import { app, BrowserWindow, ipcMain, nativeTheme, powerMonitor } from 'electron'
 import * as path from 'path'
-import { store } from './store'
-import { Settings } from './storeTypes'
+import { updateStats, updateLastBreakEndTime, getSettings, updateSettings, getStats } from './store'
+import { Settings } from './types'
 import * as fs from 'fs'
 import { startWorkTimer, clearTimer, isRunning } from './timer'
 import { showBreakView, showSummaryView, closeAllWindows } from './windows'
 import { DURATIONS } from './constants'
-import { autoUpdater } from 'electron-updater'
 import { createTray, destroyTray, updateTooltip } from './tray'
-import { download } from 'electron-dl'
-import fetch from 'node-fetch'
-import { checkForUpdates } from './updater' // Add this import
+import { checkForUpdates } from './updater'
 
 // Stats Management
 export function updateBreakStats(skipped: boolean) {
-    const stats = store.get('stats')
+    const stats = getStats()
     const currentTime = Date.now()
 
     if (skipped) {
         // Reset current streak but preserve highest
-        store.set('stats', {
+        updateStats({
             ...stats,
             breakStreakCount: 0,
             breakStreakDuration: 0,
@@ -44,9 +41,9 @@ export function updateBreakStats(skipped: boolean) {
             updatedStats.highestStreakEndTime = currentTime
         }
 
-        store.set('stats', updatedStats)
+        updateStats(updatedStats)
     }
-    store.set('lastBreakEndTime', currentTime)
+    updateLastBreakEndTime(currentTime)
 }
 
 function getIconPath() {
@@ -104,9 +101,8 @@ ipcMain.on('summary-dismissed', () => {
 })
 
 // Data access handlers
-ipcMain.handle('get-stats', () => store.get('stats'))
-ipcMain.handle('get-settings', () => store.get('settings'))
-ipcMain.handle('get-summary-duration', () => store.get('settings')?.summaryDuration)
+ipcMain.handle('get-stats', () => getStats())
+ipcMain.handle('get-settings', () => getSettings())
 
 // IPC Handler - get app info from package.json
 ipcMain.handle('get-app-info', () => {
@@ -127,13 +123,12 @@ ipcMain.handle('check-for-updates', () => checkForUpdates(false))
 
 // IPC Handlers - Settings
 ipcMain.on('save-settings', (event, settings: Settings) => {
-    store.set('settings', settings)
+    updateSettings(settings)
+
     // Configure auto-start behavior
     app.setLoginItemSettings({
         openAtLogin: settings.startOnBoot,
-        // For Windows, this ensures the app starts minimized in tray
         openAsHidden: true,
-        // Required for macOS to work properly
         path: app.getPath('exe'),
     })
 })
@@ -152,7 +147,7 @@ app.whenReady().then(() => {
     checkForUpdates(true)
 
     // Initialize auto-start setting based on stored preference
-    const settings = store.get('settings')
+    const settings = getSettings()
     app.setLoginItemSettings({
         openAtLogin: settings?.startOnBoot || false,
         openAsHidden: true,
@@ -179,4 +174,3 @@ app.on('before-quit', () => {
     closeAllWindows()
     destroyTray()
 })
-

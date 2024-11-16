@@ -3,7 +3,7 @@
 import { BrowserWindow, screen, ipcMain, nativeTheme } from 'electron'
 import * as path from 'path'
 import { DURATIONS } from './constants'
-import { store } from './store'
+import { getSettings } from './store'
 
 interface WindowWithInterval {
     window: BrowserWindow
@@ -158,7 +158,7 @@ class WindowManager {
 
     showSummaryView() {
         const displays = screen.getAllDisplays()
-        const settings = store.get('settings')
+        const settings = getSettings()
         const duration = settings?.enableAutoDismiss ? settings.summaryDuration : Infinity
         const autoDismiss = settings?.enableAutoDismiss || false
 

@@ -132,12 +132,9 @@ class UnifiedUI {
 
             // Get settings first to check if auto-dismiss is enabled
             const settings = await this.ipc.invoke('get-settings')
-            if (!settings?.enableAutoDismiss) {
-                return // Skip progress bar initialization if auto-dismiss is disabled
-            }
+            if (!settings?.enableAutoDismiss) return
 
             // Only initialize progress bar if auto-dismiss is enabled
-            this.summaryDuration = await this.ipc.invoke('get-summary-duration')
             const progressBar = this.elements.dismissButton.querySelector('.progress-bar')
             if (progressBar) {
                 const progressFill = progressBar.querySelector('.progress-fill') || progressBar
@@ -145,7 +142,7 @@ class UnifiedUI {
                     progressFill.style.transition = 'none'
                     progressFill.style.transform = 'scaleX(0)'
                     progressFill.offsetHeight // Force a reflow
-                    progressFill.style.transition = `transform ${this.summaryDuration}ms linear`
+                    progressFill.style.transition = `transform ${settings.summaryDuration}ms linear`
                     progressFill.style.transform = 'scaleX(1)'
                 }
             }
