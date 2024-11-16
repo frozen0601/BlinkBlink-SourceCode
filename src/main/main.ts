@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, nativeTheme, powerMonitor, Notification } from 'electron'
+import { app, BrowserWindow, ipcMain, nativeTheme, powerMonitor, Notification, nativeImage } from 'electron'
 import * as path from 'path'
 import { updateStats, updateLastBreakEndTime, getSettings, updateSettings, getStats } from './store'
 import { Settings } from './types'
@@ -141,6 +141,8 @@ app.whenReady().then(() => {
     }
     if (process.platform === 'darwin') {
         app.dock.hide()
+        const appIcon = nativeImage.createFromPath(path.join(__dirname, 'icon.png'))
+        app.dock.setIcon(appIcon)
         app.setActivationPolicy('regular')
     }
     createTray()
