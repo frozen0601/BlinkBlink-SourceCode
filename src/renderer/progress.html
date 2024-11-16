@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <style>
+            :root {
+                color-scheme: light dark;
+                --bg-color: #ffffffcc;
+                --text-color: #1f1f1f;
+                --progress-bg: rgba(0, 0, 0, 0.1);
+                --progress-fill: #007aff;
+            }
+
+            @media (prefers-color-scheme: dark) {
+                :root {
+                    --bg-color: #1f1f1fcc;
+                    --text-color: #ffffff;
+                    --progress-bg: rgba(255, 255, 255, 0.1);
+                    --progress-fill: #0a84ff;
+                }
+            }
+
+            body {
+                margin: 0;
+                padding: 12px;
+                background: var(--bg-color);
+                color: var(--text-color);
+                font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+                -webkit-app-region: drag;
+                user-select: none;
+                border-radius: 12px;
+                overflow: hidden;
+                backdrop-filter: blur(20px) saturate(180%);
+                -webkit-backdrop-filter: blur(20px) saturate(180%);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                min-height: 100vh;
+                box-sizing: border-box;
+            }
+
+            .container {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                animation: fadeIn 0.2s ease-out;
+                width: 100%;
+            }
+
+            .progress-bar {
+                width: 100%;
+                height: 4px;
+                background: var(--progress-bg);
+                border-radius: 2px;
+                overflow: hidden;
+            }
+
+            .progress {
+                width: 0%;
+                height: 100%;
+                background: var(--progress-fill);
+                transition: width 0.15s ease-out;
+                border-radius: 2px;
+            }
+
+            .progress-text {
+                font-size: 11.5px;
+                text-align: center;
+                font-weight: 500;
+                letter-spacing: -0.2px;
+                opacity: 0.8;
+            }
+
+            @keyframes fadeIn {
+                from {
+                    opacity: 0;
+                    transform: translateY(5px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="progress-bar">
+                <div class="progress" id="progress"></div>
+            </div>
+            <div class="progress-text" id="progress-text">Downloading update...</div>
+        </div>
+        <script>
+            const { ipcRenderer } = require('electron')
+
+            ipcRenderer.on('download-progress', (event, progress) => {
+                const percent = Math.round(progress.percent * 100)
+                document.getElementById('progress').style.width = `${percent}%`
+                const downloaded = (progress.transferredBytes / 1048576).toFixed(1)
+                const total = (progress.totalBytes / 1048576).toFixed(1)
+                document.getElementById('progress-text').textContent = `${percent}% · ${downloaded} MB of ${total} MB`
+            })
+        </script>
+    </body>
+</html>

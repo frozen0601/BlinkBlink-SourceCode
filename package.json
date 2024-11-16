@@ -29,6 +29,10 @@
                 "filter": [
                     "**/*"
                 ]
+            },
+            {
+                "from": "dist/mac-update-guide.html",
+                "to": "mac-update-guide.html"
             }
         ],
         "directories": {
@@ -40,6 +44,7 @@
             "owner": "frozen0601",
             "repo": "BlinkBlink-Releases"
         },
+        "asarUnpack": "mac-update-guide.html",
         "win": {
             "target": "nsis",
             "artifactName": "${productName}.Setup.${version}.${ext}",

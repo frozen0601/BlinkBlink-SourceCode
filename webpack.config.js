@@ -54,6 +54,7 @@ const rendererConfig = {
                 { from: 'src/renderer/styles/about.css', to: 'about.css' },
                 { from: 'src/renderer/stats.html', to: 'stats.html' },
                 { from: 'src/renderer/styles/stats.css', to: 'stats.css' },
+                { from: 'src/renderer/progress.html', to: 'progress.html' },
                 { from: 'assets/icon.png', to: 'icon.png' },
                 { from: 'assets/rolling_eyes.gif', to: 'rolling_eyes.gif' },
             ],
