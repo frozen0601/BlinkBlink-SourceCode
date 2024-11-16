@@ -90,8 +90,8 @@ export function createAboutWindow() {
 
     aboutWindow = createWindow(
         {
-            width: 430,
-            height: 750,
+            width: 420,
+            height: 840,
             ...position,
             resizable: false,
             center: !position.x && !position.y,
