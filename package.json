@@ -8,6 +8,7 @@
         "dist": "npm run build && electron-builder"
     },
     "build": {
+        "name": "blinkblink",
         "appId": "blinkblink",
         "productName": "BlinkBlink",
         "files": [

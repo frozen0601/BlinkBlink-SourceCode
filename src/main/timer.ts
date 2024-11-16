@@ -53,10 +53,12 @@ class TimerManager {
                     const notification = new Notification({
                         title: 'Break Reminder',
                         body: 'Your break is starting in ' + settings.breakNotificationDuration + ' seconds',
-                        actions: [{
-                            type: 'button',
-                            text: 'Skip this break'
-                        }]
+                        actions: [
+                            {
+                                type: 'button',
+                                text: 'Skip this break',
+                            },
+                        ],
                     })
 
                     notification.on('action', () => {
