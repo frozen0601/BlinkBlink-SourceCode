@@ -164,10 +164,12 @@ app.whenReady().then(() => {
     // Handle system resume events
     powerMonitor.on('resume', () => {
         startWorkTimer()
+        updateTooltip()
     })
 
     powerMonitor.on('unlock-screen', () => {
         startWorkTimer()
+        updateTooltip()
     })
 })
 
