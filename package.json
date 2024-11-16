@@ -39,20 +39,21 @@
             "repo": "BlinkBlink-Releases"
         },
         "win": {
-            "target": "nsis",
-            "artifactName": "${productName}.Setup.${version}.${ext}",
             "appId": "blinkblink",
-            "icon": "assets/icon.ico"
+            "target": "nsis",
+            "icon": "assets/icon.ico",
+            "artifactName": "${productName}.Setup.${version}.${ext}"
         },
         "mac": {
+            "appId": "blinkblink",
             "target": "dmg",
-            "artifactName": "${productName}.Setup.${version}.${ext}",
-            "icon": "assets/icon.icns"
+            "icon": "assets/icon.icns",
+            "artifactName": "${productName}.Setup.${version}.${ext}"
         },
         "linux": {
             "target": "AppImage",
-            "artifactName": "${productName}.Setup.${version}.${ext}",
-            "icon": "assets/icon.png"
+            "icon": "assets/icon.png",
+            "artifactName": "${productName}.Setup.${version}.${ext}"
         }
     },
     "homepage": "https://github.com/frozen0601/BlinkBlink-Releases",

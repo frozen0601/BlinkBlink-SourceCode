@@ -46,37 +46,6 @@ export function updateBreakStats(skipped: boolean) {
     updateLastBreakEndTime(currentTime)
 }
 
-function getIconPath() {
-    return process.platform === 'win32'
-        ? path.join(__dirname, 'icon.ico')
-        : process.platform === 'darwin'
-        ? path.join(__dirname, 'icon.icns')
-        : path.join(__dirname, 'icon.png')
-}
-
-function createWindow(options: Electron.BrowserWindowConstructorOptions, filePath: string, onClose: () => void) {
-    const window = new BrowserWindow({
-        ...options,
-        show: false, // Don't show the window immediately
-        backgroundColor: nativeTheme.shouldUseDarkColors ? '#1a1a1a' : '#f5f5f5',
-        icon: getIconPath(),
-        webPreferences: {
-            nodeIntegration: true,
-            contextIsolation: false,
-        },
-    })
-
-    window.loadFile(path.join(__dirname, filePath))
-    window.on('closed', onClose)
-
-    // Show the window once it's ready
-    window.once('ready-to-show', () => {
-        window.show()
-    })
-
-    return window
-}
-
 // Simplified IPC handlers
 ipcMain.on('start-break-countdown', () => {
     if (isRunning()) {
@@ -99,17 +68,6 @@ ipcMain.on('summary-dismissed', () => {
     startWorkTimer()
     closeAllWindows()
 })
-
-// ipcMain.on('show-break-notification', () => {
-//     const settings = getSettings()
-//     const notifier = require('node-notifier')
-//     console.log("reminder")
-//     notifier.notify({
-//         title: 'My notification',
-//         message: 'Hello, there!',
-//         icon: path.join(__dirname, 'icon.png'),
-//     })
-// })
 
 // Data access handlers
 ipcMain.handle('get-stats', () => getStats())
@@ -146,9 +104,9 @@ ipcMain.on('save-settings', (event, settings: Settings) => {
 
 // App Lifecycle Events
 app.whenReady().then(() => {
-    if (process.platform === 'win32') {
-        app.setAppUserModelId('blinkblink')
-    }
+    // if (process.platform === 'win32') {
+    app.setAppUserModelId('blinkblink')
+    // }
     if (process.platform === 'darwin') app.dock.hide()
     createTray()
     startWorkTimer()
@@ -178,7 +136,6 @@ app.whenReady().then(() => {
 app.on('window-all-closed', () => {
     // Keep the app running in the tray
 })
-destroyTray()
 
 // Gracefully handle app quitting
 app.on('before-quit', () => {
