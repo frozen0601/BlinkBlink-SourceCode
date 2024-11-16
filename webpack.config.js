@@ -26,7 +26,6 @@ const mainConfig = {
                 { from: 'assets/icon.png', to: 'icon.png' },
                 { from: 'assets/icon.ico', to: 'icon.ico' },
                 { from: 'assets/icon.icns', to: 'icon.icns' },
-                { from: 'src/resources/mac-update-guide.html', to: 'mac-update-guide.html' },
             ],
         }),
     ],

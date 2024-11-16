@@ -18,9 +18,7 @@
             "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}",
             "!**/node_modules/*/{test,__tests__,tests,powered-test,example,examples}",
             "!**/node_modules/.bin",
-            "!**/*.{map,ts}",
-            "src/resources/mac-update-guide.html",
-            "dist/mac-update-guide.html"
+            "!**/*.{map,ts}"
         ],
         "extraResources": [
             {
@@ -29,10 +27,6 @@
                 "filter": [
                     "**/*"
                 ]
-            },
-            {
-                "from": "dist/mac-update-guide.html",
-                "to": "mac-update-guide.html"
             }
         ],
         "directories": {
@@ -44,7 +38,6 @@
             "owner": "frozen0601",
             "repo": "BlinkBlink-Releases"
         },
-        "asarUnpack": "mac-update-guide.html",
         "win": {
             "target": "nsis",
             "artifactName": "${productName}.Setup.${version}.${ext}",
@@ -82,6 +75,7 @@
         "@types/electron": "^1.4.38",
         "@types/node": "^22.9.0",
         "@types/node-fetch": "^2.6.12",
+        "@types/semver": "^7.5.8",
         "copy-webpack-plugin": "^12.0.2",
         "cross-env": "^7.0.3",
         "electron": "^33.1.0",
@@ -96,6 +90,7 @@
         "electron-dl": "^4.0.0",
         "electron-store": "^8.2.0",
         "electron-updater": "^6.3.9",
-        "node-fetch": "^3.3.2"
+        "node-fetch": "^3.3.2",
+        "semver": "^7.6.3"
     }
 }

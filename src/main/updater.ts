@@ -3,6 +3,7 @@ import { app, BrowserWindow, dialog, shell } from 'electron'
 import { download } from 'electron-dl'
 import * as path from 'path'
 import fetch from 'node-fetch'
+import * as semver from 'semver'
 
 // Interface definitions moved from main.ts
 interface GitHubAsset {
@@ -13,6 +14,8 @@ interface GitHubAsset {
 interface GitHubRelease {
     tag_name: string
     assets: GitHubAsset[]
+    prerelease: boolean
+    published_at: string
 }
 
 // Export the update-related methods
@@ -36,8 +39,8 @@ export async function showUpdateInstructions(): Promise<void> {
     })
 
     if (response === 0) {
-        const guidePath = path.join(process.resourcesPath, 'mac-update-guide.html')
-        await shell.openPath(guidePath)
+        const guideUrl = 'https://frozen0601.github.io/blinkblink-mac-update-guide/mac-update-guide.html'
+        await shell.openExternal(guideUrl)
     }
 }
 
@@ -116,7 +119,7 @@ export async function checkMacOSUpdate() {
     const latestRelease = await getLatestReleaseFromGitHub()
     const latestVersion = latestRelease.tag_name.replace('v', '')
 
-    if (latestVersion <= currentVersion) {
+    if (!semver.gt(latestVersion, currentVersion)) {
         await showDialog({
             type: 'info',
             title: 'No Updates',
@@ -161,7 +164,7 @@ export async function checkForUpdates(silent = false) {
             const latestRelease = await getLatestReleaseFromGitHub()
             const latestVersion = latestRelease.tag_name.replace('v', '')
 
-            if (latestVersion <= currentVersion) {
+            if (!semver.gt(latestVersion, currentVersion)) {
                 if (!silent) {
                     await showDialog({
                         type: 'info',
@@ -208,9 +211,16 @@ export async function checkForUpdates(silent = false) {
 }
 
 export async function getLatestReleaseFromGitHub(): Promise<GitHubRelease> {
-    const response = await fetch('https://api.github.com/repos/frozen0601/BlinkBlink-Releases/releases/latest')
+    const response = await fetch('https://api.github.com/repos/frozen0601/BlinkBlink-Releases/releases')
     if (!response.ok) {
-        throw new Error('Failed to fetch latest release')
+        throw new Error('Failed to fetch releases')
     }
-    return response.json() as Promise<GitHubRelease> // Cast to Promise<GitHubRelease>
+    const releases = (await response.json()) as GitHubRelease[]
+    if (!releases.length) {
+        throw new Error('No releases found')
+    }
+    // Sort releases by published date to get the latest release
+    releases.sort((a, b) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime())
+    const latestRelease = releases[0]
+    return latestRelease
 }
