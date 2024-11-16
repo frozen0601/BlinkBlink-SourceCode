@@ -39,7 +39,7 @@ export async function showUpdateInstructions(): Promise<void> {
     })
 
     if (response === 0) {
-        const guideUrl = 'https://frozen0601.github.io/blinkblink-mac-update-guide/mac-update-guide.html'
+        const guideUrl = 'https://2ly.link/216pI'
         await shell.openExternal(guideUrl)
     }
 }

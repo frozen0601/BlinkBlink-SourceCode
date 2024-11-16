@@ -158,6 +158,23 @@ export function updateTooltip() {
     }
 }
 
+function createDonateSubmenu() {
+    return [
+        {
+            label: 'Buy Me a Coffee',
+            click: () => require('electron').shell.openExternal('https://2ly.link/216p3'),
+        },
+        {
+            label: 'Ko-fi',
+            click: () => require('electron').shell.openExternal('https://2ly.link/216p4'),
+        },
+        {
+            label: 'PayPal',
+            click: () => require('electron').shell.openExternal('https://2ly.link/216p8'),
+        },
+    ]
+}
+
 export function createTray() {
     const { nativeImage, Notification } = require('electron')
     let trayIcon = nativeImage.createFromPath(path.join(__dirname, 'icon.png'))
@@ -182,6 +199,16 @@ export function createTray() {
         { label: 'Statistics', click: createStatsWindow },
         { label: 'Settings', click: createSettingsWindow },
         { label: 'About', click: createAboutWindow },
+        { type: 'separator' },
+        {
+            label: 'Support',
+            click: () => require('electron').shell.openExternal('mailto:theblinkblinkapp@gmail.com'),
+        },
+        {
+            label: 'Donate',
+            submenu: createDonateSubmenu(),
+        },
+        { type: 'separator' },
         { label: 'Quit', click: () => app.quit() },
     ])
     tray.setToolTip('BlinkBlink')
