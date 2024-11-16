@@ -100,16 +100,16 @@ ipcMain.on('summary-dismissed', () => {
     closeAllWindows()
 })
 
-ipcMain.on('show-break-notification', () => {
-    const settings = getSettings()
-    const notifier = require('node-notifier')
-    console.log("reminder")
-    notifier.notify({
-        title: 'My notification',
-        message: 'Hello, there!',
-        icon: path.join(__dirname, 'icon.png'),
-    })
-})
+// ipcMain.on('show-break-notification', () => {
+//     const settings = getSettings()
+//     const notifier = require('node-notifier')
+//     console.log("reminder")
+//     notifier.notify({
+//         title: 'My notification',
+//         message: 'Hello, there!',
+//         icon: path.join(__dirname, 'icon.png'),
+//     })
+// })
 
 // Data access handlers
 ipcMain.handle('get-stats', () => getStats())
@@ -147,7 +147,7 @@ ipcMain.on('save-settings', (event, settings: Settings) => {
 // App Lifecycle Events
 app.whenReady().then(() => {
     if (process.platform === 'win32') {
-        app.setAppUserModelId('BlinkBLink')
+        app.setAppUserModelId('blinkblink')
     }
     if (process.platform === 'darwin') app.dock.hide()
     createTray()

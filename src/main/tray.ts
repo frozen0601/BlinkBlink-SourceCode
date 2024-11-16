@@ -201,7 +201,7 @@ export function createTray() {
         { label: 'About', click: createAboutWindow },
         { type: 'separator' },
         {
-            label: 'Support',
+            label: 'Feedback',
             click: () => require('electron').shell.openExternal('mailto:theblinkblinkapp@gmail.com'),
         },
         {

@@ -1,4 +1,4 @@
-import { ipcMain } from 'electron'
+import { app, ipcMain, Notification } from 'electron'
 import { DURATIONS } from './constants'
 import { closeAllWindows } from './windows'
 import { getSettings } from './store'
@@ -50,7 +50,22 @@ class TimerManager {
                     clearTimeout(this.#notificationTimer)
                 }
                 this.#notificationTimer = setTimeout(() => {
-                    ipcMain.emit('show-break-notification')
+                    const notification = new Notification({
+                        title: 'Break Reminder',
+                        body: 'Your break is starting in ' + settings.breakNotificationDuration + ' seconds',
+                        actions: [{
+                            type: 'button',
+                            text: 'Skip this break'
+                        }]
+                    })
+
+                    notification.on('action', () => {
+                        // Skip for the duration of a work period
+                        this.skipBreaksFor(Math.floor(DURATIONS.WORK_DURATION / (60 * 1000)))
+                        notification.close()
+                    })
+
+                    notification.show()
                 }, notificationTimeout)
             }
         }
@@ -98,11 +113,11 @@ class TimerManager {
     }
 
     isSkippedUntilEndOfDay(): boolean {
-        if (!this.#skipUntil) return false;
-        const now = new Date();
-        const endOfDay = new Date();
-        endOfDay.setHours(23, 59, 59, 999);
-        return this.#skipUntil.getTime() === endOfDay.getTime();
+        if (!this.#skipUntil) return false
+        const now = new Date()
+        const endOfDay = new Date()
+        endOfDay.setHours(23, 59, 59, 999)
+        return this.#skipUntil.getTime() === endOfDay.getTime()
     }
 }
 
