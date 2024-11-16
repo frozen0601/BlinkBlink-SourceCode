@@ -1,23 +1,10 @@
-/* Define CSS variables */
-:root {
-    --background-color: #f5f5f5;
-    --text-color: #333;
-    --heading-color: #1a1a1a;
-    --accent-color: #1a73e8;
-    --scrollbar-bg: #e0e0e0;
-    --scrollbar-thumb: #888;
-}
+@import 'shared.css';
 
-@media (prefers-color-scheme: dark) {
-    :root {
-        --background-color: #1a1a1a;
-        --text-color: #f5f5f5;
-        --heading-color: #ffffff;
-        --accent-color: #4285f4;
-        --scrollbar-bg: #333;
-        --scrollbar-thumb: #555;
-    }
-}
+/* ...existing code... */
+
+/* Remove the redundant :root section */
+
+/* ...existing code... */
 
 html,
 body {
@@ -305,5 +292,3 @@ body {
 .paypal:hover {
     animation: shake-maniacally 0.1s infinite;
 }
-
-@import 'shared.css';
