@@ -1,6 +1,6 @@
 {
     "name": "blinkblink",
-    "version": "0.0.4-alpha",
+    "version": "0.0.5-alpha",
     "main": "dist/main.js",
     "scripts": {
         "start": "cross-env NODE_ENV=development webpack --config webpack.config.js && electron .",
@@ -8,7 +8,6 @@
         "dist": "npm run build && electron-builder"
     },
     "build": {
-        "name": "blinkblink",
         "appId": "blinkblink",
         "productName": "BlinkBlink",
         "files": [

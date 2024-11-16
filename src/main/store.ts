@@ -19,11 +19,11 @@ const STORE_DEFAULTS: StoreSchema = {
     currentWorkStreakStartTime: Date.now(),
     settings: {
         startOnBoot: false,
-        language: 'en',
         enableAutoDismiss: true,
         summaryDuration: 5000,
         enableBreakNotification: true,
-        breakNotificationDuration: 10,
+        breakPreNotificationOffset: 30000,
+        language: 'en',
     },
     trayWindowPositions: {},
 }
@@ -51,7 +51,17 @@ export function updateStats(newStats: Partial<Stats>) {
 
 // Settings management
 export function getSettings(): Settings {
-    return store.get('settings') || STORE_DEFAULTS.settings!
+    const settings = store.get('settings')
+    if (!settings) {
+        store.set('settings', STORE_DEFAULTS.settings)
+        return STORE_DEFAULTS.settings!
+    }
+
+    // Always merge with defaults to ensure all fields exist with valid values
+    return {
+        ...STORE_DEFAULTS.settings,
+        ...settings,
+    }
 }
 
 export function updateSettings(updates: Partial<Settings>) {

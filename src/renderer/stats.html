@@ -29,7 +29,7 @@
         </div>
         <script>
             const { ipcRenderer } = require('electron')
-            const { formatDuration, intervalToDuration } = require('date-fns')
+            const { intervalToDuration } = require('date-fns')
 
             ipcRenderer.invoke('get-stats').then((stats) => {
                 // Current streak

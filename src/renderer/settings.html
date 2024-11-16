@@ -36,7 +36,7 @@
             <div class="setting-item">
                 <span class="setting-label">Break notification duration (seconds)</span>
                 <div class="setting-control">
-                    <input type="number" id="breakNotificationDuration" min="1" max="3600" />
+                    <input type="number" id="breakPreNotificationOffset" min="5" max="60" />
                 </div>
             </div>
             <div class="setting-item">
@@ -67,7 +67,7 @@
                 document.getElementById('summaryDuration').value = settings.summaryDuration / 1000
                 document.getElementById('languageSelect').value = settings.language
                 document.getElementById('enableBreakNotification').checked = settings.enableBreakNotification
-                document.getElementById('breakNotificationDuration').value = settings.breakNotificationDuration
+                document.getElementById('breakPreNotificationOffset').value = settings.breakPreNotificationOffset / 1000
                 updateDashboardDurationState(settings.enableAutoDismiss)
                 updateNotificationDurationState(settings.enableBreakNotification)
             })
@@ -80,7 +80,7 @@
             }
 
             function updateNotificationDurationState(enableBreakNotification) {
-                const durationInput = document.getElementById('breakNotificationDuration')
+                const durationInput = document.getElementById('breakPreNotificationOffset')
                 const durationContainer = durationInput.closest('.setting-item')
                 durationInput.disabled = !enableBreakNotification
                 durationContainer.classList.toggle('disabled', !enableBreakNotification)
@@ -103,7 +103,7 @@
                     language: document.getElementById('languageSelect').value,
                     summaryDuration: document.getElementById('summaryDuration').value * 1000,
                     enableBreakNotification: document.getElementById('enableBreakNotification').checked,
-                    breakNotificationDuration: parseInt(document.getElementById('breakNotificationDuration').value, 10),
+                    breakPreNotificationOffset: document.getElementById('breakPreNotificationOffset').value * 1000,
                 }
                 ipcRenderer.send('save-settings', settings)
             }

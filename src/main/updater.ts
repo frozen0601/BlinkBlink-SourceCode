@@ -153,11 +153,6 @@ export async function checkMacOSUpdate() {
 }
 
 export async function checkForUpdates(silent = false) {
-    // if (process.env.NODE_ENV === 'development') {
-    //     console.log('Simulating update check...')
-    //     return
-    // }
-
     try {
         if (process.platform === 'darwin') {
             const currentVersion = app.getVersion()

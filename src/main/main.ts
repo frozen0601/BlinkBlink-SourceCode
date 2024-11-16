@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, nativeTheme, powerMonitor, Notification, nativeImage } from 'electron'
+import { app, ipcMain, powerMonitor, nativeImage } from 'electron'
 import * as path from 'path'
 import { updateStats, updateLastBreakEndTime, getSettings, updateSettings, getStats } from './store'
 import { Settings } from './types'
@@ -100,7 +100,6 @@ ipcMain.on('summary-dismissed', () => {
     closeAllWindows()
 })
 
-
 // Data access handlers
 ipcMain.handle('get-stats', () => getStats())
 ipcMain.handle('get-settings', () => getSettings())
@@ -136,11 +135,14 @@ ipcMain.on('save-settings', (event, settings: Settings) => {
 
 // App Lifecycle Events
 app.whenReady().then(() => {
+    // Ensure settings are initialized with defaults
+    const settings = getSettings()
+
     if (process.platform === 'win32') {
         app.setAppUserModelId('BlinkBLink')
     }
     if (process.platform === 'darwin') {
-        app.dock.hide()
+        // app.dock.hide()
         const appIcon = nativeImage.createFromPath(path.join(__dirname, 'icon.png'))
         app.dock.setIcon(appIcon)
         app.setActivationPolicy('regular')
@@ -153,7 +155,6 @@ app.whenReady().then(() => {
     checkForUpdates(true)
 
     // Initialize auto-start setting based on stored preference
-    const settings = getSettings()
     app.setLoginItemSettings({
         openAtLogin: settings?.startOnBoot || false,
         openAsHidden: true,

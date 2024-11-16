@@ -13,9 +13,9 @@ export interface Settings {
     startOnBoot: boolean
     enableAutoDismiss: boolean
     summaryDuration: number
-    language: string
     enableBreakNotification: boolean
-    breakNotificationDuration: number
+    breakPreNotificationOffset: number
+    language: string
 }
 
 export interface TrayWindowPosition {

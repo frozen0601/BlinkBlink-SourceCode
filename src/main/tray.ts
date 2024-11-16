@@ -3,7 +3,6 @@ import { autoUpdater } from 'electron-updater'
 import path from 'path'
 import { skipBreaksFor, skipBreaksUntilEndOfDay, getRemainingTimeInMinutes, isSkippedUntilEndOfDay } from './timer'
 import { getWindowPosition, saveWindowPosition } from './store'
-import { TrayWindowPosition } from './types'
 
 let statsWindow: BrowserWindow | null = null
 let settingsWindow: BrowserWindow | null = null

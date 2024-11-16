@@ -1,4 +1,4 @@
-import { app, ipcMain, Notification } from 'electron'
+import { ipcMain, Notification } from 'electron'
 import { DURATIONS } from './constants'
 import { closeAllWindows } from './windows'
 import { getSettings } from './store'
@@ -36,41 +36,40 @@ class TimerManager {
     }
 
     // Timer calculations
+    private scheduleBreakNotification(breakTime: Date): void {
+        const settings = getSettings()
+        if (!settings.enableBreakNotification) return
+
+        const now = Date.now()
+        const breakTimeMs = breakTime.getTime()
+        const notificationTime = breakTimeMs - settings.breakPreNotificationOffset
+
+        // Don't schedule if break is too soon or already passed
+        if (notificationTime <= now) return
+
+        this.#notificationTimer = setTimeout(() => {
+            const notification = new Notification({
+                title: 'Break Reminder',
+                body: `Your break is starting in ${Math.round(settings.breakPreNotificationOffset / 1000)} seconds`,
+                actions: [{ type: 'button', text: 'Skip this break' }],
+            })
+
+            notification.on('action', () => {
+                this.skipBreaksFor(Math.floor(DURATIONS.WORK_DURATION / (60 * 1000)))
+                notification.close()
+            })
+
+            notification.show()
+        }, notificationTime - now)
+    }
+
     private setNextBreakTime(date: Date): void {
         this.#nextBreakTime = date
         const timeoutDuration = date.getTime() - Date.now()
 
         this.clearTimer()
-        const settings = getSettings()
-        if (settings.enableBreakNotification) {
-            const notificationTime = date.getTime() - settings.breakNotificationDuration * 1000
-            const notificationTimeout = notificationTime - Date.now()
-            if (notificationTimeout > 0) {
-                if (this.#notificationTimer) {
-                    clearTimeout(this.#notificationTimer)
-                }
-                this.#notificationTimer = setTimeout(() => {
-                    const notification = new Notification({
-                        title: 'Break Reminder',
-                        body: 'Your break is starting in ' + settings.breakNotificationDuration + ' seconds',
-                        actions: [
-                            {
-                                type: 'button',
-                                text: 'Skip this break',
-                            },
-                        ],
-                    })
+        this.scheduleBreakNotification(date)
 
-                    notification.on('action', () => {
-                        // Skip for the duration of a work period
-                        this.skipBreaksFor(Math.floor(DURATIONS.WORK_DURATION / (60 * 1000)))
-                        notification.close()
-                    })
-
-                    notification.show()
-                }, notificationTimeout)
-            }
-        }
         this.#currentTimer = setTimeout(async () => {
             try {
                 ipcMain.emit('start-break-countdown')
