@@ -28,6 +28,18 @@
                 </div>
             </div>
             <div class="setting-item">
+                <span class="setting-label">Enable break notification</span>
+                <div class="setting-control">
+                    <input type="checkbox" id="enableBreakNotification" />
+                </div>
+            </div>
+            <div class="setting-item">
+                <span class="setting-label">Break notification duration (seconds)</span>
+                <div class="setting-control">
+                    <input type="number" id="breakNotificationDuration" min="1" max="3600" />
+                </div>
+            </div>
+            <div class="setting-item">
                 <span class="setting-label">Language</span>
                 <div class="setting-control">
                     <select id="languageSelect">
@@ -54,7 +66,10 @@
                 document.getElementById('enableAutoDismiss').checked = settings.enableAutoDismiss
                 document.getElementById('summaryDuration').value = settings.summaryDuration / 1000
                 document.getElementById('languageSelect').value = settings.language
+                document.getElementById('enableBreakNotification').checked = settings.enableBreakNotification
+                document.getElementById('breakNotificationDuration').value = settings.breakNotificationDuration
                 updateDashboardDurationState(settings.enableAutoDismiss)
+                updateNotificationDurationState(settings.enableBreakNotification)
             })
 
             function updateDashboardDurationState(enableAutoDismiss) {
@@ -64,8 +79,20 @@
                 durationContainer.classList.toggle('disabled', !enableAutoDismiss)
             }
 
+            function updateNotificationDurationState(enableBreakNotification) {
+                const durationInput = document.getElementById('breakNotificationDuration')
+                const durationContainer = durationInput.closest('.setting-item')
+                durationInput.disabled = !enableBreakNotification
+                durationContainer.classList.toggle('disabled', !enableBreakNotification)
+            }
+
             document.getElementById('enableAutoDismiss').addEventListener('change', (e) => {
                 updateDashboardDurationState(e.target.checked)
+                saveSettings()
+            })
+
+            document.getElementById('enableBreakNotification').addEventListener('change', (e) => {
+                updateNotificationDurationState(e.target.checked)
                 saveSettings()
             })
 
@@ -75,6 +102,8 @@
                     enableAutoDismiss: document.getElementById('enableAutoDismiss').checked,
                     language: document.getElementById('languageSelect').value,
                     summaryDuration: document.getElementById('summaryDuration').value * 1000,
+                    enableBreakNotification: document.getElementById('enableBreakNotification').checked,
+                    breakNotificationDuration: parseInt(document.getElementById('breakNotificationDuration').value, 10),
                 }
                 ipcRenderer.send('save-settings', settings)
             }

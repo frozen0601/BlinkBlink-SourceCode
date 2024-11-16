@@ -22,6 +22,8 @@ const STORE_DEFAULTS: StoreSchema = {
         language: 'en',
         enableAutoDismiss: true,
         summaryDuration: 5000,
+        enableBreakNotification: true,
+        breakNotificationDuration: 10,
     },
     trayWindowPositions: {},
 }

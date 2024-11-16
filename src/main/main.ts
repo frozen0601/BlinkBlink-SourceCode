@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, nativeTheme, powerMonitor } from 'electron'
+import { app, BrowserWindow, ipcMain, nativeTheme, powerMonitor, Notification } from 'electron'
 import * as path from 'path'
 import { updateStats, updateLastBreakEndTime, getSettings, updateSettings, getStats } from './store'
 import { Settings } from './types'
@@ -100,6 +100,17 @@ ipcMain.on('summary-dismissed', () => {
     closeAllWindows()
 })
 
+ipcMain.on('show-break-notification', () => {
+    const settings = getSettings()
+    const notifier = require('node-notifier')
+    console.log("reminder")
+    notifier.notify({
+        title: 'My notification',
+        message: 'Hello, there!',
+        icon: path.join(__dirname, 'icon.png'),
+    })
+})
+
 // Data access handlers
 ipcMain.handle('get-stats', () => getStats())
 ipcMain.handle('get-settings', () => getSettings())
@@ -167,6 +178,7 @@ app.whenReady().then(() => {
 app.on('window-all-closed', () => {
     // Keep the app running in the tray
 })
+destroyTray()
 
 // Gracefully handle app quitting
 app.on('before-quit', () => {

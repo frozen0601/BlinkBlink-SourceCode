@@ -14,6 +14,8 @@ export interface Settings {
     enableAutoDismiss: boolean
     summaryDuration: number
     language: string
+    enableBreakNotification: boolean
+    breakNotificationDuration: number
 }
 
 export interface TrayWindowPosition {

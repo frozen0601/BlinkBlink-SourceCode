@@ -1,12 +1,14 @@
 import { ipcMain } from 'electron'
 import { DURATIONS } from './constants'
 import { closeAllWindows } from './windows'
+import { getSettings } from './store'
 
 class TimerManager {
     private static instance: TimerManager
     #currentTimer?: NodeJS.Timeout
     #nextBreakTime?: Date
     #skipUntil?: Date
+    #notificationTimer?: NodeJS.Timeout
 
     private constructor() {}
 
@@ -27,6 +29,10 @@ class TimerManager {
             clearTimeout(this.#currentTimer)
             this.#currentTimer = undefined
         }
+        if (this.#notificationTimer) {
+            clearTimeout(this.#notificationTimer)
+            this.#notificationTimer = undefined
+        }
     }
 
     // Timer calculations
@@ -35,6 +41,19 @@ class TimerManager {
         const timeoutDuration = date.getTime() - Date.now()
 
         this.clearTimer()
+        const settings = getSettings()
+        if (settings.enableBreakNotification) {
+            const notificationTime = date.getTime() - settings.breakNotificationDuration * 1000
+            const notificationTimeout = notificationTime - Date.now()
+            if (notificationTimeout > 0) {
+                if (this.#notificationTimer) {
+                    clearTimeout(this.#notificationTimer)
+                }
+                this.#notificationTimer = setTimeout(() => {
+                    ipcMain.emit('show-break-notification')
+                }, notificationTimeout)
+            }
+        }
         this.#currentTimer = setTimeout(async () => {
             try {
                 ipcMain.emit('start-break-countdown')
