@@ -308,10 +308,11 @@ a {
     gap: 0.75rem;
 }
 
+/* Remove any extra spacing in schedule day */
 .schedule-day {
     background: var(--surface-color);
     border-radius: var(--border-radius);
-    padding: 0.875rem;
+    padding: 0; /* Remove padding to match other items */
     transition: opacity 0.3s ease;
 }
 
@@ -334,12 +335,13 @@ a {
     color: var(--text-secondary);
 }
 
+/* Make schedule day headers consistent with setting items */
 .day-header {
     display: grid;
     grid-template-columns: 1fr auto;
     align-items: center;
-    gap: 1rem;
-    padding: 0.5rem 0.75rem;
+    gap: 1.25rem; /* Match setting-item gap */
+    padding: calc(var(--spacing-unit) * 0.75); /* Match setting-item padding */
     cursor: pointer;
     background: var(--surface-color);
     border-radius: var(--border-radius);
@@ -355,6 +357,9 @@ a {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    /* Remove any extra padding/margin */
+    padding: 0;
+    margin: 0;
 }
 
 .day-header .helper-text {
@@ -368,28 +373,24 @@ a {
     justify-self: end;
 }
 
+/* Adjust time ranges container to match other settings */
 .time-ranges {
     display: flex;
     flex-direction: column;
     gap: 0.625rem;
-    margin-left: 1.75rem !important; /* Keep margin stable */
+    padding-left: calc(var(--spacing-unit) * 0.75); /* Match setting-item padding */
+    margin: 0;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     overflow: hidden;
-    max-height: 500px; /* Arbitrary large height */
+    max-height: 500px;
     opacity: 1;
-    transform-origin: top;
 }
 
-/* Add new styles for hiding content */
 .schedule-day.disabled .time-ranges {
     max-height: 0;
+    padding: 0;
     opacity: 0;
     pointer-events: none;
-    /* Remove margin and transform changes to prevent movement */
-}
-
-.schedule-day.disabled .add-range {
-    display: none;
 }
 
 .time-range {
