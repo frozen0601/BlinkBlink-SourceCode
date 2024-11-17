@@ -69,9 +69,9 @@ export function createSettingsWindow() {
     settingsWindow = createWindow(
         {
             width: Math.min(800, width * 0.8),
-            height: Math.min(600, width * 0.8),
+            height: Math.min(800, width * 0.8),
             ...position,
-            resizable: false,
+            resizable: true,
             center: !position.x && !position.y,
             autoHideMenuBar: true,
         },
@@ -130,17 +130,6 @@ function getIconPath() {
         : process.platform === 'darwin'
         ? path.join(__dirname, 'icon.icns')
         : path.join(__dirname, 'icon.png')
-}
-
-function formatDuration(mins: number): string {
-    if (mins < 60) {
-        return `${mins} min${mins !== 1 ? 's' : ''}`
-    }
-
-    const hours = Math.floor(mins / 60)
-    const remainingMins = mins % 60
-    const hourText = `${hours} hr${hours > 1 ? 's' : ''}`
-    return remainingMins > 0 ? `${hourText} ${remainingMins} min` : hourText
 }
 
 function formatRemainingTime(minutes: number): string {

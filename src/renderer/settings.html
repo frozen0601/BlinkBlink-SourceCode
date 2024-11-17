@@ -18,29 +18,37 @@
 
             <div class="tab-content active" data-tab="break">
                 <div class="setting-item" data-setting="enableBreakNotification">
-                    <span class="setting-label">Show Break Reminders</span>
-                    <!-- <span class="helper-text">Enable this to receive notifications before your scheduled breaks.</span> -->
+                    <div class="setting-item-text">
+                        <span class="setting-label">Show Break Reminders</span>
+                        <span class="helper-text">Enable this to receive notifications before your scheduled breaks.</span>
+                    </div>
                     <div class="setting-control">
                         <input type="checkbox" id="enableBreakNotification" />
                     </div>
                 </div>
                 <div class="setting-item" data-setting="breakPreNotificationOffset">
-                    <span class="setting-label">Notify before break</span>
-                    <!-- <span class="helper-text">Set how many seconds before a break you want to be notified.</span> -->
+                    <div class="setting-item-text">
+                        <span class="setting-label">Notify before break</span>
+                        <span class="helper-text">Set how many seconds before a break you want to be notified.</span>
+                    </div>
                     <div class="setting-control">
                         <input type="number" id="breakPreNotificationOffset" min="5" max="60" />
                         <span class="input-unit">seconds</span>
                     </div>
                 </div>
                 <div class="setting-item">
-                    <span class="setting-label">Auto dismiss Summary View</span>
+                    <div class="setting-item-text">
+                        <span class="setting-label">Auto dismiss Summary View</span>
+                    </div>
                     <div class="setting-control">
                         <input type="checkbox" id="enableAutoDismiss" />
                     </div>
                 </div>
                 <div class="setting-item">
-                    <span class="setting-label">Summary duration</span>
-                    <!-- <span class="helper-text">Duration the summary view is displayed after a break.</span> -->
+                    <div class="setting-item-text">
+                        <span class="setting-label">Summary duration</span>
+                        <span class="helper-text">Duration the summary view is displayed after a break.</span>
+                    </div>
                     <div class="setting-control">
                         <input type="number" id="summaryDuration" min="1" max="60" />
                         <span class="input-unit">seconds</span>
@@ -50,7 +58,10 @@
 
             <div class="tab-content" data-tab="schedule">
                 <div class="setting-item">
-                    <span class="setting-label">Enable Schedule</span>
+                    <div class="setting-item-text">
+                        <span class="setting-label">Enable Schedule</span>
+                        <span class="helper-text">Set custom work hours for each day to receive break reminders</span>
+                    </div>
                     <div class="setting-control">
                         <input type="checkbox" id="scheduleEnabled" />
                     </div>
@@ -64,13 +75,17 @@
 
             <div class="tab-content" data-tab="system">
                 <div class="setting-item">
-                    <span class="setting-label">Start on system startup</span>
+                    <div class="setting-item-text">
+                        <span class="setting-label">Start on system startup</span>
+                    </div>
                     <div class="setting-control">
                         <input type="checkbox" id="startOnBoot" />
                     </div>
                 </div>
                 <div class="setting-item">
-                    <span class="setting-label">Language</span>
+                    <div class="setting-item-text">
+                        <span class="setting-label">Language</span>
+                    </div>
                     <div class="setting-control">
                         <select id="languageSelect">
                             <option value="en">English</option>
@@ -103,15 +118,23 @@
 
                 initializeSchedule()
 
-                // Populate existing schedule
+                // Populate existing schedule with state management
                 Object.entries(settings.schedule).forEach(([day, config]) => {
                     const dayCheckbox = document.querySelector(`input[data-day="${day}"]`)
                     dayCheckbox.checked = config.enabled
 
                     const rangesContainer = document.getElementById(`${day}-ranges`)
-                    config.timeRanges.forEach((range) => {
-                        rangesContainer.appendChild(createTimeRangeElement(day, rangesContainer.children.length, range))
-                    })
+                    if (config.enabled && config.timeRanges.length === 0) {
+                        // Add default range for enabled days with no ranges
+                        rangesContainer.appendChild(createTimeRangeElement(day, 0))
+                    } else {
+                        config.timeRanges.forEach((range) => {
+                            rangesContainer.appendChild(createTimeRangeElement(day, rangesContainer.children.length, range))
+                        })
+                    }
+
+                    // Update the day's state
+                    updateDayState(dayCheckbox)
                 })
 
                 updateScheduleState(settings.scheduleEnabled)
@@ -212,11 +235,72 @@
                 const rangeDiv = document.createElement('div')
                 rangeDiv.className = 'time-range'
                 rangeDiv.innerHTML = `
-                    <input type="time" class="time-input start" value="${timeRange.start}">
-                    <span>to</span>
-                    <input type="time" class="time-input end" value="${timeRange.end}">
-                    <button class="remove-range">×</button>
+                    <div class="time-input-group">
+                        <input type="time" 
+                            class="time-input start" 
+                            value="${timeRange.start}" 
+                            aria-label="Start time"
+                            pattern="[0-9]{2}:[0-9]{2}"
+                            required>
+                    </div>
+                    <span class="time-range-separator">to</span>
+                    <div class="time-input-group">
+                        <input type="time" 
+                            class="time-input end" 
+                            value="${timeRange.end}" 
+                            aria-label="End time"
+                            pattern="[0-9]{2}:[0-9]{2}"
+                            required>
+                    </div>
+                    <button class="remove-range" aria-label="Remove time range">×</button>
                 `
+
+                // Get references to both inputs
+                const startInput = rangeDiv.querySelector('.start')
+                const endInput = rangeDiv.querySelector('.end')
+
+                function validateTimeRange() {
+                    const startTime = startInput.value
+                    const endTime = endInput.value
+
+                    if (startTime && endTime && startTime >= endTime) {
+                        // If end time is earlier or equal to start time,
+                        // set end time to start time + 1 hour
+                        const [hours, minutes] = startTime.split(':')
+                        let newHour = parseInt(hours) + 1
+                        if (newHour > 23) newHour = 23
+                        endInput.value = `${String(newHour).padStart(2, '0')}:${minutes}`
+                    }
+                }
+
+                // Add validation to both inputs
+                startInput.addEventListener('change', () => {
+                    validateTimeRange()
+                    saveSettings()
+                })
+
+                endInput.addEventListener('change', () => {
+                    validateTimeRange()
+                    saveSettings()
+                })
+
+                // Replace existing blur event with enhanced validation
+                rangeDiv.querySelectorAll('.time-input').forEach((input) => {
+                    input.addEventListener('blur', (e) => {
+                        // First ensure valid time format
+                        if (!e.target.value.match(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/)) {
+                            e.target.value = e.target === startInput ? '09:00' : '18:00'
+                        }
+                        validateTimeRange()
+                    })
+
+                    // Keep existing keypress handler
+                    input.addEventListener('keypress', (e) => {
+                        if (!/[\d:]/.test(e.key)) {
+                            e.preventDefault()
+                        }
+                    })
+                })
 
                 rangeDiv.querySelector('.remove-range').addEventListener('click', () => {
                     rangeDiv.remove()
@@ -239,15 +323,37 @@
                     dayElement.className = 'schedule-day'
                     dayElement.innerHTML = `
                         <div class="day-header">
-                            <label>
+                            <div class="day-name">
                                 <input type="checkbox" class="day-enabled" data-day="${day}">
                                 <span>${daysDisplay[index]}</span>
-                            </label>
-                            <button class="add-range" data-day="${day}">Add Time Range</button>
+                            </div>
+                            <button class="add-range" data-day="${day}">+ Add Hours</button>
                         </div>
                         <div class="time-ranges" id="${day}-ranges"></div>
                     `
                     scheduleContainer.appendChild(dayElement)
+
+                    // Add click handler for the entire header
+                    const header = dayElement.querySelector('.day-header')
+                    const checkbox = dayElement.querySelector('.day-enabled')
+
+                    header.addEventListener('click', (e) => {
+                        // Don't toggle if clicking on the add button or inputs
+                        if (!e.target.closest('.add-range') && !e.target.closest('input')) {
+                            checkbox.checked = !checkbox.checked
+                            checkbox.dispatchEvent(new Event('change'))
+                        }
+                    })
+                })
+
+                // Update initial states after creating elements
+                document.querySelectorAll('.day-enabled').forEach((checkbox) => {
+                    checkbox.addEventListener('change', (e) => {
+                        updateDayState(e.target)
+                        saveSettings()
+                    })
+                    // Initialize state for each day
+                    updateDayState(checkbox)
                 })
 
                 // Event listeners
@@ -261,7 +367,10 @@
                 })
 
                 document.querySelectorAll('.day-enabled').forEach((checkbox) => {
-                    checkbox.addEventListener('change', saveSettings)
+                    checkbox.addEventListener('change', (e) => {
+                        updateDayState(e.target)
+                        saveSettings()
+                    })
                 })
             }
 
@@ -274,6 +383,64 @@
                 updateScheduleState(e.target.checked)
                 saveSettings()
             })
+
+            function updateDayState(checkbox) {
+                const dayElement = checkbox.closest('.schedule-day')
+                const dayId = checkbox.dataset.day
+                const rangesContainer = document.getElementById(`${dayId}-ranges`)
+                const isEnabled = checkbox.checked
+
+                dayElement.classList.toggle('disabled', !isEnabled)
+
+                // Simplified toggle logic
+                if (isEnabled && rangesContainer.children.length === 0) {
+                    rangesContainer.appendChild(createTimeRangeElement(dayId, 0))
+                } else if (!isEnabled) {
+                    rangesContainer.innerHTML = ''
+                }
+            }
+
+            function createTimeRangeElement(dayId, rangeIndex, timeRange = { start: '09:00', end: '18:00' }) {
+                const rangeDiv = document.createElement('div')
+                rangeDiv.className = 'time-range'
+                rangeDiv.innerHTML = `
+                    <div class="time-input-group">
+                        <input type="time" class="time-input start" value="${timeRange.start}">
+                    </div>
+                    <span class="time-range-separator">to</span>
+                    <div class="time-input-group">
+                        <input type="time" class="time-input end" value="${timeRange.end}">
+                    </div>
+                    <button class="remove-range">×</button>
+                `
+
+                // Simplified event handling
+                const startInput = rangeDiv.querySelector('.start')
+                const endInput = rangeDiv.querySelector('.end')
+                const removeButton = rangeDiv.querySelector('.remove-range')
+
+                function validateTimeRange() {
+                    if (startInput.value >= endInput.value) {
+                        const [hours, minutes] = startInput.value.split(':')
+                        const newHour = Math.min(parseInt(hours) + 1, 23)
+                        endInput.value = `${String(newHour).padStart(2, '0')}:${minutes}`
+                    }
+                }
+
+                [startInput, endInput].forEach(input => {
+                    input.addEventListener('change', () => {
+                        validateTimeRange()
+                        saveSettings()
+                    })
+                })
+
+                removeButton.addEventListener('click', () => {
+                    rangeDiv.remove()
+                    saveSettings()
+                })
+
+                return rangeDiv
+            }
         </script>
     </body>
 </html>
