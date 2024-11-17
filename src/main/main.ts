@@ -100,6 +100,13 @@ ipcMain.on('summary-dismissed', () => {
     closeAllWindows()
 })
 
+// Add this new IPC handler for schedule updates
+ipcMain.on('schedule-updated', () => {
+    clearTimer() // Clear existing timer
+    startWorkTimer() // Restart timer with new schedule
+    updateTooltip()
+})
+
 // Data access handlers
 ipcMain.handle('get-stats', () => getStats())
 ipcMain.handle('get-settings', () => getSettings())

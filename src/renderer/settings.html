@@ -9,43 +9,74 @@
     <body>
         <div class="container">
             <h1>Settings</h1>
-            <div class="setting-item">
-                <span class="setting-label">Start on system startup</span>
-                <div class="setting-control">
-                    <input type="checkbox" id="startOnBoot" />
+            <div class="tabs">
+                <button class="tab-button active" data-tab="break">Break</button>
+                <button class="tab-button" data-tab="schedule">Schedule</button>
+                <button class="tab-button" data-tab="system">System</button>
+                <div class="tab-highlight"></div>
+            </div>
+
+            <div class="tab-content active" data-tab="break">
+                <div class="setting-item" data-setting="enableBreakNotification">
+                    <span class="setting-label">Show Break Reminders</span>
+                    <!-- <span class="helper-text">Enable this to receive notifications before your scheduled breaks.</span> -->
+                    <div class="setting-control">
+                        <input type="checkbox" id="enableBreakNotification" />
+                    </div>
+                </div>
+                <div class="setting-item" data-setting="breakPreNotificationOffset">
+                    <span class="setting-label">Notify before break</span>
+                    <!-- <span class="helper-text">Set how many seconds before a break you want to be notified.</span> -->
+                    <div class="setting-control">
+                        <input type="number" id="breakPreNotificationOffset" min="5" max="60" />
+                        <span class="input-unit">seconds</span>
+                    </div>
+                </div>
+                <div class="setting-item">
+                    <span class="setting-label">Auto dismiss Summary View</span>
+                    <div class="setting-control">
+                        <input type="checkbox" id="enableAutoDismiss" />
+                    </div>
+                </div>
+                <div class="setting-item">
+                    <span class="setting-label">Summary duration</span>
+                    <!-- <span class="helper-text">Duration the summary view is displayed after a break.</span> -->
+                    <div class="setting-control">
+                        <input type="number" id="summaryDuration" min="1" max="60" />
+                        <span class="input-unit">seconds</span>
+                    </div>
                 </div>
             </div>
-            <div class="setting-item">
-                <span class="setting-label">Auto dismiss Summary View</span>
-                <div class="setting-control">
-                    <input type="checkbox" id="enableAutoDismiss" />
+
+            <div class="tab-content" data-tab="schedule">
+                <div class="setting-item">
+                    <span class="setting-label">Enable Schedule</span>
+                    <div class="setting-control">
+                        <input type="checkbox" id="scheduleEnabled" />
+                    </div>
+                </div>
+                <div id="scheduleSettings">
+                    <div class="schedule-days">
+                        <!-- Days will be dynamically generated here -->
+                    </div>
                 </div>
             </div>
-            <div class="setting-item">
-                <span class="setting-label">Summary duration (seconds)</span>
-                <div class="setting-control">
-                    <input type="number" id="summaryDuration" min="1" max="60" />
+
+            <div class="tab-content" data-tab="system">
+                <div class="setting-item">
+                    <span class="setting-label">Start on system startup</span>
+                    <div class="setting-control">
+                        <input type="checkbox" id="startOnBoot" />
+                    </div>
                 </div>
-            </div>
-            <div class="setting-item">
-                <span class="setting-label">Enable break notification</span>
-                <div class="setting-control">
-                    <input type="checkbox" id="enableBreakNotification" />
-                </div>
-            </div>
-            <div class="setting-item">
-                <span class="setting-label">Break notification duration (seconds)</span>
-                <div class="setting-control">
-                    <input type="number" id="breakPreNotificationOffset" min="5" max="60" />
-                </div>
-            </div>
-            <div class="setting-item">
-                <span class="setting-label">Language</span>
-                <div class="setting-control">
-                    <select id="languageSelect">
-                        <option value="en">English</option>
-                        <!-- Add more languages -->
-                    </select>
+                <div class="setting-item">
+                    <span class="setting-label">Language</span>
+                    <div class="setting-control">
+                        <select id="languageSelect">
+                            <option value="en">English</option>
+                            <!-- Add more languages -->
+                        </select>
+                    </div>
                 </div>
             </div>
         </div>
@@ -68,6 +99,23 @@
                 document.getElementById('languageSelect').value = settings.language
                 document.getElementById('enableBreakNotification').checked = settings.enableBreakNotification
                 document.getElementById('breakPreNotificationOffset').value = settings.breakPreNotificationOffset / 1000
+                document.getElementById('scheduleEnabled').checked = settings.scheduleEnabled
+
+                initializeSchedule()
+
+                // Populate existing schedule
+                Object.entries(settings.schedule).forEach(([day, config]) => {
+                    const dayCheckbox = document.querySelector(`input[data-day="${day}"]`)
+                    dayCheckbox.checked = config.enabled
+
+                    const rangesContainer = document.getElementById(`${day}-ranges`)
+                    config.timeRanges.forEach((range) => {
+                        rangesContainer.appendChild(createTimeRangeElement(day, rangesContainer.children.length, range))
+                    })
+                })
+
+                updateScheduleState(settings.scheduleEnabled)
+
                 updateDashboardDurationState(settings.enableAutoDismiss)
                 updateNotificationDurationState(settings.enableBreakNotification)
             })
@@ -97,6 +145,19 @@
             })
 
             function saveSettings() {
+                const schedule = {}
+                days.forEach((day) => {
+                    const dayEnabled = document.querySelector(`input[data-day="${day}"]`).checked
+                    const timeRanges = Array.from(document.querySelectorAll(`#${day}-ranges .time-range`)).map((range) => ({
+                        start: range.querySelector('.start').value,
+                        end: range.querySelector('.end').value,
+                    }))
+                    schedule[day] = {
+                        enabled: dayEnabled,
+                        timeRanges: dayEnabled ? timeRanges : [],
+                    }
+                })
+
                 const settings = {
                     startOnBoot: document.getElementById('startOnBoot').checked,
                     enableAutoDismiss: document.getElementById('enableAutoDismiss').checked,
@@ -104,6 +165,8 @@
                     summaryDuration: document.getElementById('summaryDuration').value * 1000,
                     enableBreakNotification: document.getElementById('enableBreakNotification').checked,
                     breakPreNotificationOffset: document.getElementById('breakPreNotificationOffset').value * 1000,
+                    scheduleEnabled: document.getElementById('scheduleEnabled').checked,
+                    schedule: schedule,
                 }
                 ipcRenderer.send('save-settings', settings)
             }
@@ -111,6 +174,105 @@
             // Add change event listeners to all inputs
             document.querySelectorAll('input, select').forEach((element) => {
                 element.addEventListener('change', saveSettings)
+            })
+
+            // Add tab switching functionality
+            document.querySelectorAll('.tab-button').forEach((button) => {
+                button.addEventListener('click', () => {
+                    // Update active tab button
+                    document.querySelectorAll('.tab-button').forEach((btn) => btn.classList.remove('active'))
+                    button.classList.add('active')
+
+                    // Show selected tab content
+                    const tabName = button.dataset.tab
+                    document.querySelectorAll('.tab-content').forEach((content) => {
+                        content.classList.toggle('active', content.dataset.tab === tabName)
+                    })
+                })
+            })
+
+            // Make setting-items with checkboxes clickable
+            document.querySelectorAll('.setting-item').forEach((item) => {
+                const checkbox = item.querySelector('input[type="checkbox"]')
+                if (checkbox && checkbox.type === 'checkbox') {
+                    item.addEventListener('click', (e) => {
+                        if (!e.target.closest('input')) {
+                            checkbox.checked = !checkbox.checked
+                            checkbox.dispatchEvent(new Event('change'))
+                        }
+                    })
+                }
+            })
+
+            // Schedule Management
+            const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+            const daysDisplay = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+
+            function createTimeRangeElement(dayId, rangeIndex, timeRange = { start: '09:00', end: '18:00' }) {
+                const rangeDiv = document.createElement('div')
+                rangeDiv.className = 'time-range'
+                rangeDiv.innerHTML = `
+                    <input type="time" class="time-input start" value="${timeRange.start}">
+                    <span>to</span>
+                    <input type="time" class="time-input end" value="${timeRange.end}">
+                    <button class="remove-range">×</button>
+                `
+
+                rangeDiv.querySelector('.remove-range').addEventListener('click', () => {
+                    rangeDiv.remove()
+                    saveSettings()
+                })
+
+                rangeDiv.querySelectorAll('input').forEach((input) => {
+                    input.addEventListener('change', saveSettings)
+                })
+
+                return rangeDiv
+            }
+
+            function initializeSchedule() {
+                const scheduleContainer = document.querySelector('.schedule-days')
+                scheduleContainer.innerHTML = ''
+
+                days.forEach((day, index) => {
+                    const dayElement = document.createElement('div')
+                    dayElement.className = 'schedule-day'
+                    dayElement.innerHTML = `
+                        <div class="day-header">
+                            <label>
+                                <input type="checkbox" class="day-enabled" data-day="${day}">
+                                <span>${daysDisplay[index]}</span>
+                            </label>
+                            <button class="add-range" data-day="${day}">Add Time Range</button>
+                        </div>
+                        <div class="time-ranges" id="${day}-ranges"></div>
+                    `
+                    scheduleContainer.appendChild(dayElement)
+                })
+
+                // Event listeners
+                document.querySelectorAll('.add-range').forEach((button) => {
+                    button.addEventListener('click', (e) => {
+                        const dayId = e.target.dataset.day
+                        const rangesContainer = document.getElementById(`${dayId}-ranges`)
+                        rangesContainer.appendChild(createTimeRangeElement(dayId, rangesContainer.children.length))
+                        saveSettings()
+                    })
+                })
+
+                document.querySelectorAll('.day-enabled').forEach((checkbox) => {
+                    checkbox.addEventListener('change', saveSettings)
+                })
+            }
+
+            function updateScheduleState(enabled) {
+                const scheduleSettings = document.getElementById('scheduleSettings')
+                scheduleSettings.style.display = enabled ? 'block' : 'none'
+            }
+
+            document.getElementById('scheduleEnabled').addEventListener('change', (e) => {
+                updateScheduleState(e.target.checked)
+                saveSettings()
             })
         </script>
     </body>

@@ -37,6 +37,7 @@ class WindowManager {
                 width: display.bounds.width,
                 height: display.bounds.height,
                 closable: false,
+                // focusable: false,
                 show: false,
                 transparent: process.platform === 'darwin',
                 frame: false,

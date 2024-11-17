@@ -2,7 +2,18 @@
 
 import Store from 'electron-store'
 import { BrowserWindow, screen } from 'electron'
-import { StoreSchema, Settings, Stats, TrayWindowPosition } from './types'
+import { updateTooltip } from './tray'
+import { StoreSchema, Settings, Stats, TrayWindowPosition, WeeklySchedule, DaySchedule } from './types'
+
+const DEFAULT_SCHEDULE: WeeklySchedule = {
+    monday: { enabled: true, timeRanges: [{ start: '09:00', end: '18:00' }] },
+    tuesday: { enabled: true, timeRanges: [{ start: '09:00', end: '18:00' }] },
+    wednesday: { enabled: true, timeRanges: [{ start: '09:00', end: '18:00' }] },
+    thursday: { enabled: true, timeRanges: [{ start: '09:00', end: '18:00' }] },
+    friday: { enabled: true, timeRanges: [{ start: '09:00', end: '18:00' }] },
+    saturday: { enabled: false, timeRanges: [] },
+    sunday: { enabled: false, timeRanges: [] },
+}
 
 // Store instance and defaults (now private to this module)
 const STORE_DEFAULTS: StoreSchema = {
@@ -24,6 +35,8 @@ const STORE_DEFAULTS: StoreSchema = {
         enableBreakNotification: true,
         breakPreNotificationOffset: 30000,
         language: 'en',
+        scheduleEnabled: false,
+        schedule: DEFAULT_SCHEDULE,
     },
     trayWindowPositions: {},
 }
@@ -50,23 +63,56 @@ export function updateStats(newStats: Partial<Stats>) {
 }
 
 // Settings management
+
+// Add this type guard
+function isDayOfWeek(day: string): day is keyof WeeklySchedule {
+    return ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].includes(day)
+}
+
+// Modify getSettings function
 export function getSettings(): Settings {
     const settings = store.get('settings')
+    const defaultSettings = STORE_DEFAULTS.settings!
+
     if (!settings) {
-        store.set('settings', STORE_DEFAULTS.settings)
-        return STORE_DEFAULTS.settings!
+        store.set('settings', defaultSettings)
+        return defaultSettings
     }
 
-    // Always merge with defaults to ensure all fields exist with valid values
+    // Ensure schedule exists and has all required properties
+    const schedule = settings.schedule || DEFAULT_SCHEDULE
+    Object.keys(DEFAULT_SCHEDULE).forEach((day) => {
+        if (isDayOfWeek(day)) {
+            // Type guard
+            if (!schedule[day]) {
+                schedule[day] = DEFAULT_SCHEDULE[day]
+            }
+            // Ensure each day has the correct structure
+            if (typeof schedule[day].enabled !== 'boolean') {
+                schedule[day].enabled = DEFAULT_SCHEDULE[day].enabled
+            }
+            if (!Array.isArray(schedule[day].timeRanges)) {
+                schedule[day].timeRanges = DEFAULT_SCHEDULE[day].timeRanges
+            }
+        }
+    })
+
+    // Merge with defaults to ensure all properties exist
     return {
-        ...STORE_DEFAULTS.settings,
+        ...defaultSettings,
         ...settings,
+        schedule, // Use our validated schedule
     }
 }
 
 export function updateSettings(updates: Partial<Settings>) {
     const current = getSettings()
     store.set('settings', { ...current, ...updates })
+
+    // Trigger timer and tooltip updates when schedule changes
+    const { ipcMain } = require('electron')
+    ipcMain.emit('schedule-updated')
+    updateTooltip()
 }
 
 // Last break time management
@@ -100,4 +146,17 @@ export function saveWindowPosition(window: BrowserWindow, windowName: string) {
         const { x, y } = window.getBounds()
         store.set(`trayWindowPositions.${windowName}`, { x, y } as TrayWindowPosition)
     }
+}
+
+// Add these new helper functions
+
+// Remove these exports as they're now handled by ScheduleManager
+// export function isWithinActiveHours
+// export function getCurrentRangeEnd
+// export function getNextActiveTime
+
+export function updateDaySchedule(day: keyof WeeklySchedule, schedule: DaySchedule) {
+    const settings = getSettings()
+    settings.schedule[day] = schedule
+    updateSettings(settings)
 }

@@ -16,11 +16,33 @@ export interface Settings {
     enableBreakNotification: boolean
     breakPreNotificationOffset: number
     language: string
+    scheduleEnabled: boolean // Master toggle for schedule feature
+    schedule: WeeklySchedule
 }
 
 export interface TrayWindowPosition {
     x: number
     y: number
+}
+
+export interface TimeRange {
+    start: string // 24-hour format "HH:mm"
+    end: string // 24-hour format "HH:mm"
+}
+
+export interface DaySchedule {
+    enabled: boolean
+    timeRanges: TimeRange[]
+}
+
+export interface WeeklySchedule {
+    monday: DaySchedule
+    tuesday: DaySchedule
+    wednesday: DaySchedule
+    thursday: DaySchedule
+    friday: DaySchedule
+    saturday: DaySchedule
+    sunday: DaySchedule
 }
 
 // Root schema that defines the complete structure of our persistent storage

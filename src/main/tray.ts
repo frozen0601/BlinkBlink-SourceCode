@@ -1,8 +1,9 @@
-import { BrowserWindow, Tray, Menu, nativeTheme, app, MenuItem } from 'electron'
+import { BrowserWindow, Tray, Menu, nativeTheme, app, screen, MenuItem } from 'electron'
 import { autoUpdater } from 'electron-updater'
 import path from 'path'
-import { skipBreaksFor, skipBreaksUntilEndOfDay, getRemainingTimeInMinutes, isSkippedUntilEndOfDay } from './timer'
-import { getWindowPosition, saveWindowPosition } from './store'
+import { skipBreaksFor, skipBreaksUntilEndOfDay, getRemainingTimeInMinutes, isRunning } from './timer'
+import { getWindowPosition, saveWindowPosition, getSettings } from './store'
+import { scheduleManager } from './scheduler'
 
 let statsWindow: BrowserWindow | null = null
 let settingsWindow: BrowserWindow | null = null
@@ -64,11 +65,11 @@ export function createSettingsWindow() {
         return
     }
     const position = getWindowPosition('settings')
-
+    const { width, height } = screen.getPrimaryDisplay().workAreaSize
     settingsWindow = createWindow(
         {
-            width: 400,
-            height: 500,
+            width: Math.min(800, width * 0.8),
+            height: Math.min(600, width * 0.8),
             ...position,
             resizable: false,
             center: !position.x && !position.y,
@@ -142,19 +143,29 @@ function formatDuration(mins: number): string {
     return remainingMins > 0 ? `${hourText} ${remainingMins} min` : hourText
 }
 
+function formatRemainingTime(minutes: number): string {
+    if (minutes < 60) {
+        return `${minutes}m`
+    }
+    const hours = Math.floor(minutes / 60)
+    const mins = minutes % 60
+    return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`
+}
+
 export function updateTooltip() {
     if (!tray) return
 
-    const mins = getRemainingTimeInMinutes()
-    const isRestOfDay = isSkippedUntilEndOfDay()
+    const now = new Date()
+    const isActive = scheduleManager.isWithinActiveHours(now)
+    const remainingMins = getRemainingTimeInMinutes()
+    let outputText = 'Zzz'
 
-    const timeText = isRestOfDay ? 'Zzz' : formatDuration(mins)
-    const tooltipText = `BlinkBlink - ${isRestOfDay ? 'Rest of day' : timeText}`
-    tray.setToolTip(tooltipText)
-
-    if (process.platform === 'darwin') {
-        tray.setTitle(timeText)
+    if (isActive && isRunning() && remainingMins > 0) {
+        outputText = formatRemainingTime(remainingMins)
     }
+
+    if (process.platform === 'darwin') tray.setTitle(outputText)
+    tray.setToolTip(`BlinkBlink: ${outputText}`)
 }
 
 function createDonateSubmenu() {

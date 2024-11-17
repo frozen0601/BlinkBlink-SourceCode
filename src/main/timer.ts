@@ -2,6 +2,7 @@ import { ipcMain, Notification } from 'electron'
 import { DURATIONS } from './constants'
 import { closeAllWindows } from './windows'
 import { getSettings } from './store'
+import { scheduleManager } from './scheduler'
 
 class TimerManager {
     private static instance: TimerManager
@@ -64,19 +65,34 @@ class TimerManager {
     }
 
     private setNextBreakTime(date: Date): void {
+        // Don't set a break if it's equal to or after the current range end time
+        const currentRangeEnd = scheduleManager.getCurrentRangeEnd(new Date())
+        if (currentRangeEnd && date >= currentRangeEnd) {
+            this.clearTimer()
+            return
+        }
+
         this.#nextBreakTime = date
         const timeoutDuration = date.getTime() - Date.now()
 
         this.clearTimer()
         this.scheduleBreakNotification(date)
 
-        this.#currentTimer = setTimeout(async () => {
-            try {
-                ipcMain.emit('start-break-countdown')
-            } catch (error) {
-                console.error('Error during break countdown:', error)
-            }
-        }, timeoutDuration)
+        // Only set timer if it's within today's schedule
+        if (scheduleManager.isWithinActiveHours(date)) {
+            this.#currentTimer = setTimeout(async () => {
+                try {
+                    ipcMain.emit('start-break-countdown')
+                } catch (error) {
+                    console.error('Error during break countdown:', error)
+                }
+            }, timeoutDuration)
+        }
+    }
+
+    private shouldSetTimer(date: Date): boolean {
+        const currentRangeEnd = scheduleManager.getCurrentRangeEnd(date)
+        return !currentRangeEnd || date < currentRangeEnd
     }
 
     getRemainingTimeInMinutes(): number {
@@ -87,15 +103,40 @@ class TimerManager {
 
     // Public timer operations
     startWorkTimer(): void {
-        // Only honor skip if more than 20 minutes remaining
-        if (this.#skipUntil && this.#skipUntil > new Date() && this.#skipUntil.getTime() - Date.now() > 20 * 60 * 1000) {
-            this.setNextBreakTime(this.#skipUntil)
+        const now = new Date()
+
+        // 1. Handle schedule restrictions
+        if (!scheduleManager.isWithinActiveHours(now)) {
+            const nextActive = scheduleManager.getNextActiveTime()
+            if (nextActive) {
+                this.setNextBreakTime(nextActive)
+            } else {
+                this.clearTimer()
+            }
             return
         }
 
+        // 2. Handle skip conditions
+        if (this.#skipUntil && this.#skipUntil > now) {
+            if (scheduleManager.isWithinActiveHours(this.#skipUntil)) {
+                this.setNextBreakTime(this.#skipUntil)
+                return
+            }
+        }
+
+        // 3. Calculate next break
+        const proposedBreak = new Date(now.getTime() + DURATIONS.WORK_DURATION)
+        if (!this.shouldSetTimer(proposedBreak)) {
+            const currentRangeEnd = scheduleManager.getCurrentRangeEnd(now)
+            if (currentRangeEnd) {
+                this.setNextBreakTime(currentRangeEnd)
+                return
+            }
+        }
+
+        // 4. Set normal timer
         this.#skipUntil = undefined
-        const nextBreak = new Date(Date.now() + DURATIONS.WORK_DURATION)
-        this.setNextBreakTime(nextBreak)
+        this.setNextBreakTime(proposedBreak)
     }
 
     skipBreaksFor(minutes: number): void {
@@ -109,7 +150,7 @@ class TimerManager {
         const endOfDay = new Date()
         endOfDay.setHours(23, 59, 59, 999)
         this.#skipUntil = endOfDay
-        this.setNextBreakTime(endOfDay)
+        this.clearTimer() // Don't set a timer if skipping
         closeAllWindows()
     }
 
