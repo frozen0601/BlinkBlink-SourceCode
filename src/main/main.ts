@@ -7,7 +7,7 @@ import { startWorkTimer, clearTimer, isRunning } from './timer'
 import { showBreakView, showSummaryView, closeAllWindows } from './windows'
 import { DURATIONS } from './constants'
 import { createTray, destroyTray, updateTooltip } from './tray'
-import { checkForUpdates } from './updater'
+import { checkForUpdates, startAutoUpdateTimer, stopAutoUpdateTimer } from './updater'
 
 // Stats Management
 export function updateBreakStats(skipped: boolean) {
@@ -45,37 +45,6 @@ export function updateBreakStats(skipped: boolean) {
     }
     updateLastBreakEndTime(currentTime)
 }
-
-// function getIconPath() {
-//     return process.platform === 'win32'
-//         ? path.join(__dirname, 'icon.ico')
-//         : process.platform === 'darwin'
-//         ? path.join(__dirname, 'icon.icns')
-//         : path.join(__dirname, 'icon.png')
-// }
-
-// function createWindow(options: Electron.BrowserWindowConstructorOptions, filePath: string, onClose: () => void) {
-//     const window = new BrowserWindow({
-//         ...options,
-//         show: false, // Don't show the window immediately
-//         backgroundColor: nativeTheme.shouldUseDarkColors ? '#1a1a1a' : '#f5f5f5',
-//         icon: getIconPath(),
-//         webPreferences: {
-//             nodeIntegration: true,
-//             contextIsolation: false,
-//         },
-//     })
-
-//     window.loadFile(path.join(__dirname, filePath))
-//     window.on('closed', onClose)
-
-//     // Show the window once it's ready
-//     window.once('ready-to-show', () => {
-//         window.show()
-//     })
-
-//     return window
-// }
 
 // Simplified IPC handlers
 ipcMain.on('start-break-countdown', () => {
@@ -130,6 +99,8 @@ ipcMain.handle('check-for-updates', () => checkForUpdates(false))
 
 // IPC Handlers - Settings
 ipcMain.on('save-settings', (event, settings: Settings) => {
+    const currentSettings = getSettings()
+
     updateSettings(settings)
 
     // Configure auto-start behavior
@@ -138,6 +109,9 @@ ipcMain.on('save-settings', (event, settings: Settings) => {
         openAsHidden: true,
         path: app.getPath('exe'),
     })
+
+    // Only handle auto-update timer if the setting changed
+
 })
 
 // App Lifecycle Events
@@ -149,17 +123,17 @@ app.whenReady().then(() => {
         app.setAppUserModelId('BlinkBLink')
     }
     if (process.platform === 'darwin') {
-        // app.dock.hide()
         const appIcon = nativeImage.createFromPath(path.join(__dirname, 'icon.png'))
         app.dock.setIcon(appIcon)
+        app.dock.hide()
         app.setActivationPolicy('regular')
     }
     createTray()
     startWorkTimer()
     updateTooltip()
 
-    // Automatically check for updates on startup
-    checkForUpdates(true)
+    // Replace the single update check with the timer-based system
+    startAutoUpdateTimer()
 
     // Initialize auto-start setting based on stored preference
     app.setLoginItemSettings({
@@ -187,6 +161,7 @@ destroyTray()
 
 // Gracefully handle app quitting
 app.on('before-quit', () => {
+    stopAutoUpdateTimer()
     clearTimer()
     closeAllWindows()
     destroyTray()

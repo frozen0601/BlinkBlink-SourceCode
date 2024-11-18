@@ -4,6 +4,7 @@ import Store from 'electron-store'
 import { BrowserWindow, screen } from 'electron'
 import { updateTooltip } from './tray'
 import { StoreSchema, Settings, Stats, TrayWindowPosition, WeeklySchedule, DaySchedule } from './types'
+import { startAutoUpdateTimer, stopAutoUpdateTimer } from './updater'
 
 const DEFAULT_SCHEDULE: WeeklySchedule = {
     monday: { enabled: true, timeRanges: [{ start: '09:00', end: '18:00' }] },
@@ -36,6 +37,7 @@ const STORE_DEFAULTS: StoreSchema = {
         breakPreNotificationOffset: 30000,
         language: 'en',
         scheduleEnabled: false,
+        autoUpdate: true,
         schedule: DEFAULT_SCHEDULE,
     },
     trayWindowPositions: {},
@@ -107,11 +109,23 @@ export function getSettings(): Settings {
 
 export function updateSettings(updates: Partial<Settings>) {
     const current = getSettings()
+    const autoUpdateChanged = current.autoUpdate !== updates.autoUpdate
+
+    if (autoUpdateChanged) {
+        if (updates.autoUpdate) {
+            console.log('Starting auto-update timer')
+            startAutoUpdateTimer()
+        } else {
+            console.log('Stopping auto-update timer')
+            stopAutoUpdateTimer()
+        }
+    }
     store.set('settings', { ...current, ...updates })
 
     // Trigger timer and tooltip updates when schedule changes
     const { ipcMain } = require('electron')
     ipcMain.emit('schedule-updated')
+
     updateTooltip()
 }
 

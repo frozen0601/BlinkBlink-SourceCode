@@ -93,6 +93,15 @@
                         </select>
                     </div>
                 </div>
+                <div class="setting-item">
+                    <div class="setting-item-text">
+                        <span class="setting-label">Automatic Updates</span>
+                        <span class="helper-text">Check for updates automatically when the app starts</span>
+                    </div>
+                    <div class="setting-control">
+                        <input type="checkbox" id="autoUpdate" />
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -115,6 +124,7 @@
                 document.getElementById('enableBreakNotification').checked = settings.enableBreakNotification
                 document.getElementById('breakPreNotificationOffset').value = settings.breakPreNotificationOffset / 1000
                 document.getElementById('scheduleEnabled').checked = settings.scheduleEnabled
+                document.getElementById('autoUpdate').checked = settings.autoUpdate
 
                 initializeSchedule()
 
@@ -189,6 +199,7 @@
                     enableBreakNotification: document.getElementById('enableBreakNotification').checked,
                     breakPreNotificationOffset: document.getElementById('breakPreNotificationOffset').value * 1000,
                     scheduleEnabled: document.getElementById('scheduleEnabled').checked,
+                    autoUpdate: document.getElementById('autoUpdate').checked,
                     schedule: schedule,
                 }
                 ipcRenderer.send('save-settings', settings)
@@ -427,7 +438,7 @@
                     }
                 }
 
-                [startInput, endInput].forEach(input => {
+                ;[startInput, endInput].forEach((input) => {
                     input.addEventListener('change', () => {
                         validateTimeRange()
                         saveSettings()

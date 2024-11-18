@@ -16,7 +16,8 @@ export interface Settings {
     enableBreakNotification: boolean
     breakPreNotificationOffset: number
     language: string
-    scheduleEnabled: boolean // Master toggle for schedule feature
+    scheduleEnabled: boolean
+    autoUpdate: boolean
     schedule: WeeklySchedule
 }
 

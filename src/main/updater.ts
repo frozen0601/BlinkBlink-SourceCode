@@ -4,6 +4,7 @@ import { download } from 'electron-dl'
 import * as path from 'path'
 import fetch from 'node-fetch'
 import * as semver from 'semver'
+import { getSettings } from './store'
 
 // Interface definitions moved from main.ts
 interface GitHubAsset {
@@ -218,4 +219,28 @@ export async function getLatestReleaseFromGitHub(): Promise<GitHubRelease> {
     releases.sort((a, b) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime())
     const latestRelease = releases[0]
     return latestRelease
+}
+
+let autoUpdateTimer: NodeJS.Timeout | null = null
+const FOUR_HOURS = 4 * 60 * 60 * 1000
+
+export function startAutoUpdateTimer() {
+    if (autoUpdateTimer) {
+        clearInterval(autoUpdateTimer)
+    }
+
+    const settings = getSettings()
+    if (settings.autoUpdate) {
+        checkForUpdates(true)
+        autoUpdateTimer = setInterval(() => {
+            checkForUpdates(true)
+        }, FOUR_HOURS)
+    }
+}
+
+export function stopAutoUpdateTimer() {
+    if (autoUpdateTimer) {
+        clearInterval(autoUpdateTimer)
+        autoUpdateTimer = null
+    }
 }
