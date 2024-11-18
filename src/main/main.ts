@@ -109,9 +109,6 @@ ipcMain.on('save-settings', (event, settings: Settings) => {
         openAsHidden: true,
         path: app.getPath('exe'),
     })
-
-    // Only handle auto-update timer if the setting changed
-
 })
 
 // App Lifecycle Events
@@ -122,11 +119,11 @@ app.whenReady().then(() => {
     if (process.platform === 'win32') {
         app.setAppUserModelId('BlinkBLink')
     }
-    if (process.platform === 'darwin') {
+    if (process.platform === 'darwin' && app.dock) {
+        app.dock.hide()
         const appIcon = nativeImage.createFromPath(path.join(__dirname, 'icon.png'))
         app.dock.setIcon(appIcon)
-        app.dock.hide()
-        app.setActivationPolicy('regular')
+        app.setActivationPolicy('accessory')
     }
     createTray()
     startWorkTimer()
