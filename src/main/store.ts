@@ -5,6 +5,7 @@ import { BrowserWindow, screen } from 'electron'
 import { updateTooltip } from './tray'
 import { StoreSchema, Settings, Stats, TrayWindowPosition, WeeklySchedule, DaySchedule } from './types'
 import { startAutoUpdateTimer, stopAutoUpdateTimer } from './updater'
+import { v4 as uuidv4 } from 'uuid'
 
 const DEFAULT_SCHEDULE: WeeklySchedule = {
     monday: { enabled: true, timeRanges: [{ start: '09:00', end: '18:00' }] },
@@ -18,6 +19,18 @@ const DEFAULT_SCHEDULE: WeeklySchedule = {
 
 // Store instance and defaults (now private to this module)
 const STORE_DEFAULTS: StoreSchema = {
+    userId: uuidv4(),
+    settings: {
+        enableBreakNotification: true,
+        breakPreNotificationOffset: 30000,
+        enableAutoDismiss: true,
+        summaryDuration: 5000,
+        scheduleEnabled: false,
+        schedule: DEFAULT_SCHEDULE,
+        startOnBoot: false,
+        autoUpdate: true,
+        language: 'en',
+    },
     stats: {
         breakStreakCount: 0,
         breakStreakDuration: 0,
@@ -27,19 +40,9 @@ const STORE_DEFAULTS: StoreSchema = {
         highestStreakStartTime: Date.now(),
         highestStreakEndTime: Date.now(),
     },
+    hasCompletedFirstRun: false,
     lastBreakEndTime: Date.now(),
     currentWorkStreakStartTime: Date.now(),
-    settings: {
-        startOnBoot: false,
-        enableAutoDismiss: true,
-        summaryDuration: 5000,
-        enableBreakNotification: true,
-        breakPreNotificationOffset: 30000,
-        language: 'en',
-        scheduleEnabled: false,
-        autoUpdate: true,
-        schedule: DEFAULT_SCHEDULE,
-    },
     trayWindowPositions: {},
 }
 
@@ -54,7 +57,6 @@ const WINDOW_DEFAULTS = {
 }
 
 // Stats management
-
 export function getStats(): Stats {
     return store.get('stats')
 }
@@ -64,14 +66,11 @@ export function updateStats(newStats: Partial<Stats>) {
     store.set('stats', { ...currentStats, ...newStats })
 }
 
-// Settings management
-
-// Add this type guard
+// Modify getSettings function
 function isDayOfWeek(day: string): day is keyof WeeklySchedule {
     return ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].includes(day)
 }
 
-// Modify getSettings function
 export function getSettings(): Settings {
     const settings = store.get('settings')
     const defaultSettings = STORE_DEFAULTS.settings!
@@ -103,7 +102,7 @@ export function getSettings(): Settings {
     return {
         ...defaultSettings,
         ...settings,
-        schedule, // Use our validated schedule
+        schedule,
     }
 }
 
@@ -113,10 +112,8 @@ export function updateSettings(updates: Partial<Settings>) {
 
     if (autoUpdateChanged) {
         if (updates.autoUpdate) {
-            console.log('Starting auto-update timer')
             startAutoUpdateTimer()
         } else {
-            console.log('Stopping auto-update timer')
             stopAutoUpdateTimer()
         }
     }
@@ -139,7 +136,6 @@ export function updateLastBreakEndTime(timestamp: number) {
 }
 
 // Window position management
-
 export function getWindowPosition(windowName: string): TrayWindowPosition {
     function getDefaultWindowPosition(): TrayWindowPosition {
         const primaryDisplay = screen.getPrimaryDisplay()
@@ -162,15 +158,33 @@ export function saveWindowPosition(window: BrowserWindow, windowName: string) {
     }
 }
 
-// Add these new helper functions
-
-// Remove these exports as they're now handled by ScheduleManager
-// export function isWithinActiveHours
-// export function getCurrentRangeEnd
-// export function getNextActiveTime
-
+// Schedule management
 export function updateDaySchedule(day: keyof WeeklySchedule, schedule: DaySchedule) {
     const settings = getSettings()
     settings.schedule[day] = schedule
     updateSettings(settings)
+}
+
+// First run flag management
+export function hasCompletedFirstRun(): boolean {
+    return store.get('hasCompletedFirstRun')
+}
+
+export function setFirstRunCompleted() {
+    store.set('hasCompletedFirstRun', true)
+}
+
+// User ID management
+export function getUserId(): string {
+    return store.get('userId')
+}
+
+export function ensureUserId(): string {
+    const userId = getUserId()
+    if (!userId) {
+        const newUserId = uuidv4()
+        store.set('userId', newUserId)
+        return newUserId
+    }
+    return userId
 }

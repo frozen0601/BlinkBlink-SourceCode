@@ -1,4 +1,5 @@
 import { ipcRenderer } from 'electron'
+import { trackEvent } from '@aptabase/electron/renderer'
 
 const MILESTONE_TIERS = {
     BASE: [3, 10, 20, 50],
@@ -78,6 +79,15 @@ class UnifiedUI {
         this.elements.dismissButton?.addEventListener('click', () => {
             this.ipc.send('summary-dismissed')
             window.close()
+        })
+
+        // Track user interactions
+        document.getElementById('skipButton')?.addEventListener('click', () => {
+            trackEvent('user_interaction', { action: 'skip_clicked' })
+        })
+
+        document.getElementById('completeButton')?.addEventListener('click', () => {
+            trackEvent('user_interaction', { action: 'complete_clicked' })
         })
     }
 

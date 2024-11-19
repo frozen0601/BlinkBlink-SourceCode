@@ -10,15 +10,15 @@ export interface Stats {
 }
 
 export interface Settings {
-    startOnBoot: boolean
-    enableAutoDismiss: boolean
-    summaryDuration: number
     enableBreakNotification: boolean
     breakPreNotificationOffset: number
-    language: string
+    enableAutoDismiss: boolean
+    summaryDuration: number
     scheduleEnabled: boolean
-    autoUpdate: boolean
     schedule: WeeklySchedule
+    startOnBoot: boolean
+    autoUpdate: boolean
+    language: string
 }
 
 export interface TrayWindowPosition {
@@ -49,10 +49,12 @@ export interface WeeklySchedule {
 // Root schema that defines the complete structure of our persistent storage
 // This ensures type safety when reading/writing to electron-store
 export interface StoreSchema {
+    userId: string // Unique user ID
+    settings?: Settings // User preferences
+    stats: Stats // Break/work streak statistics
+    hasCompletedFirstRun: boolean // First run flag
     lastBreakEndTime: number // Timestamp of last break
     currentWorkStreakStartTime: number // Current work session start
-    stats: Stats // Break/work streak statistics
-    settings?: Settings // User preferences
     trayWindowPositions: {
         // UI state persistence
         [trayWindowName: string]: TrayWindowPosition

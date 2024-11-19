@@ -1,6 +1,6 @@
 import { app, ipcMain, powerMonitor, nativeImage } from 'electron'
 import * as path from 'path'
-import { updateStats, updateLastBreakEndTime, getSettings, updateSettings, getStats } from './store'
+import { updateStats, updateLastBreakEndTime, getSettings, updateSettings, getStats, getUserId, hasCompletedFirstRun } from './store'
 import { Settings } from './types'
 import * as fs from 'fs'
 import { startWorkTimer, clearTimer, isRunning } from './timer'
@@ -8,9 +8,14 @@ import { showBreakView, showSummaryView, closeAllWindows } from './windows'
 import { DURATIONS } from './constants'
 import { createTray, destroyTray, updateTooltip } from './tray'
 import { checkForUpdates, startAutoUpdateTimer, stopAutoUpdateTimer } from './updater'
+import { initialize, trackEvent } from '@aptabase/electron/main'
 
 // Stats Management
 export function updateBreakStats(skipped: boolean) {
+    trackEvent('break_action', {
+        type: skipped ? 'skipped' : 'completed',
+        streak_count: getStats().breakStreakCount,
+    })
     const stats = getStats()
     const currentTime = Date.now()
 
@@ -54,12 +59,14 @@ ipcMain.on('start-break-countdown', () => {
 })
 
 ipcMain.on('break-skip', () => {
+    trackEvent('break_skipped')
     updateBreakStats(true)
     closeAllWindows()
     startWorkTimer()
 })
 
 ipcMain.on('break-complete', () => {
+    trackEvent('break_completed', { skipped: false })
     updateBreakStats(false)
     showSummaryView()
 })
@@ -97,11 +104,26 @@ ipcMain.handle('get-app-info', () => {
 // IPC Handler - Check for updates (manual check)
 ipcMain.handle('check-for-updates', () => checkForUpdates(false))
 
+function trackSettingsState(settings: Settings) {
+    trackEvent('settings_values', {
+        startOnBoot: settings.startOnBoot ? 1 : 0,
+        autoDismiss: settings.enableAutoDismiss ? 1 : 0,
+        summaryDuration: settings.summaryDuration,
+        breakNotification: settings.enableBreakNotification ? 1 : 0,
+        breakNotificationOffset: settings.breakPreNotificationOffset,
+        scheduleEnabled: settings.scheduleEnabled ? 1 : 0,
+        autoUpdate: settings.autoUpdate ? 1 : 0,
+    })
+    // we track the language setting separately as being a string value mess up aptabase dashboard
+    trackEvent('language_setting', {
+        value: settings.language,
+    })
+}
+
 // IPC Handlers - Settings
 ipcMain.on('save-settings', (event, settings: Settings) => {
-    const currentSettings = getSettings()
-
     updateSettings(settings)
+    trackSettingsState(settings)
 
     // Configure auto-start behavior
     app.setLoginItemSettings({
@@ -112,9 +134,24 @@ ipcMain.on('save-settings', (event, settings: Settings) => {
 })
 
 // App Lifecycle Events
+initialize('process.env.APTABASE_API_KEY')
 app.whenReady().then(() => {
-    // Ensure settings are initialized with defaults
+    const firstRun = hasCompletedFirstRun()
+
+    trackEvent('app_started', {
+        platform: process.platform,
+        version: app.getVersion(),
+        first_run: firstRun ? 1 : 0,
+    })
+
     const settings = getSettings()
+    // TODO: Show tutorial on first run
+    if (firstRun) trackSettingsState(settings)
+    app.setLoginItemSettings({
+        openAtLogin: settings?.startOnBoot || false,
+        openAsHidden: true,
+        path: app.getPath('exe'),
+    })
 
     if (process.platform === 'win32') {
         app.setAppUserModelId('BlinkBLink')
@@ -128,27 +165,23 @@ app.whenReady().then(() => {
     createTray()
     startWorkTimer()
     updateTooltip()
-
-    // Replace the single update check with the timer-based system
     startAutoUpdateTimer()
-
-    // Initialize auto-start setting based on stored preference
-    app.setLoginItemSettings({
-        openAtLogin: settings?.startOnBoot || false,
-        openAsHidden: true,
-        path: app.getPath('exe'),
-    })
 
     // Handle system resume events
     powerMonitor.on('resume', () => {
         startWorkTimer()
         updateTooltip()
+        closeAllWindows()
     })
 
     powerMonitor.on('unlock-screen', () => {
         startWorkTimer()
         updateTooltip()
+        closeAllWindows()
     })
+
+    // print user uuid
+    console.log(`User ID: ${getUserId()}`)
 })
 
 app.on('window-all-closed', () => {
@@ -158,6 +191,7 @@ destroyTray()
 
 // Gracefully handle app quitting
 app.on('before-quit', () => {
+    trackEvent('app_quit')
     stopAutoUpdateTimer()
     clearTimer()
     closeAllWindows()

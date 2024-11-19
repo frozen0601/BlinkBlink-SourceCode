@@ -87,11 +87,14 @@
         "webpack-cli": "^5.1.4"
     },
     "dependencies": {
+        "@aptabase/electron": "^0.3.1",
         "date-fns": "^4.1.0",
         "electron-dl": "^4.0.0",
         "electron-store": "^8.2.0",
         "electron-updater": "^6.3.9",
         "node-fetch": "^3.3.2",
-        "semver": "^7.6.3"
+        "semver": "^7.6.3",
+        "universal-analytics": "^0.5.3",
+        "uuid": "^11.0.3"
     }
 }

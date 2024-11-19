@@ -4,6 +4,7 @@ import { BrowserWindow, screen, ipcMain, nativeTheme } from 'electron'
 import * as path from 'path'
 import { DURATIONS } from './constants'
 import { getSettings } from './store'
+import { trackEvent } from '@aptabase/electron/main'
 
 interface WindowWithInterval {
     window: BrowserWindow
@@ -145,6 +146,7 @@ class WindowManager {
     }
 
     showBreakView() {
+        trackEvent('view_shown', { type: 'break' })
         const displays = screen.getAllDisplays()
         displays.forEach((display) => {
             this.createOrUpdateWindow({
@@ -158,6 +160,7 @@ class WindowManager {
     }
 
     showSummaryView() {
+        trackEvent('view_shown', { type: 'summary' })
         const displays = screen.getAllDisplays()
         const settings = getSettings()
         const duration = settings?.enableAutoDismiss ? settings.summaryDuration : Infinity
