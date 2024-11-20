@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Welcome to BlinkBlink</title>
+        <link rel="stylesheet" href="tutorial.css" />
+    </head>
+    <body>
+        <div class="tutorial-container">
+            <div class="content">
+                <section class="page active" id="welcome">
+                    <div class="page-content">
+                        <div class="welcome-header animate-fade-in">
+                            <img src="icon.png" alt="BlinkBlink Icon" class="app-icon pulse" />
+                            <h1>Welcome to BlinkBlink</h1>
+                            <p class="subtitle">Your intelligent eye care companion</p>
+                        </div>
+                        <div class="feature-highlights animate-fade-in-delayed">
+                            <div class="highlight-item">
+                                <span class="icon">👀</span>
+                                <p>Smart break reminders</p>
+                            </div>
+                            <div class="highlight-item">
+                                <span class="icon">📊</span>
+                                <p>Usage analytics</p>
+                            </div>
+                            <div class="highlight-item">
+                                <span class="icon">⚡</span>
+                                <p>Lightweight & efficient</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="page" id="rule">
+                    <div class="page-content">
+                        <div class="header-section">
+                            <h2 class="animate-fade-in">The 20-20-20 Rule</h2>
+                            <p class="section-description animate-fade-in-delayed">A scientifically proven method to reduce eye strain</p>
+                        </div>
+                        <div class="main-section">
+                            <div class="rule-card">
+                                <div class="rule-item hover-lift animate-enter delay-0 transition-hover-lift">
+                                    <div class="rule-icon">⏰</div>
+                                    <h3>Every 20 minutes</h3>
+                                    <p>Take a brief pause from your screen time</p>
+                                </div>
+                                <div class="rule-item hover-lift animate-enter delay-0 transition-hover-lift">
+                                    <div class="rule-icon">👁️</div>
+                                    <h3>Look 20 feet away</h3>
+                                    <p>Reset your eye's focal distance</p>
+                                </div>
+                                <div class="rule-item hover-lift animate-enter delay-0 transition-hover-lift">
+                                    <div class="rule-icon">⌛</div>
+                                    <h3>For 20 seconds</h3>
+                                    <p>A short break is all you need</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="page" id="usage">
+                    <div class="page-content">
+                        <div class="header-section">
+                            <h2 class="animate-fade-in">Quick Access</h2>
+                            <p class="section-description animate-fade-in-delayed">Easily manage BlinkBlink from your system tray</p>
+                        </div>
+                        <div class="main-section">
+                            <div class="usage-guide">
+                                <div class="feature-card transition-hover-lift animate-slide-up">
+                                    <div class="tray-preview">
+                                        <img class="tray-screenshot" alt="System tray location" />
+                                    </div>
+                                    <div class="content-section">
+                                        <ul>
+                                            <li class="hover-move">Skip breaks when needed</li>
+                                            <li class="hover-move">View your usage statistics</li>
+                                            <li class="hover-move">Customize your settings</li>
+                                            <li class="hover-move">Share your feedback</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="page" id="settings">
+                    <div class="page-content">
+                        <div class="header-section">
+                            <h2 class="animate-fade-in">One More Thing...</h2>
+                            <p class="section-description animate-fade-in-delayed">Enable these settings to enhance a seamless experience</p>
+                        </div>
+                        <div class="main-section">
+                            <div class="settings-grid animate-fade-in-delayed">
+                                <div class="setting-card transition-hover-lift" id="startOnBootCard" data-setting="startOnBoot">
+                                    <h3>Auto Start</h3>
+                                    <p>Launch BlinkBlink when your computer starts</p>
+                                </div>
+                                <div class="setting-card transition-hover-lift" id="autoUpdateCard" data-setting="autoUpdate">
+                                    <h3>Auto Update</h3>
+                                    <p>Keep BlinkBlink up to date automatically</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <div class="nav-buttons">
+                <button id="prevBtn" class="nav-btn">Previous</button>
+                <button id="nextBtn" class="nav-btn">Next</button>
+                <button id="finishBtn" class="nav-btn primary">Get Started</button>
+            </div>
+        </div>
+        <script src="tutorial.js"></script>
+    </body>
+</html>

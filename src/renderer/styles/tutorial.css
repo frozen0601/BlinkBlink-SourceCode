@@ -1,0 +1,655 @@
+@import 'shared.css';
+
+:root {
+    --transition-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bouncy: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --animation-scale: 1.02;
+    --animation-duration-fast: 0.2s;
+    --animation-duration-normal: 0.3s;
+    --animation-duration-slow: 0.5s;
+    --card-hover-shadow: var(--card-shadow), 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+/* Shared animation utility classes */
+.animate-fade-in {
+    opacity: 0;
+    animation: fadeIn 0.6s var(--transition-smooth) forwards;
+}
+
+.animate-fade-in-delayed {
+    opacity: 0;
+    animation: fadeIn 0.6s var(--transition-smooth) 0.2s forwards;
+}
+
+.animate-slide-up {
+    opacity: 0;
+    transform: translateY(20px);
+    animation: slideUp 0.6s var(--transition-smooth) forwards;
+}
+
+.transition-hover-lift {
+    transition: transform var(--animation-duration-normal) var(--transition-bouncy),
+                box-shadow var(--animation-duration-normal) var(--transition-smooth);
+    will-change: transform;
+}
+
+.transition-hover-lift:hover {
+    transform: translateY(-4px) scale(var(--animation-scale));
+    box-shadow: var(--card-hover-shadow);
+}
+
+/* Consolidated animation utility classes */
+.animate-enter {
+    opacity: 0;
+    transform: translateY(20px);
+    animation: enterAnimation 0.6s var(--transition-smooth) forwards;
+}
+
+.animate-enter.delay-0 {
+    animation-delay: 0s;
+}
+
+.animate-enter.delay-1 {
+    animation-delay: 0.1s;
+}
+
+.animate-enter.delay-2 {
+    animation-delay: 0.2s;
+}
+
+.hover-lift {
+    transition: transform var(--animation-duration-normal) var(--transition-bouncy),
+                box-shadow var(--animation-duration-normal) var(--transition-smooth);
+    will-change: transform, box-shadow;
+}
+
+.hover-lift:hover {
+    transform: translateY(-4px) scale(var(--animation-scale));
+    box-shadow: var(--card-hover-shadow);
+}
+
+/* Base styles */
+html, body {
+    overflow: hidden;
+    margin: 0;
+    height: 100vh;
+}
+
+/* Layout components */
+.tutorial-container {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--background-color);
+    overflow: hidden;
+}
+
+.content {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Page transitions */
+.page {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    transform: translateX(30px);
+    transition: all var(--animation-duration-normal) var(--transition-smooth);
+    display: none;
+    overflow: hidden;
+    box-sizing: border-box;
+    will-change: transform, opacity;
+}
+
+.page.active {
+    opacity: 1;
+    transform: translateX(0);
+    display: block;
+    transition-delay: 0.05s;
+}
+
+.welcome-header {
+    text-align: center;
+    margin: -2rem 0 0;
+}
+
+.app-icon {
+    width: 120px;
+    height: 120px;
+    margin-bottom: 1rem;
+}
+
+.app-icon.pulse {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(var(--animation-scale)); }
+    100% { transform: scale(1); }
+}
+
+.subtitle {
+    color: var(--text-secondary);
+    font-size: 1.2rem;
+    margin-top: 0.5rem;
+}
+
+.feature-highlights {
+    display: flex;
+    justify-content: center;
+    gap: 3rem;
+    margin-top: 0;
+}
+
+.highlight-item {
+    text-align: center;
+    padding: 1rem;
+}
+
+.highlight-item .icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+}
+
+.rule-card {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    margin: 1rem auto;
+    align-items: center;
+    padding: 1rem 0;
+    max-width: 900px;
+}
+
+/* Card components */
+.rule-item,
+.feature-card,
+.setting-card {
+    background: var(--surface-color);
+    border-radius: var(--border-radius);
+    box-shadow: var(--card-shadow);
+}
+
+.rule-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100%;
+    text-align: center;
+    padding: 1.2rem;
+    max-height: none;
+    padding: 2rem 1.5rem;
+    gap: 1rem;
+    cursor: pointer;
+}
+
+.rule-item:hover {
+    transform: translateY(-4px) scale(var(--animation-scale));
+    box-shadow: var(--card-hover-shadow);
+}
+
+.rule-item:hover .rule-icon {
+    transform: scale(1.1);
+}
+
+.rule-item:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.rule-item:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.rule-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    transition: transform var(--animation-duration-normal) var(--transition-bouncy);
+}
+
+.rule-item h3 {
+    margin: 0 0 1rem 0;
+    flex: 0 0 auto;
+}
+
+.rule-item p {
+    margin: 0;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.feature-card,
+.setting-card {
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    max-width: 600px;
+    margin: 0 auto 1rem auto;
+}
+
+.feature-card {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 3rem;
+    padding: 3rem;
+    margin: auto;
+    max-width: 900px;
+    width: 100%;
+    height: auto;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Remove the whole card hover effect */
+.feature-card::before {
+    display: none;
+}
+
+.feature-card .content-section {
+    padding-left: 1rem;
+}
+
+.feature-card ul {
+    list-style: none;
+    padding: 0;
+    margin: 1rem 0 0;
+}
+
+.feature-card li {
+    margin: 1.5rem 0;
+    padding-left: 2.5rem;
+    position: relative;
+    transform: translateX(-20px);
+    transition: transform var(--animation-duration-normal) var(--transition-bouncy),
+                color var(--animation-duration-fast) var(--transition-smooth);
+    font-size: 1.15rem;
+    line-height: 1.4;
+}
+
+.feature-card li:before {
+    content: '→';
+    position: absolute;
+    left: 0;
+    color: var(--primary-color);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.feature-card li:nth-child(2) {
+    animation-delay: 0.1s;
+}
+.feature-card li:nth-child(3) {
+    animation-delay: 0.2s;
+}
+.feature-card li:nth-child(4) {
+    animation-delay: 0.3s;
+}
+
+.feature-card li:hover {
+    transform: translateX(8px);
+    color: var(--primary-color);
+}
+
+.feature-card li:hover:before {
+    transform: scale(1.2);
+    color: var(--primary-color);
+}
+
+.setting-card {
+    cursor: pointer;
+    position: relative;
+    padding: 1.5rem 4rem 1.5rem 1.5rem;
+    margin: 0;
+    border: 1px solid transparent;
+    transition: all var(--animation-duration-normal) var(--transition-bouncy),
+                border-color var(--animation-duration-fast) var(--transition-smooth);
+}
+
+.setting-card h3 {
+    margin: 0 0 0.7rem 0;
+    font-size: 1.2rem;
+}
+
+.setting-card p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.4;
+    padding-right: 1rem;
+}
+
+.setting-card:hover {
+    border-color: var(--primary-color);
+}
+
+.setting-card::after {
+    content: '';
+    position: absolute;
+    right: 1.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1.2rem;
+    height: 1.2rem;
+    border: 2px solid var(--text-secondary);
+    border-radius: 4px;
+}
+
+.setting-card.active::after {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>');
+    background-size: 1rem;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.settings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+    max-width: 900px;
+    margin: auto 0;
+    padding: 1rem 0;
+}
+
+.nav-buttons {
+    padding: 1.5rem 2.5rem;
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    background: linear-gradient(transparent, var(--background-color) 40%);
+    position: relative;
+    z-index: 1;
+    margin-top: auto;
+}
+
+.nav-btn {
+    padding: 0.9rem 2.2rem;
+    font-weight: 500;
+    border: none;
+    border-radius: calc(var(--border-radius) + 2px);
+    background: var(--surface-color);
+    color: var(--text-primary);
+    cursor: pointer;
+    min-width: 130px;
+    text-align: center;
+    font-size: 1rem;
+    position: relative;
+    overflow: hidden;
+    transition: all var(--animation-duration-fast) var(--transition-smooth);
+    transform: translateZ(0);
+    will-change: transform, background-color;
+}
+
+.nav-btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 120%;
+    height: 120%;
+    background: var(--primary-color);
+    border-radius: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0;
+    transition: transform 0.4s ease, opacity 0.3s ease;
+    pointer-events: none;
+}
+
+.nav-btn:hover::before {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.1;
+}
+
+.nav-btn.primary::before {
+    background: white;
+}
+
+.nav-btn:hover {
+    background: var(--primary-color);
+    color: white;
+}
+
+.nav-btn.primary {
+    background: var(--primary-color);
+    color: white;
+}
+
+.nav-btn.primary:hover {
+    opacity: 0.9;
+}
+
+.tray-preview {
+    margin: 0;
+    padding: 0;
+    background: none;
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--border-radius);
+    transition: transform 0.3s ease;
+}
+
+.tray-screenshot {
+    width: 100%;
+    max-width: 350px;
+    height: auto;
+    object-fit: contain;
+    border-radius: var(--border-radius);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tray-preview:hover .tray-screenshot {
+    transform: scale(1.05);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+}
+
+.tray-caption {
+    margin-top: 1rem;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.page-content {
+    max-width: 1000px;
+    height: 100%;
+    margin: 0 auto;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 0;
+}
+
+.page-content .header-section {
+    padding-top: 3rem;
+}
+
+.page-content h2 {
+    font-size: 2rem;
+    text-align: center;
+    margin: 0;
+    letter-spacing: -0.02em;
+}
+
+.page-content .section-description {
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+    line-height: 1.5;
+    max-width: 600px;
+    margin: 0.5rem auto 0;
+}
+
+.page-content .main-section {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 2rem;
+    min-height: 0;
+}
+
+/* Add specific styling for welcome page */
+#welcome {
+    overflow: hidden;
+}
+
+#welcome .page-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 100%;
+    height: 100%;
+    padding: 0 2rem;
+    grid-template-rows: 1fr auto 1fr;
+    padding-top: 0;
+    gap: 3rem;
+}
+
+.usage-guide {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    padding: 2rem 0;
+    max-width: none;
+    margin: auto 0;
+    flex: 1;
+    max-height: 450px;
+    justify-content: center;
+    padding: 2rem 0;
+    max-height: 400px;
+}
+
+.usage-guide {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: auto;
+    padding: 0;
+    margin: auto;
+}
+
+.feature-card .content-section {
+    padding: 0;
+}
+
+.feature-card ul {
+    margin: 0;
+    padding: 0;
+}
+
+.feature-card li {
+    font-size: 1.15rem;
+    margin: 1.5rem 0;
+    padding-left: 2rem;
+    line-height: 1.4;
+}
+
+.tray-preview {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.tray-screenshot {
+    width: 100%;
+    max-width: 280px;
+    height: auto;
+}
+
+/* Rule page layout */
+#rule .rule-card {
+    margin: auto 0;
+    padding: 2rem 0;
+    max-height: 380px;
+}
+
+/* Rule page refinements */
+#rule .rule-card {
+    margin: 1rem auto;
+    padding: 1rem 0;
+    gap: 1.5rem;
+    max-width: 900px;
+}
+
+/* Settings page layout */
+#settings .page-content {
+    justify-content: center;
+    gap: 2rem;
+}
+
+/* Animation keyframes */
+@keyframes fadeIn {
+    from { 
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes enterAnimation {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.rule-item:hover .rule-icon,
+.feature-card li:hover:before {
+    transform: scale(1.1);
+}
+
+.hover-move {
+    transition: transform var(--animation-duration-normal) var(--transition-bouncy),
+                color var(--animation-duration-fast) var(--transition-smooth);
+}
+
+.hover-move:hover {
+    transform: translateX(8px);
+    color: var(--primary-color);
+}
+
+::-webkit-scrollbar {
+    width: 12px;
+    background-color: transparent;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: var(--scrollbar-thumb);
+    border-radius: 10px;
+    border: 3px solid var(--background-color);
+    min-height: 40px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background-color: var(--scrollbar-thumb-hover, var(--scrollbar-thumb));
+}

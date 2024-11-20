@@ -9,6 +9,8 @@ import { DURATIONS } from './constants'
 import { createTray, destroyTray, updateTooltip } from './tray'
 import { checkForUpdates, startAutoUpdateTimer, stopAutoUpdateTimer } from './updater'
 import { initialize, trackEvent } from '@aptabase/electron/main'
+import { showTutorial } from './tutorial'
+import { get } from 'http'
 
 // Stats Management
 export function updateBreakStats(skipped: boolean) {
@@ -121,9 +123,9 @@ function trackSettingsState(settings: Settings) {
 }
 
 // IPC Handlers - Settings
-ipcMain.on('save-settings', (event, settings: Settings) => {
+ipcMain.on('save-settings', (event, settings: Partial<Settings>) => {
     updateSettings(settings)
-    trackSettingsState(settings)
+    trackSettingsState(getSettings())
 
     // Configure auto-start behavior
     app.setLoginItemSettings({
@@ -136,7 +138,7 @@ ipcMain.on('save-settings', (event, settings: Settings) => {
 // App Lifecycle Events
 initialize('process.env.APTABASE_API_KEY')
 app.whenReady().then(() => {
-    const firstRun = hasCompletedFirstRun()
+    const firstRun = !hasCompletedFirstRun()
 
     trackEvent('app_started', {
         platform: process.platform,
@@ -145,13 +147,11 @@ app.whenReady().then(() => {
     })
 
     const settings = getSettings()
-    // TODO: Show tutorial on first run
-    if (firstRun) trackSettingsState(settings)
-    app.setLoginItemSettings({
-        openAtLogin: settings?.startOnBoot || false,
-        openAsHidden: true,
-        path: app.getPath('exe'),
-    })
+    if (firstRun) {
+        trackSettingsState(settings)
+        // showTutorial()
+    }
+    showTutorial()
 
     if (process.platform === 'win32') {
         app.setAppUserModelId('BlinkBLink')
@@ -179,9 +179,6 @@ app.whenReady().then(() => {
         updateTooltip()
         closeAllWindows()
     })
-
-    // print user uuid
-    console.log(`User ID: ${getUserId()}`)
 })
 
 app.on('window-all-closed', () => {

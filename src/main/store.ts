@@ -28,7 +28,7 @@ const STORE_DEFAULTS: StoreSchema = {
         scheduleEnabled: false,
         schedule: DEFAULT_SCHEDULE,
         startOnBoot: false,
-        autoUpdate: true,
+        autoUpdate: false,
         language: 'en',
     },
     stats: {
@@ -106,18 +106,18 @@ export function getSettings(): Settings {
     }
 }
 
-export function updateSettings(updates: Partial<Settings>) {
+export function updateSettings(settings: Partial<Settings>) {
     const current = getSettings()
-    const autoUpdateChanged = current.autoUpdate !== updates.autoUpdate
+    const autoUpdateChanged = current.autoUpdate !== settings.autoUpdate
 
     if (autoUpdateChanged) {
-        if (updates.autoUpdate) {
+        if (settings.autoUpdate) {
             startAutoUpdateTimer()
         } else {
             stopAutoUpdateTimer()
         }
     }
-    store.set('settings', { ...current, ...updates })
+    store.set('settings', { ...current, ...settings })
 
     // Trigger timer and tooltip updates when schedule changes
     const { ipcMain } = require('electron')
