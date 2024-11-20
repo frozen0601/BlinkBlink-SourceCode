@@ -35,7 +35,7 @@
                 document.getElementById('license').innerText = appInfo.license
                 const websiteLink = document.getElementById('website')
                 websiteLink.href = appInfo.website
-                websiteLink.innerText = "GitHub"
+                websiteLink.innerText = 'GitHub'
                 const supportLink = document.getElementById('support')
                 supportLink.href = `mailto:${appInfo.supportEmail}`
                 supportLink.innerText = appInfo.supportEmail
@@ -64,23 +64,23 @@
                 shell.openExternal(event.target.href)
             })
 
-            const buyMeCoffeeButton = document.querySelector('.buy-me-coffee');
+            const buyMeCoffeeButton = document.querySelector('.buy-me-coffee')
             buyMeCoffeeButton.addEventListener('click', (event) => {
-                event.preventDefault();
-                shell.openExternal(event.target.href);
-            });
+                event.preventDefault()
+                shell.openExternal(event.target.href)
+            })
 
-            const koFiButton = document.querySelector('.ko-fi');
+            const koFiButton = document.querySelector('.ko-fi')
             koFiButton.addEventListener('click', (event) => {
-                event.preventDefault();
-                shell.openExternal(event.target.href);
-            });
+                event.preventDefault()
+                shell.openExternal(event.target.href)
+            })
 
-            const paypalButton = document.querySelector('.paypal');
+            const paypalButton = document.querySelector('.paypal')
             paypalButton.addEventListener('click', (event) => {
-                event.preventDefault();
-                shell.openExternal(event.target.href);
-            });
+                event.preventDefault()
+                shell.openExternal(event.target.href)
+            })
         </script>
     </body>
 </html>

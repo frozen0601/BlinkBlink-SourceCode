@@ -149,9 +149,8 @@ app.whenReady().then(() => {
     const settings = getSettings()
     if (firstRun) {
         trackSettingsState(settings)
-        // showTutorial()
+        showTutorial()
     }
-    showTutorial()
 
     if (process.platform === 'win32') {
         app.setAppUserModelId('BlinkBLink')

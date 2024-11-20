@@ -29,7 +29,7 @@
 
 .transition-hover-lift {
     transition: transform var(--animation-duration-normal) var(--transition-bouncy),
-                box-shadow var(--animation-duration-normal) var(--transition-smooth);
+        box-shadow var(--animation-duration-normal) var(--transition-smooth);
     will-change: transform;
 }
 
@@ -59,7 +59,7 @@
 
 .hover-lift {
     transition: transform var(--animation-duration-normal) var(--transition-bouncy),
-                box-shadow var(--animation-duration-normal) var(--transition-smooth);
+        box-shadow var(--animation-duration-normal) var(--transition-smooth);
     will-change: transform, box-shadow;
 }
 
@@ -69,7 +69,8 @@
 }
 
 /* Base styles */
-html, body {
+html,
+body {
     overflow: hidden;
     margin: 0;
     height: 100vh;
@@ -129,9 +130,15 @@ html, body {
 }
 
 @keyframes pulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(var(--animation-scale)); }
-    100% { transform: scale(1); }
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(var(--animation-scale));
+    }
+    100% {
+        transform: scale(1);
+    }
 }
 
 .subtitle {
@@ -279,7 +286,7 @@ html, body {
     position: relative;
     transform: translateX(-20px);
     transition: transform var(--animation-duration-normal) var(--transition-bouncy),
-                color var(--animation-duration-fast) var(--transition-smooth);
+        color var(--animation-duration-fast) var(--transition-smooth);
     font-size: 1.15rem;
     line-height: 1.4;
 }
@@ -319,7 +326,7 @@ html, body {
     margin: 0;
     border: 1px solid transparent;
     transition: all var(--animation-duration-normal) var(--transition-bouncy),
-                border-color var(--animation-duration-fast) var(--transition-smooth);
+        border-color var(--animation-duration-fast) var(--transition-smooth);
 }
 
 .setting-card h3 {
@@ -598,7 +605,7 @@ html, body {
 
 /* Animation keyframes */
 @keyframes fadeIn {
-    from { 
+    from {
         opacity: 0;
         transform: translateY(20px);
     }
@@ -626,7 +633,7 @@ html, body {
 
 .hover-move {
     transition: transform var(--animation-duration-normal) var(--transition-bouncy),
-                color var(--animation-duration-fast) var(--transition-smooth);
+        color var(--animation-duration-fast) var(--transition-smooth);
 }
 
 .hover-move:hover {

@@ -1,4 +1,3 @@
-
 import { BrowserWindow, screen } from 'electron'
 import * as path from 'path'
 import { setFirstRunCompleted } from './store'
