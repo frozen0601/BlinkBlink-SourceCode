@@ -5,6 +5,12 @@
         <meta charset="UTF-8" />
         <title>Settings</title>
         <link rel="stylesheet" href="settings.css" />
+        <style>
+            .container {
+                width: 90%;
+                max-width: 800px;
+            }
+        </style>
     </head>
     <body>
         <div class="container">
@@ -106,13 +112,6 @@
             </div>
         </div>
 
-        <style>
-            .container {
-                width: 90%;
-                max-width: 800px;
-            }
-        </style>
-
         <script>
             const { ipcRenderer } = require('electron')
 
@@ -182,10 +181,12 @@
                 const schedule = {}
                 days.forEach((day) => {
                     const dayEnabled = document.querySelector(`input[data-day="${day}"]`).checked
-                    const timeRanges = Array.from(document.querySelectorAll(`#${day}-ranges .time-range`)).map((range) => ({
-                        start: range.querySelector('.start').value,
-                        end: range.querySelector('.end').value,
-                    }))
+                    const timeRanges = Array.from(document.querySelectorAll(`#${day}-ranges .time-range`))
+                        .map((range) => ({
+                            start: range.querySelector('.start').value,
+                            end: range.querySelector('.end').value,
+                        }))
+
                     schedule[day] = {
                         enabled: dayEnabled,
                         timeRanges: dayEnabled ? timeRanges : [],
@@ -248,82 +249,41 @@
                 rangeDiv.className = 'time-range'
                 rangeDiv.innerHTML = `
                     <div class="time-input-group">
-                        <input type="time" 
-                            class="time-input start" 
-                            value="${timeRange.start}" 
-                            aria-label="Start time"
-                            pattern="[0-9]{2}:[0-9]{2}"
-                            required>
+                        <input type="time" class="time-input start" value="${timeRange.start}">
                     </div>
                     <span class="time-range-separator">to</span>
                     <div class="time-input-group">
-                        <input type="time" 
-                            class="time-input end" 
-                            value="${timeRange.end}" 
-                            aria-label="End time"
-                            pattern="[0-9]{2}:[0-9]{2}"
-                            required>
+                        <input type="time" class="time-input end" value="${timeRange.end}">
                     </div>
-                    <button class="remove-range" aria-label="Remove time range">×</button>
+                    <button class="remove-range">×</button>
                 `
 
-                // Get references to both inputs
                 const startInput = rangeDiv.querySelector('.start')
                 const endInput = rangeDiv.querySelector('.end')
 
+                // Handle validation on blur for both inputs
+                startInput.addEventListener('blur', validateTimeRange)
+                endInput.addEventListener('blur', validateTimeRange)
+
                 function validateTimeRange() {
-                    const startTime = startInput.value
-                    const endTime = endInput.value
-
-                    if (startTime && endTime && startTime >= endTime) {
-                        // If end time is earlier or equal to start time,
-                        // set end time to start time + 1 hour
-                        const [hours, minutes] = startTime.split(':')
-                        let newHour = parseInt(hours) + 1
-                        if (newHour > 23) newHour = 23
-                        endInput.value = `${String(newHour).padStart(2, '0')}:${minutes}`
+                    if (endInput.value <= startInput.value) {
+                        endInput.value = getAdjustedEndTime(startInput.value)
                     }
+                    saveSettings()
                 }
-
-                // Add validation to both inputs
-                startInput.addEventListener('change', () => {
-                    validateTimeRange()
-                    saveSettings()
-                })
-
-                endInput.addEventListener('change', () => {
-                    validateTimeRange()
-                    saveSettings()
-                })
-
-                // Replace existing blur event with enhanced validation
-                rangeDiv.querySelectorAll('.time-input').forEach((input) => {
-                    input.addEventListener('blur', (e) => {
-                        // First ensure valid time format
-                        if (!e.target.value.match(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/)) {
-                            e.target.value = e.target === startInput ? '09:00' : '18:00'
-                        }
-                        validateTimeRange()
-                    })
-
-                    // Keep existing keypress handler
-                    input.addEventListener('keypress', (e) => {
-                        if (!/[\d:]/.test(e.key)) {
-                            e.preventDefault()
-                        }
-                    })
-                })
 
                 rangeDiv.querySelector('.remove-range').addEventListener('click', () => {
                     rangeDiv.remove()
                     saveSettings()
                 })
 
-                rangeDiv.querySelectorAll('input').forEach((input) => {
-                    input.addEventListener('change', saveSettings)
-                })
-
                 return rangeDiv
+            }
+
+            function getAdjustedEndTime(startTime) {
+                const startDate = new Date(`2000-01-01T${startTime}`)
+                startDate.setHours(startDate.getHours() + 1)
+                return startDate.toTimeString().slice(0, 5)
             }
 
             function initializeSchedule() {
@@ -410,48 +370,6 @@
                 } else if (!isEnabled) {
                     rangesContainer.innerHTML = ''
                 }
-            }
-
-            function createTimeRangeElement(dayId, rangeIndex, timeRange = { start: '09:00', end: '18:00' }) {
-                const rangeDiv = document.createElement('div')
-                rangeDiv.className = 'time-range'
-                rangeDiv.innerHTML = `
-                    <div class="time-input-group">
-                        <input type="time" class="time-input start" value="${timeRange.start}">
-                    </div>
-                    <span class="time-range-separator">to</span>
-                    <div class="time-input-group">
-                        <input type="time" class="time-input end" value="${timeRange.end}">
-                    </div>
-                    <button class="remove-range">×</button>
-                `
-
-                // Simplified event handling
-                const startInput = rangeDiv.querySelector('.start')
-                const endInput = rangeDiv.querySelector('.end')
-                const removeButton = rangeDiv.querySelector('.remove-range')
-
-                function validateTimeRange() {
-                    if (startInput.value >= endInput.value) {
-                        const [hours, minutes] = startInput.value.split(':')
-                        const newHour = Math.min(parseInt(hours) + 1, 23)
-                        endInput.value = `${String(newHour).padStart(2, '0')}:${minutes}`
-                    }
-                }
-
-                ;[startInput, endInput].forEach((input) => {
-                    input.addEventListener('change', () => {
-                        validateTimeRange()
-                        saveSettings()
-                    })
-                })
-
-                removeButton.addEventListener('click', () => {
-                    rangeDiv.remove()
-                    saveSettings()
-                })
-
-                return rangeDiv
             }
         </script>
     </body>
