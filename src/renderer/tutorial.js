@@ -128,6 +128,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.querySelectorAll('.nav-btn').forEach((btn) => {
         btn.addEventListener('click', createRipple)
     })
+
+    // Add click scale effect to customize option cards
+    addClickScaleEffect(document.querySelectorAll('.option-card'))
+
+    // Add click scale effect to feature items
+    addClickScaleEffect(document.querySelectorAll('.feature-item'))
 })
 
 prevBtn.addEventListener('click', () => {
