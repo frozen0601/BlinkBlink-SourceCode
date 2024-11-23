@@ -31,6 +31,8 @@ const STORE_DEFAULTS: StoreSchema = {
         schedule: DEFAULT_SCHEDULE,
         startOnBoot: false,
         autoUpdate: false,
+        workDuration: 20 * 60 * 1000,
+        breakDuration: 20 * 1000,
         language: 'en',
     },
     stats: {
@@ -106,6 +108,14 @@ export function getSettings(): Settings {
         ...settings,
         schedule,
     }
+}
+
+export function getWorkDuration(): number {
+    return getSettings().workDuration
+}
+
+export function getBreakDuration(): number {
+    return getSettings().breakDuration
 }
 
 export function updateSettings(settings: Partial<Settings>) {

@@ -5,12 +5,6 @@
         <meta charset="UTF-8" />
         <title>Settings</title>
         <link rel="stylesheet" href="settings.css" />
-        <style>
-            .container {
-                width: 90%;
-                max-width: 800px;
-            }
-        </style>
     </head>
     <body>
         <div class="container">
@@ -23,25 +17,41 @@
             </div>
 
             <div class="tab-content active" data-tab="break">
-                <div class="setting-item" data-setting="enableBreakNotification">
+                <h2 class="section-title">Timer Settings</h2>
+                <div class="setting-item">
                     <div class="setting-item-text">
-                        <span class="setting-label">Show Break Reminders</span>
-                        <span class="helper-text">Enable this to receive notifications before your breaks.</span>
+                        <span class="setting-label">Work Duration</span>
+                        <span class="helper-text">Duration of work sessions (1-120 minutes).</span>
                     </div>
                     <div class="setting-control">
-                        <input type="checkbox" id="enableBreakNotification" />
+                        <input
+                            type="number"
+                            id="workDuration"
+                            min="1"
+                            max="120"
+                            step="1"
+                            onchange="this.value = Math.min(120, Math.max(1, this.value))" />
+                        <span class="input-unit">min</span>
                     </div>
                 </div>
-                <div class="setting-item" data-setting="breakPreNotificationOffset">
+                <div class="setting-item">
                     <div class="setting-item-text">
-                        <span class="setting-label">Notify before break</span>
-                        <span class="helper-text">Set how many seconds before a break you want to be notified.</span>
+                        <span class="setting-label">Break Duration</span>
+                        <span class="helper-text">Duration of break sessions (10-60 seconds).</span>
                     </div>
                     <div class="setting-control">
-                        <input type="number" id="breakPreNotificationOffset" min="5" max="60" />
-                        <span class="input-unit">seconds</span>
+                        <input
+                            type="number"
+                            id="breakDuration"
+                            min="10"
+                            max="60"
+                            step="1"
+                            onchange="this.value = Math.min(60, Math.max(10, this.value))" />
+                        <span class="input-unit">sec</span>
                     </div>
                 </div>
+
+                <h2 class="section-title">Break Summary</h2>
                 <div class="setting-item">
                     <div class="setting-item-text">
                         <span class="setting-label">Auto dismiss Summary View</span>
@@ -58,9 +68,32 @@
                     </div>
                     <div class="setting-control">
                         <input type="number" id="summaryDuration" min="1" max="60" />
-                        <span class="input-unit">seconds</span>
+                        <span class="input-unit">sec</span>
                     </div>
                 </div>
+
+                <h2 class="section-title">Notifications</h2>
+                <div class="setting-item" data-setting="enableBreakNotification">
+                    <div class="setting-item-text">
+                        <span class="setting-label">Show Break Reminders</span>
+                        <span class="helper-text">Enable this to receive notifications before your breaks.</span>
+                    </div>
+                    <div class="setting-control">
+                        <input type="checkbox" id="enableBreakNotification" />
+                    </div>
+                </div>
+                <div class="setting-item" data-setting="breakPreNotificationOffset">
+                    <div class="setting-item-text">
+                        <span class="setting-label">Notify before break</span>
+                        <span class="helper-text">Set how many seconds before a break you want to be notified.</span>
+                    </div>
+                    <div class="setting-control">
+                        <input type="number" id="breakPreNotificationOffset" min="5" max="60" />
+                        <span class="input-unit">sec</span>
+                    </div>
+                </div>
+
+                <h2 class="section-title">Sound</h2>
                 <div class="setting-item" data-setting="enableSoundNotification">
                     <div class="setting-item-text">
                         <span class="setting-label">Play Sound on Break End</span>
@@ -94,9 +127,7 @@
                     </div>
                 </div>
                 <div id="scheduleSettings">
-                    <div class="schedule-days">
-                        <!-- Days will be dynamically generated here -->
-                    </div>
+                    <div class="schedule-days"></div>
                 </div>
             </div>
 
@@ -125,7 +156,6 @@
                     <div class="setting-control">
                         <select id="languageSelect">
                             <option value="en">English</option>
-                            <!-- Add more languages -->
                         </select>
                     </div>
                 </div>
@@ -147,6 +177,8 @@
                 document.getElementById('autoUpdate').checked = settings.autoUpdate
                 document.getElementById('enableSoundNotification').checked = settings.enableSoundNotification
                 document.getElementById('notificationSound').value = settings.notificationSound
+                document.getElementById('workDuration').value = settings.workDuration / (60 * 1000)
+                document.getElementById('breakDuration').value = settings.breakDuration / 1000
 
                 initializeSchedule()
 
@@ -228,17 +260,19 @@
                 })
 
                 const settings = {
-                    startOnBoot: document.getElementById('startOnBoot').checked,
+                    workDuration: document.getElementById('workDuration').value * 60 * 1000,
+                    breakDuration: document.getElementById('breakDuration').value * 1000,
                     enableAutoDismiss: document.getElementById('enableAutoDismiss').checked,
-                    language: document.getElementById('languageSelect').value,
                     summaryDuration: document.getElementById('summaryDuration').value * 1000,
                     enableBreakNotification: document.getElementById('enableBreakNotification').checked,
                     breakPreNotificationOffset: document.getElementById('breakPreNotificationOffset').value * 1000,
-                    scheduleEnabled: document.getElementById('scheduleEnabled').checked,
-                    autoUpdate: document.getElementById('autoUpdate').checked,
                     enableSoundNotification: document.getElementById('enableSoundNotification').checked,
                     notificationSound: document.getElementById('notificationSound').value,
+                    scheduleEnabled: document.getElementById('scheduleEnabled').checked,
                     schedule: schedule,
+                    startOnBoot: document.getElementById('startOnBoot').checked,
+                    autoUpdate: document.getElementById('autoUpdate').checked,
+                    language: document.getElementById('languageSelect').value,
                 }
                 ipcRenderer.send('save-settings', settings)
             }

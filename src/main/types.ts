@@ -20,6 +20,8 @@ export interface Settings {
     schedule: WeeklySchedule
     startOnBoot: boolean
     autoUpdate: boolean
+    workDuration: number
+    breakDuration: number
     language: string
 }
 

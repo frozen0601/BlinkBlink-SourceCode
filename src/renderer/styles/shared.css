@@ -22,6 +22,7 @@
     --container-padding: 2rem;
     --content-max-width: 800px;
     --spacing-unit: 1rem;
+    --scrollbar-width: 12px;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -48,6 +49,7 @@ body {
     color: var(--text-primary);
     margin: 0;
     padding: var(--container-padding);
+    padding-right: calc(var(--container-padding) + var(--scrollbar-width));
     line-height: 1.5;
 }
 

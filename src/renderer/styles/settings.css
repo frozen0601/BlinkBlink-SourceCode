@@ -7,17 +7,18 @@ body {
     background: var(--background-color);
     margin: 0;
     color: var(--text-color);
-    /* Always show scrollbar space to prevent layout shift */
-    overflow-y: scroll;
+    overflow-x: hidden;
+    overflow-y: overlay;
     scrollbar-gutter: stable;
 }
 
 .container {
     background: var(--background-color);
-    padding: 1rem; /* Reduce padding */
+    padding: 1rem;
+    padding-right: calc(var(--spacing-unit) + var(--scrollbar-width));
     border-radius: 0;
     box-shadow: none;
-    max-width: 600px; /* Adjust the container width for better alignment */
+    max-width: 600px;
     width: 100%;
     margin: 0 auto;
     user-select: none;
@@ -34,7 +35,7 @@ h1 {
 .setting-item {
     display: flex;
     justify-content: space-between;
-    align-items: center; /* Center align the whole item */
+    align-items: center;
     padding: calc(var(--spacing-unit) * 0.75);
     min-height: 2.25rem;
     gap: 1.25rem;
@@ -61,7 +62,7 @@ h1 {
 .setting-item input,
 .setting-item select,
 .setting-item .setting-control {
-    cursor: default; /* Keep default cursor on inputs */
+    cursor: default;
 }
 
 .setting-label {
@@ -75,12 +76,11 @@ h1 {
 .setting-item-text {
     display: flex;
     flex-direction: column;
-    gap: 0.125rem; /* Reduced gap between label and helper */
+    gap: 0.125rem;
     flex: 1;
-    padding: 0.125rem 0; /* Add small padding to ensure consistent height */
+    padding: 0.125rem 0;
 }
 
-/* When there's only a label without helper text, center it */
 .setting-item-text:only-child > .setting-label {
     padding: 0.125rem 0;
 }
@@ -92,8 +92,23 @@ h1 {
     line-height: 1.2;
 }
 
+.section-title {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin: 1.5rem 0 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--surface-color);
+}
+
+.section-title:first-child {
+    margin-top: 0;
+}
+
 .setting-control {
-    align-self: center; /* Center control vertically */
+    align-self: center;
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -152,7 +167,7 @@ input[type='checkbox']:hover {
 }
 
 input[type='number'] {
-    width: 3rem; /* Make input box smaller */
+    width: 3rem;
     padding: 0.25rem 0.375rem;
     font-size: 0.9375rem;
     text-align: right;
@@ -172,10 +187,10 @@ select {
     color: var(--text-primary);
 }
 
-/* Custom scrollbar styles */
 ::-webkit-scrollbar {
-    width: 12px;
-    /* Make scrollbar background transparent */
+    width: var(--scrollbar-width);
+    position: fixed;
+    right: 0;
     background-color: transparent;
 }
 
@@ -194,7 +209,13 @@ select {
     background-color: var(--scrollbar-thumb-hover, var(--scrollbar-thumb));
 }
 
-/* Responsive adjustments */
+@supports (scrollbar-width: thin) {
+    html {
+        scrollbar-width: thin;
+        scrollbar-color: var(--scrollbar-thumb) transparent;
+    }
+}
+
 @media (min-width: 768px) {
     .container {
         max-width: 700px;
@@ -245,12 +266,11 @@ a {
     background: transparent;
 }
 
-/* Add this new sliding highlight */
 .tab-highlight {
     position: absolute;
     left: 0.5rem;
     top: 0.5rem;
-    width: calc((100% - 1rem) / 3); /* Dynamically calculate width based on number of tabs */
+    width: calc((100% - 1rem) / 3);
     height: calc(100% - 1rem);
     background: color-mix(in srgb, var(--primary-color) 15%, var(--surface-color));
     border-radius: var(--border-radius);
@@ -258,7 +278,6 @@ a {
     z-index: 0;
 }
 
-/* Update transform calculations for each tab */
 .tab-button[data-tab='schedule'].active ~ .tab-highlight {
     transform: translateX(100%);
 }
@@ -267,7 +286,6 @@ a {
     transform: translateX(200%);
 }
 
-/* Remove these no longer needed rules */
 .tabs::before,
 .tabs .tab-button:nth-child(2).active ~ .tabs::before,
 .tab-button.active::after {
@@ -296,23 +314,20 @@ a {
     }
 }
 
-/* Remove the previous category styles as they're no longer needed */
 .settings-category {
     display: none;
 }
 
-/* Schedule styles */
 .schedule-days {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
 }
 
-/* Remove any extra spacing in schedule day */
 .schedule-day {
     background: var(--surface-color);
     border-radius: var(--border-radius);
-    padding: 0; /* Remove padding to match other items */
+    padding: 0;
     transition: opacity 0.3s ease;
 }
 
@@ -335,13 +350,12 @@ a {
     color: var(--text-secondary);
 }
 
-/* Make schedule day headers consistent with setting items */
 .day-header {
     display: grid;
     grid-template-columns: 1fr auto;
     align-items: center;
-    gap: 1.25rem; /* Match setting-item gap */
-    padding: calc(var(--spacing-unit) * 0.75); /* Match setting-item padding */
+    gap: 1.25rem;
+    padding: calc(var(--spacing-unit) * 0.75);
     cursor: pointer;
     background: var(--surface-color);
     border-radius: var(--border-radius);
@@ -357,7 +371,7 @@ a {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    /* Remove any extra padding/margin */
+
     padding: 0;
     margin: 0;
 }
@@ -373,12 +387,11 @@ a {
     justify-self: end;
 }
 
-/* Adjust time ranges container to match other settings */
 .time-ranges {
     display: flex;
     flex-direction: column;
     gap: 0.625rem;
-    padding-left: calc(var(--spacing-unit) * 0.75); /* Match setting-item padding */
+    padding-left: calc(var(--spacing-unit) * 0.75);
     margin: 0;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     overflow: hidden;
@@ -424,7 +437,6 @@ a {
     align-items: center;
 }
 
-/* Remove clock icon and its related styles */
 .time-input {
     padding: 0.5rem;
     border: 1px solid var(--text-secondary);
@@ -460,7 +472,6 @@ a {
     user-select: none;
 }
 
-/* Remove all clock icon and duplicate styles */
 .time-input-group::before,
 .time-input-group::after,
 .time-input::-webkit-calendar-picker-indicator {

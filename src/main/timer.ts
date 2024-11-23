@@ -1,7 +1,6 @@
 import { ipcMain, Notification } from 'electron'
-import { DURATIONS } from './constants'
 import { closeAllWindows } from './windows'
-import { getSettings } from './store'
+import { getSettings, getWorkDuration } from './store'
 import { scheduleManager } from './scheduler'
 
 class TimerManager {
@@ -56,7 +55,7 @@ class TimerManager {
             })
 
             notification.on('action', () => {
-                this.skipBreaksFor(Math.floor(DURATIONS.WORK_DURATION / (60 * 1000)))
+                this.skipBreaksFor(Math.floor(getWorkDuration() / (60 * 1000)))
                 notification.close()
             })
 
@@ -125,7 +124,7 @@ class TimerManager {
         }
 
         // 3. Calculate next break
-        const proposedBreak = new Date(now.getTime() + DURATIONS.WORK_DURATION)
+        const proposedBreak = new Date(now.getTime() + getWorkDuration())
         if (!this.shouldSetTimer(proposedBreak)) {
             const currentRangeEnd = scheduleManager.getCurrentRangeEnd(now)
             if (currentRangeEnd) {

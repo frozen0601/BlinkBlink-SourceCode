@@ -2,8 +2,7 @@
 
 import { BrowserWindow, screen, ipcMain, nativeTheme } from 'electron'
 import * as path from 'path'
-import { DURATIONS } from './constants'
-import { getSettings } from './store'
+import { getSettings, getBreakDuration } from './store'
 import { trackEvent } from '@aptabase/electron/main'
 
 interface WindowWithInterval {
@@ -152,7 +151,7 @@ class WindowManager {
             this.createOrUpdateWindow({
                 type: 'break',
                 display,
-                duration: DURATIONS.BREAK_DURATION,
+                duration: getBreakDuration(),
                 autoDismiss: true,
                 onComplete: () => ipcMain.emit('break-complete'),
             })

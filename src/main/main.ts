@@ -1,16 +1,14 @@
-import { app, ipcMain, powerMonitor, nativeImage, shell, dialog } from 'electron'
+import { app, ipcMain, powerMonitor, nativeImage } from 'electron'
 import * as path from 'path'
-import { updateStats, updateLastBreakEndTime, getSettings, updateSettings, getStats, getUserId, hasCompletedFirstRun } from './store'
+import { updateStats, updateLastBreakEndTime, getSettings, getWorkDuration, updateSettings, getStats, hasCompletedFirstRun } from './store'
 import { Settings } from './types'
 import * as fs from 'fs'
 import { startWorkTimer, clearTimer, isRunning } from './timer'
 import { showBreakView, showSummaryView, closeAllWindows } from './windows'
-import { DURATIONS } from './constants'
 import { createTray, destroyTray, updateTooltip } from './tray'
 import { checkForUpdates, startAutoUpdateTimer, stopAutoUpdateTimer } from './updater'
 import { initialize, trackEvent } from '@aptabase/electron/main'
 import { showTutorial } from './tutorial'
-import { get } from 'http'
 import { playNotificationSound, getAvailableSounds } from './sound'
 
 // Stats Management
@@ -33,7 +31,7 @@ export function updateBreakStats(skipped: boolean) {
     } else {
         // Completing a break successfully
         const newCount = stats.breakStreakCount + 1
-        const newDuration = stats.breakStreakDuration + DURATIONS.WORK_DURATION
+        const newDuration = stats.breakStreakDuration + getWorkDuration()
 
         const updatedStats = {
             ...stats,
@@ -126,15 +124,20 @@ function trackSettingsState(settings: Settings) {
         notificationSound: settings.notificationSound,
     })
     // we track the language setting separately as being a string value mess up aptabase dashboard
-    trackEvent('language_setting', {
-        value: settings.language,
-    })
+    // trackEvent('language_setting', {
+    //     value: settings.language,
+    // })
 }
 
 // IPC Handlers - Settings
 ipcMain.on('save-settings', (event, settings: Partial<Settings>) => {
+    const prevSettings = getSettings()
     updateSettings(settings)
-    trackSettingsState(getSettings())
+    const newSettings = getSettings()
+    trackSettingsState(newSettings)
+    if ('notificationSound' in settings && newSettings.notificationSound !== prevSettings.notificationSound) {
+        playNotificationSound()
+    }
 
     // Configure auto-start behavior
     app.setLoginItemSettings({
@@ -142,11 +145,6 @@ ipcMain.on('save-settings', (event, settings: Partial<Settings>) => {
         openAsHidden: true,
         path: app.getPath('exe'),
     })
-
-    // Play sound if notification sound is changed
-    if ('notificationSound' in settings) {
-        playNotificationSound()
-    }
 })
 
 // App Lifecycle Events
