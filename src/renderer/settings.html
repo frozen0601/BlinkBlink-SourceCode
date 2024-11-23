@@ -164,6 +164,15 @@
 
         <script>
             const { ipcRenderer } = require('electron')
+            function formatTimeForInput(timeString) {
+                // Use 24-hour format for time inputs
+                const date = new Date(`2000-01-01T${timeString}`)
+                return date.toLocaleTimeString('en-GB', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false,
+                })
+            }
 
             // Load initial settings
             ipcRenderer.invoke('get-settings').then((settings) => {
@@ -314,16 +323,17 @@
             const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
             const daysDisplay = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 
+            // Modify the createTimeRangeElement function
             function createTimeRangeElement(dayId, rangeIndex, timeRange = { start: '09:00', end: '18:00' }) {
                 const rangeDiv = document.createElement('div')
                 rangeDiv.className = 'time-range'
                 rangeDiv.innerHTML = `
                     <div class="time-input-group">
-                        <input type="time" class="time-input start" value="${timeRange.start}">
+                        <input type="time" class="time-input start" value="${formatTimeForInput(timeRange.start)}">
                     </div>
                     <span class="time-range-separator">to</span>
                     <div class="time-input-group">
-                        <input type="time" class="time-input end" value="${timeRange.end}">
+                        <input type="time" class="time-input end" value="${formatTimeForInput(timeRange.end)}">
                     </div>
                     <button class="remove-range">×</button>
                 `
@@ -450,6 +460,13 @@
                     option.value = sound.filename
                     option.textContent = sound.name
                     soundSelect.appendChild(option)
+                })
+
+                // Play sound only when selection changes
+                soundSelect.addEventListener('change', () => {
+                    if (document.getElementById('enableSoundNotification').checked) {
+                        ipcRenderer.send('play-sound', soundSelect.value)
+                    }
                 })
             })
         </script>

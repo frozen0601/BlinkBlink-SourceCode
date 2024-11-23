@@ -69,7 +69,7 @@ ipcMain.on('break-skip', () => {
 ipcMain.on('break-complete', () => {
     const settings = getSettings()
     if (settings.enableSoundNotification) {
-        playNotificationSound()
+        playNotificationSound(settings.notificationSound)
     }
     updateBreakStats(false)
     showSummaryView()
@@ -85,6 +85,11 @@ ipcMain.on('schedule-updated', () => {
     clearTimer() // Clear existing timer
     startWorkTimer() // Restart timer with new schedule
     updateTooltip()
+})
+
+// Add this new IPC handler for sound testing
+ipcMain.on('play-sound', (event, soundValue) => {
+    playNotificationSound(soundValue)
 })
 
 // Data access handlers
@@ -131,13 +136,8 @@ function trackSettingsState(settings: Settings) {
 
 // IPC Handlers - Settings
 ipcMain.on('save-settings', (event, settings: Partial<Settings>) => {
-    const prevSettings = getSettings()
     updateSettings(settings)
-    const newSettings = getSettings()
-    trackSettingsState(newSettings)
-    if ('notificationSound' in settings && newSettings.notificationSound !== prevSettings.notificationSound) {
-        playNotificationSound()
-    }
+    trackSettingsState(getSettings())
 
     // Configure auto-start behavior
     app.setLoginItemSettings({

@@ -11,22 +11,12 @@ function getSoundsPath() {
     return path.join(__dirname, '../assets/sounds')
 }
 
-export function playNotificationSound() {
-    const settings = getSettings()
-    if (!settings.enableSoundNotification) return
-
-    if (settings.notificationSound === 'system') {
-        if (process.platform === 'darwin') {
-            shell.beep()
-        } else if (process.platform === 'win32') {
-            const audio = new Audio('ms-winsoundevent:Notification.Default')
-            audio.play().catch(() => shell.beep())
-        } else {
-            shell.beep()
-        }
+export function playNotificationSound(soundValue: string) {
+    if (soundValue === 'system') {
+        shell.beep()
     } else {
         try {
-            const soundPath = path.join(getSoundsPath(), settings.notificationSound)
+            const soundPath = path.join(getSoundsPath(), soundValue)
             sound.play(soundPath).catch((error: Error) => {
                 console.error('Failed to play sound:', error)
                 shell.beep()
