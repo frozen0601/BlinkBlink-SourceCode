@@ -537,3 +537,25 @@ a {
 #scheduleSettings {
     margin-top: 1rem;
 }
+
+.sound-control {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.import-sound-btn {
+    padding: 0.25rem 0.5rem;
+    border: 1px solid var(--text-secondary);
+    border-radius: calc(var(--border-radius) * 0.5);
+    background: var(--background-color);
+    color: var(--text-primary);
+    cursor: pointer;
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+}
+
+.import-sound-btn:hover {
+    border-color: var(--primary-color);
+    background: color-mix(in srgb, var(--primary-color) 10%, transparent);
+}

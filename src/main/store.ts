@@ -22,6 +22,8 @@ const STORE_DEFAULTS: StoreSchema = {
     userId: uuidv4(),
     settings: {
         enableBreakNotification: true,
+        enableSoundNotification: true,
+        notificationSound: 'system',
         breakPreNotificationOffset: 30000,
         enableAutoDismiss: true,
         summaryDuration: 5000,

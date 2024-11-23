@@ -11,6 +11,8 @@ export interface Stats {
 
 export interface Settings {
     enableBreakNotification: boolean
+    enableSoundNotification: boolean
+    notificationSound: string
     breakPreNotificationOffset: number
     enableAutoDismiss: boolean
     summaryDuration: number

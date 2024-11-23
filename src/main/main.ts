@@ -1,4 +1,4 @@
-import { app, ipcMain, powerMonitor, nativeImage } from 'electron'
+import { app, ipcMain, powerMonitor, nativeImage, shell, dialog } from 'electron'
 import * as path from 'path'
 import { updateStats, updateLastBreakEndTime, getSettings, updateSettings, getStats, getUserId, hasCompletedFirstRun } from './store'
 import { Settings } from './types'
@@ -11,6 +11,7 @@ import { checkForUpdates, startAutoUpdateTimer, stopAutoUpdateTimer } from './up
 import { initialize, trackEvent } from '@aptabase/electron/main'
 import { showTutorial } from './tutorial'
 import { get } from 'http'
+import { playNotificationSound, getAvailableSounds } from './sound'
 
 // Stats Management
 export function updateBreakStats(skipped: boolean) {
@@ -68,7 +69,10 @@ ipcMain.on('break-skip', () => {
 })
 
 ipcMain.on('break-complete', () => {
-    trackEvent('break_completed', { skipped: false })
+    const settings = getSettings()
+    if (settings.enableSoundNotification) {
+        playNotificationSound()
+    }
     updateBreakStats(false)
     showSummaryView()
 })
@@ -106,6 +110,9 @@ ipcMain.handle('get-app-info', () => {
 // IPC Handler - Check for updates (manual check)
 ipcMain.handle('check-for-updates', () => checkForUpdates(false))
 
+// Update the IPC handler to use imported function
+ipcMain.handle('get-available-sounds', () => getAvailableSounds())
+
 function trackSettingsState(settings: Settings) {
     trackEvent('settings_values', {
         startOnBoot: settings.startOnBoot ? 1 : 0,
@@ -115,6 +122,8 @@ function trackSettingsState(settings: Settings) {
         breakNotificationOffset: settings.breakPreNotificationOffset,
         scheduleEnabled: settings.scheduleEnabled ? 1 : 0,
         autoUpdate: settings.autoUpdate ? 1 : 0,
+        soundNotification: settings.enableSoundNotification ? 1 : 0,
+        notificationSound: settings.notificationSound,
     })
     // we track the language setting separately as being a string value mess up aptabase dashboard
     trackEvent('language_setting', {
@@ -133,6 +142,11 @@ ipcMain.on('save-settings', (event, settings: Partial<Settings>) => {
         openAsHidden: true,
         path: app.getPath('exe'),
     })
+
+    // Play sound if notification sound is changed
+    if ('notificationSound' in settings) {
+        playNotificationSound()
+    }
 })
 
 // App Lifecycle Events

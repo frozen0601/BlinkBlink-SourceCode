@@ -25,7 +25,7 @@ const mainConfig = {
             patterns: [
                 { from: 'assets/icon.png', to: 'icon.png' },
                 { from: 'assets/icon.ico', to: 'icon.ico' },
-                { from: 'assets/icon.icns', to: 'icon.icns' },
+                { from: 'assets/icon.icns', to: 'icon.icns' },  
             ],
         }),
     ],
