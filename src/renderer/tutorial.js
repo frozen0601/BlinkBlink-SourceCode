@@ -71,6 +71,15 @@ function createRipple(e) {
     })
 }
 
+async function saveQuickSettings(setting, value) {
+    const settings = await ipcRenderer.invoke('get-settings')
+    const updatedSettings = {
+        ...settings,
+        [setting]: value,
+    }
+    ipcRenderer.send('save-settings', updatedSettings)
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
     // Initialize the tutorial
     showPage(currentPageIndex)
@@ -89,18 +98,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             card.classList.add('active')
         }
 
-        card.addEventListener('click', async () => {
+        // Make the entire card clickable
+        card.addEventListener('click', async (e) => {
             const newState = !card.classList.contains('active')
-            card.classList.toggle('active')
-
-            // Create settings object with only the changed setting
-            const updatedSettings = {
-                ...settings,
-                [setting]: newState,
-            }
-
-            // Save settings using ipcRenderer
-            await ipcRenderer.send('save-settings', updatedSettings)
+            card.classList.toggle('active', newState)
+            await saveQuickSettings(setting, newState)
         })
     })
 
