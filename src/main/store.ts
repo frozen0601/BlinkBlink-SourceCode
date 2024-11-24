@@ -70,7 +70,6 @@ export function updateStats(newStats: Partial<Stats>) {
     store.set('stats', { ...currentStats, ...newStats })
 }
 
-// Modify getSettings function
 function isDayOfWeek(day: string): day is keyof WeeklySchedule {
     return ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].includes(day)
 }
@@ -84,7 +83,6 @@ export function getSettings(): Settings {
         return defaultSettings
     }
 
-    // Ensure schedule exists and has all required properties
     const schedule = settings.schedule || DEFAULT_SCHEDULE
     Object.keys(DEFAULT_SCHEDULE).forEach((day) => {
         if (isDayOfWeek(day)) {
@@ -92,7 +90,6 @@ export function getSettings(): Settings {
             if (!schedule[day]) {
                 schedule[day] = DEFAULT_SCHEDULE[day]
             }
-            // Ensure each day has the correct structure
             if (typeof schedule[day].enabled !== 'boolean') {
                 schedule[day].enabled = DEFAULT_SCHEDULE[day].enabled
             }
@@ -102,7 +99,6 @@ export function getSettings(): Settings {
         }
     })
 
-    // Merge with defaults to ensure all properties exist
     return {
         ...defaultSettings,
         ...settings,

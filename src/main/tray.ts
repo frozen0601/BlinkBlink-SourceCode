@@ -125,11 +125,14 @@ function createSkipBreaksSubmenu() {
 }
 
 function getIconPath() {
-    return process.platform === 'win32'
-        ? path.join(__dirname, 'icon.ico')
-        : process.platform === 'darwin'
-        ? path.join(__dirname, 'icon.icns')
-        : path.join(__dirname, 'icon.png')
+    switch (process.platform) {
+        case 'win32':
+            return path.join(__dirname, 'icon.ico')
+        case 'darwin':
+            return path.join(__dirname, 'icon.icns')
+        default:
+            return path.join(__dirname, 'icon.png')
+    }
 }
 
 function formatRemainingTime(minutes: number): string {

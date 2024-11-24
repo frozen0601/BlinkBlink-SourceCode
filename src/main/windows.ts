@@ -24,6 +24,63 @@ class WindowManager {
     private windowsByDisplay = new Map<number, BrowserWindow>()
     private activeIntervals: WindowWithInterval[] = []
 
+    private getPlatformSpecificOptions(): Partial<Electron.BrowserWindowConstructorOptions> {
+        switch (process.platform) {
+            case 'darwin':
+                return {
+                    transparent: true,
+                    vibrancy: 'fullscreen-ui',
+                }
+            case 'win32':
+                return {
+                    transparent: false,
+                    backgroundMaterial: 'acrylic',
+                }
+            default:
+                return {
+                    transparent: true,
+                    type: 'notification',
+                }
+        }
+    }
+
+    private setWindowPlatformSpecifics(window: BrowserWindow) {
+        switch (process.platform) {
+            case 'darwin':
+                window.setWindowButtonVisibility(false)
+                window.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
+                window.setAlwaysOnTop(true, 'screen-saver')
+                break
+            case 'win32':
+                window.setAlwaysOnTop(true, 'screen-saver')
+                break
+            default:
+                window.setAlwaysOnTop(true, 'pop-up-menu')
+                break
+        }
+    }
+
+    private getBaseWindowOptions(display: Electron.Display): Electron.BrowserWindowConstructorOptions {
+        return {
+            x: display.bounds.x,
+            y: display.bounds.y,
+            width: display.bounds.width,
+            height: display.bounds.height,
+            closable: false,
+            show: false,
+            frame: false,
+            skipTaskbar: true,
+            titleBarStyle: 'hidden',
+            hasShadow: false,
+            enableLargerThanScreen: true,
+            visualEffectState: 'active',
+            webPreferences: {
+                nodeIntegration: true,
+                contextIsolation: false,
+            },
+        }
+    }
+
     private createOrUpdateWindow(config: WindowConfig): BrowserWindow {
         const { type, display } = config
         let window = this.windowsByDisplay.get(display.id)
@@ -31,36 +88,15 @@ class WindowManager {
 
         if (!window) {
             isNewWindow = true
-            window = new BrowserWindow({
-                x: display.bounds.x,
-                y: display.bounds.y,
-                width: display.bounds.width,
-                height: display.bounds.height,
-                closable: false,
-                // focusable: false,
-                show: false,
-                transparent: process.platform === 'darwin',
-                frame: false,
-                skipTaskbar: true,
-                titleBarStyle: 'hidden',
-                hasShadow: false,
-                enableLargerThanScreen: true,
-                visualEffectState: 'active',
-                webPreferences: {
-                    nodeIntegration: true,
-                    contextIsolation: false,
-                },
-                vibrancy: 'fullscreen-ui',
-                backgroundMaterial: 'acrylic',
-            })
-
-            window.loadFile(path.join(__dirname, 'overlay.html'))
-            window.setAlwaysOnTop(true, 'screen-saver')
-
-            if (process.platform === 'darwin') {
-                window.setWindowButtonVisibility(false)
-                window.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
+            const windowOptions = {
+                ...this.getBaseWindowOptions(display),
+                ...this.getPlatformSpecificOptions(),
             }
+
+            window = new BrowserWindow(windowOptions)
+            window.loadFile(path.join(__dirname, 'overlay.html'))
+            this.setWindowPlatformSpecifics(window)
+
             window.setPosition(display.bounds.x, display.bounds.y)
             window.setSize(display.bounds.width, display.bounds.height)
             this.setupWindowEvents(window, display.id)
@@ -68,7 +104,6 @@ class WindowManager {
         }
 
         if (isNewWindow) {
-            // For new windows, wait for ready-to-show
             window.once('ready-to-show', () => {
                 window.webContents.send('show-view', type)
                 window.show()
