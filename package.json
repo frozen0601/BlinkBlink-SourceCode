@@ -94,6 +94,7 @@
         "electron-store": "^8.2.0",
         "electron-updater": "^6.3.9",
         "node-fetch": "^3.3.2",
+        "play-sound": "^1.1.6",
         "semver": "^7.6.3",
         "sound-play": "^1.1.0",
         "universal-analytics": "^0.5.3",

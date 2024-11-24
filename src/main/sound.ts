@@ -1,8 +1,8 @@
 import { shell, app } from 'electron'
 import * as path from 'path'
 import * as fs from 'fs'
-import { getSettings } from './store'
-import sound from 'sound-play'
+import sound from 'sound-play' // for Windows and macOS
+const audioPlayer = require('play-sound')({}) // for Linux
 
 function getSoundsPath() {
     if (app.isPackaged) {
@@ -11,20 +11,43 @@ function getSoundsPath() {
     return path.join(__dirname, '../assets/sounds')
 }
 
-export function playNotificationSound(soundValue: string) {
+function playLinuxSound(soundPath: string) {
+    return new Promise<void>((resolve, reject) => {
+        audioPlayer.play(soundPath, (err: Error | null) => {
+            if (err) reject(err)
+            else resolve()
+        })
+    })
+}
+
+export async function playNotificationSound(soundValue: string) {
+    // Handle system sound
     if (soundValue === 'system') {
-        shell.beep()
-    } else {
-        try {
-            const soundPath = path.join(getSoundsPath(), soundValue)
-            sound.play(soundPath).catch((error: Error) => {
-                console.error('Failed to play sound:', error)
+        if (process.platform === 'linux') {
+            const defaultSound = path.join(getSoundsPath(), 'bling.wav')
+            if (!fs.existsSync(defaultSound)) {
                 shell.beep()
-            })
-        } catch (error) {
-            console.error('Failed to play sound:', error)
-            shell.beep()
+                return
+            }
+            try {
+                await playLinuxSound(defaultSound)
+            } catch {
+                shell.beep()
+            }
+            return
         }
+        shell.beep()
+        return
+    }
+
+    // Handle custom sounds
+    try {
+        const soundPath = path.join(getSoundsPath(), soundValue)
+        const playSound = process.platform === 'linux' ? playLinuxSound : sound.play
+        await playSound(soundPath)
+    } catch (error) {
+        console.error('Failed to play sound:', error)
+        shell.beep()
     }
 }
 
