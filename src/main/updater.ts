@@ -153,8 +153,33 @@ export async function checkMacOSUpdate() {
     await downloadMacOSUpdate(dmgAsset)
 }
 
+function isRunningInSnap(): boolean {
+    return process.platform === 'linux' && process.env.SNAP !== undefined;
+}
+
 export async function checkForUpdates(silent = false) {
     try {
+        // Skip update checks on Linux
+        if (process.platform === 'linux') {
+            if (!silent) {
+                if (isRunningInSnap()) {
+                    await showDialog({
+                        type: 'info',
+                        title: 'Updates',
+                        message: 'Updates are handled automatically by Snap.',
+                        detail: 'Your system will automatically update this application when updates are available.'
+                    });
+                } else {
+                    await showDialog({
+                        type: 'info',
+                        title: 'Updates',
+                        message: 'Please use your system package manager to update this application.'
+                    });
+                }
+            }
+            return;
+        }
+
         if (process.platform === 'darwin') {
             const currentVersion = app.getVersion()
             const latestRelease = await getLatestReleaseFromGitHub()
@@ -230,7 +255,7 @@ export function startAutoUpdateTimer() {
     }
 
     const settings = getSettings()
-    if (settings.autoUpdate) {
+    if (settings.autoUpdate && process.platform !== 'linux') {
         checkForUpdates(true)
         autoUpdateTimer = setInterval(() => {
             checkForUpdates(true)
