@@ -1,6 +1,6 @@
 {
     "name": "blinkblink",
-    "version": "0.0.8-beta",
+    "version": "0.0.9-beta",
     "main": "dist/main.js",
     "scripts": {
         "start": "cross-env NODE_ENV=development webpack --config webpack.config.js && electron .",
@@ -53,9 +53,6 @@
         },
         "linux": {
             "target": [
-                "deb",
-                "rpm",
-                "AppImage",
                 "snap"
             ],
             "icon": "assets/icon.png",
