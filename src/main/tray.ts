@@ -2,7 +2,7 @@ import { BrowserWindow, Tray, Menu, nativeTheme, app, screen, MenuItem } from 'e
 import { autoUpdater } from 'electron-updater'
 import path from 'path'
 import { skipBreaksFor, skipBreaksUntilEndOfDay, getRemainingTimeInMinutes, isRunning } from './timer'
-import { getWindowPosition, saveWindowPosition, getSettings } from './store'
+import { getWindowPosition, saveWindowPosition } from './store'
 import { scheduleManager } from './scheduler'
 
 let statsWindow: BrowserWindow | null = null
@@ -22,6 +22,7 @@ function createWindow(options: Electron.BrowserWindowConstructorOptions, filePat
         webPreferences: {
             nodeIntegration: true,
             contextIsolation: false,
+            ...(process.platform === 'darwin' && { scrollBounce: true }),
         },
     })
 

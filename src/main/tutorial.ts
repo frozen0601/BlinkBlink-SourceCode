@@ -22,6 +22,7 @@ export function showTutorial() {
         webPreferences: {
             nodeIntegration: true,
             contextIsolation: false,
+            ...(process.platform === 'darwin' && { scrollBounce: true }),
         },
     })
 
