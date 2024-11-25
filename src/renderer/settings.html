@@ -181,11 +181,11 @@
                 document.getElementById('summaryDuration').value = settings.summaryDuration / 1000
                 document.getElementById('languageSelect').value = settings.language
                 document.getElementById('enableBreakNotification').checked = settings.enableBreakNotification
+                document.getElementById('notificationSound').value = settings.notificationSound
                 document.getElementById('breakPreNotificationOffset').value = settings.breakPreNotificationOffset / 1000
                 document.getElementById('scheduleEnabled').checked = settings.scheduleEnabled
                 document.getElementById('autoUpdate').checked = settings.autoUpdate
                 document.getElementById('enableSoundNotification').checked = settings.enableSoundNotification
-                document.getElementById('notificationSound').value = settings.notificationSound
                 document.getElementById('workDuration').value = settings.workDuration / (60 * 1000)
                 document.getElementById('breakDuration').value = settings.breakDuration / 1000
 
@@ -455,6 +455,11 @@
             // Load available sounds
             ipcRenderer.invoke('get-available-sounds').then((sounds) => {
                 const soundSelect = document.getElementById('notificationSound')
+                
+                // Clear existing options first
+                soundSelect.innerHTML = '<option value="system">Default</option>'
+                
+                // Add sound options
                 sounds.forEach((sound) => {
                     const option = document.createElement('option')
                     option.value = sound.filename
@@ -462,10 +467,17 @@
                     soundSelect.appendChild(option)
                 })
 
-                // Play sound only when selection changes
+                // After populating sounds, set the current value from settings
+                ipcRenderer.invoke('get-settings').then((settings) => {
+                    soundSelect.value = settings.notificationSound
+                })
+
+                // Play sound and save settings when selection changes
                 soundSelect.addEventListener('change', () => {
                     if (document.getElementById('enableSoundNotification').checked) {
-                        ipcRenderer.send('play-sound', soundSelect.value)
+                        const selectedSound = soundSelect.value
+                        ipcRenderer.send('play-sound', selectedSound)
+                        saveSettings()
                     }
                 })
             })
