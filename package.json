@@ -5,7 +5,8 @@
     "scripts": {
         "start": "cross-env NODE_ENV=development webpack --config webpack.config.js && electron .",
         "build": "cross-env NODE_ENV=production webpack --config webpack.config.js",
-        "dist": "npm run build && electron-builder"
+        "dist": "npm run build && electron-builder",
+        "dist:linux": "npm run build && electron-builder --linux"
     },
     "build": {
         "appId": "blinkblink",
@@ -51,12 +52,18 @@
             "artifactName": "${productName}.Setup.${version}.${ext}"
         },
         "linux": {
-            "target": "AppImage",
+            "target": [
+                "deb",
+                "rpm",
+                "AppImage",
+                "snap"
+            ],
             "icon": "assets/icon.png",
-            "artifactName": "${productName}.Setup.${version}.${ext}"
+            "artifactName": "${productName}.Setup.${version}.${ext}",
+            "category": "Utility"
         }
     },
-    "homepage": "https://github.com/frozen0601/BlinkBlink-Releases",
+    "homepage": "https://blinkblinkapp.github.io/",
     "keywords": [
         "202020",
         "20-20-20",
@@ -69,7 +76,10 @@
         "wellness",
         "well-being"
     ],
-    "author": "Wei-Cheng Huang",
+    "author": {
+        "name": "Wei-Cheng Huang",
+        "email": "andywh1996@gmail.com"
+    },
     "license": "Proprietary",
     "description": "Healthy Eyes, Happy Life",
     "devDependencies": {
