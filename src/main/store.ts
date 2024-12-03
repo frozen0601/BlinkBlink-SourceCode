@@ -107,10 +107,12 @@ export function getSettings(): Settings {
 }
 
 export function getWorkDuration(): number {
+    return 2000
     return getSettings().workDuration
 }
 
 export function getBreakDuration(): number {
+    return 5000
     return getSettings().breakDuration
 }
 

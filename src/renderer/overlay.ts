@@ -1,12 +1,6 @@
 import { ipcRenderer } from 'electron'
 import { trackEvent } from '@aptabase/electron/renderer'
 
-const MILESTONE_TIERS = {
-    BASE: [3, 10, 20, 50],
-    MEDIUM: [75, 100, 125, 150],
-    HIGH: [100, 150, 200, 250],
-}
-
 // Types
 interface Stats {
     breakStreakCount: number
@@ -163,13 +157,12 @@ class UnifiedUI {
 
     private updateMilestoneMarkers(count: number, milestones: number[]): void {
         const container = this.elements.progressTracker
-        const fullMilestones = [0, ...milestones]
         const hitMilestone = milestones.some((m) => m === count)
         const nextMilestone = !hitMilestone ? milestones.find((m) => m > count) : null
 
         container.innerHTML = `
             <div class="milestone-markers">
-                ${fullMilestones
+                ${milestones
                     .map((milestone) => {
                         const isHit = count === milestone
                         const isNext = milestone === nextMilestone
@@ -190,21 +183,21 @@ class UnifiedUI {
         `
 
         // Find current segment
-        let currentSegmentStart = 0
-        let currentSegmentEnd = fullMilestones[1]
+        let currentSegmentStart = milestones[0]
+        let currentSegmentEnd = milestones[1]
 
-        for (let i = 0; i < fullMilestones.length - 1; i++) {
-            if (count >= fullMilestones[i] && count <= fullMilestones[i + 1]) {
-                currentSegmentStart = fullMilestones[i]
-                currentSegmentEnd = fullMilestones[i + 1]
+        for (let i = 0; i < milestones.length - 1; i++) {
+            if (count >= milestones[i] && count <= milestones[i + 1]) {
+                currentSegmentStart = milestones[i]
+                currentSegmentEnd = milestones[i + 1]
                 break
             }
         }
 
         // Calculate segment-based progress
         const segmentProgress = (count - currentSegmentStart) / (currentSegmentEnd - currentSegmentStart)
-        const segmentWidth = 100 / (fullMilestones.length - 1) // Width of each segment
-        const completedSegments = fullMilestones.findIndex((m) => m === currentSegmentStart)
+        const segmentWidth = 100 / (milestones.length - 1) // Width of each segment
+        const completedSegments = milestones.findIndex((m) => m === currentSegmentStart)
         const totalProgress = completedSegments * segmentWidth + segmentWidth * segmentProgress
 
         const progressFill = container.querySelector('.progress-fill') as HTMLElement
@@ -220,14 +213,12 @@ class UnifiedUI {
 
     private calculateMilestones(currentStreak: number): number[] {
         if (currentStreak <= 50) {
-            return MILESTONE_TIERS.BASE
-        }
-        if (currentStreak <= 150) {
-            return [...MILESTONE_TIERS.BASE, ...MILESTONE_TIERS.MEDIUM]
+            return [0, 3, 10, 20, 50]
         }
 
-        const baseNumber = Math.floor(currentStreak / 100) * 100
-        return [...MILESTONE_TIERS.BASE, ...MILESTONE_TIERS.MEDIUM, ...MILESTONE_TIERS.HIGH.map((offset) => baseNumber + offset)]
+        const setNumber = Math.floor((currentStreak - 51) / 100)
+        const baseNumber = 50 + (setNumber * 100)
+        return [baseNumber, baseNumber + 25, baseNumber + 50, baseNumber + 75, baseNumber + 100]
     }
 
     private updateProgressTracker(count: number) {
