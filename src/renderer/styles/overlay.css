@@ -54,6 +54,15 @@ body {
     user-select: none;
 }
 
+body,
+html {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
 body {
     opacity: 0;
     display: flex;
@@ -84,6 +93,12 @@ body.ready {
     transition: opacity 0.3s ease-out;
 }
 
+.content-container {
+    text-align: center;
+    opacity: 0;
+    transition: opacity 0.3s ease-out;
+}
+
 .ready .content-container {
     opacity: 1;
 }
@@ -94,6 +109,24 @@ body.ready {
     position: fixed;
     inset: 0;
     z-index: 1000;
+}
+
+#break-view,
+#summary-view {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1000;
+}
+
+.show-break #break-view,
+.show-summary #summary-view {
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .show-break #break-view,
@@ -178,6 +211,11 @@ button,
     box-sizing: border-box;
 }
 
+#progress-tracker {
+    position: relative;
+    width: 100%;
+}
+
 .progress-bar {
     width: 100%;
     height: 8px;
@@ -205,17 +243,23 @@ button,
     justify-content: space-between;
 }
 
+.milestone-markers {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+}
+
 .milestone-marker {
-    position: relative;
-    color: var(--milestone-color);
-    font-size: 0.9rem;
-    transform: translateX(50%);
-    margin-right: -100%;
+    position: absolute;
+    transform: translateX(-50%);
+}
+
+.milestone-marker:first-child {
+    left: 0;
 }
 
 .milestone-marker:last-child {
-    transform: translateX(0);
-    margin-right: 0;
+    left: 100%;
 }
 
 .milestone-marker.reached {
@@ -325,15 +369,14 @@ button,
 /* Animations */
 @keyframes milestone-hit {
     0% {
-        transform: scale(1);
+        transform: translateX(-50%) scale(1);
     }
     50% {
-        transform: scale(1.3);
-        border-color: var(--accent-color);
+        transform: translateX(-50%) scale(1.3);
         color: var(--text-primary);
     }
     100% {
-        transform: scale(1);
+        transform: translateX(-50%) scale(1);
     }
 }
 

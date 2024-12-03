@@ -7,13 +7,11 @@ interface Stats {
     breakStreakDuration: number
 }
 
-// 1. Define View Enum
 enum View {
     Break = 'break',
     Summary = 'summary',
 }
 
-// 2. Inject ipcRenderer via constructor for better testability
 class UnifiedUI {
     private skipConfirmed = false
     private summaryDuration: number = 0
@@ -48,7 +46,6 @@ class UnifiedUI {
         }
     }
 
-    // 3. Refactor initializeEventListeners into separate methods
     private initializeEventListeners() {
         this.initializeViewSwitching()
         this.initializeButtonHandlers()
@@ -127,7 +124,6 @@ class UnifiedUI {
         this.skipConfirmed = false
     }
 
-    // 4. Enhance error handling in initializeSummary
     private async initializeSummary() {
         try {
             const stats = (await this.ipc.invoke('get-stats')) as Stats
@@ -160,28 +156,6 @@ class UnifiedUI {
         const hitMilestone = milestones.some((m) => m === count)
         const nextMilestone = !hitMilestone ? milestones.find((m) => m > count) : null
 
-        container.innerHTML = `
-            <div class="milestone-markers">
-                ${milestones
-                    .map((milestone) => {
-                        const isHit = count === milestone
-                        const isNext = milestone === nextMilestone
-                        return `
-                            <div class="milestone-marker
-                                ${count >= milestone ? 'reached' : ''}
-                                ${isHit ? 'milestone-hit' : ''}
-                                ${isNext ? 'next-milestone' : ''}">
-                                ${milestone}
-                            </div>
-                        `
-                    })
-                    .join('')}
-            </div>
-            <div class="progress-bar">
-                <div class="progress-fill"></div>
-            </div>
-        `
-
         // Find current segment
         let currentSegmentStart = milestones[0]
         let currentSegmentEnd = milestones[1]
@@ -196,9 +170,35 @@ class UnifiedUI {
 
         // Calculate segment-based progress
         const segmentProgress = (count - currentSegmentStart) / (currentSegmentEnd - currentSegmentStart)
-        const segmentWidth = 100 / (milestones.length - 1) // Width of each segment
+        const segmentWidth = 100 / (milestones.length - 1)
         const completedSegments = milestones.findIndex((m) => m === currentSegmentStart)
         const totalProgress = completedSegments * segmentWidth + segmentWidth * segmentProgress
+
+        container.innerHTML = `
+            <div class="milestone-markers">
+                ${milestones
+                    .map((milestone, index) => {
+                        const isHit = count === milestone
+                        const isNext = milestone === nextMilestone
+                        // Position based on index instead of value
+                        const positionPercent = (index / (milestones.length - 1)) * 100
+
+                        return `
+                            <div class="milestone-marker
+                                ${count >= milestone ? 'reached' : ''}
+                                ${isHit ? 'milestone-hit' : ''}
+                                ${isNext ? 'next-milestone' : ''}"
+                                style="left: ${positionPercent}%; transform: translateX(-50%);">
+                                ${milestone}
+                            </div>
+                        `
+                    })
+                    .join('')}
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: ${Math.min(totalProgress, 100)}%;"></div>
+            </div>
+        `
 
         const progressFill = container.querySelector('.progress-fill') as HTMLElement
         if (progressFill) {
@@ -217,7 +217,7 @@ class UnifiedUI {
         }
 
         const setNumber = Math.floor((currentStreak - 51) / 100)
-        const baseNumber = 50 + (setNumber * 100)
+        const baseNumber = 50 + setNumber * 100
         return [baseNumber, baseNumber + 25, baseNumber + 50, baseNumber + 75, baseNumber + 100]
     }
 
