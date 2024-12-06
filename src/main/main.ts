@@ -80,6 +80,7 @@ ipcMain.on('break-complete', () => {
 ipcMain.on('summary-dismissed', () => {
     startWorkTimer()
     closeAllWindows()
+    updateTooltip()
 })
 
 ipcMain.on('schedule-updated', () => {
