@@ -2,7 +2,6 @@
 
 import Store from 'electron-store'
 import { BrowserWindow, screen } from 'electron'
-import { updateTooltip } from './tray'
 import { StoreSchema, Settings, Stats, TrayWindowPosition, WeeklySchedule, DaySchedule } from './types'
 import { startAutoUpdateTimer, stopAutoUpdateTimer } from './updater'
 import { v4 as uuidv4 } from 'uuid'
@@ -130,8 +129,6 @@ export function updateSettings(settings: Partial<Settings>) {
     // Trigger timer and tooltip updates when schedule changes
     const { ipcMain } = require('electron')
     ipcMain.emit('schedule-updated')
-
-    updateTooltip()
 }
 
 // Last break time management

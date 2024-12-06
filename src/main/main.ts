@@ -74,6 +74,7 @@ ipcMain.on('break-complete', () => {
     }
     updateBreakStats(false)
     showSummaryView()
+    updateTooltip()
 })
 
 ipcMain.on('summary-dismissed', () => {
@@ -81,10 +82,9 @@ ipcMain.on('summary-dismissed', () => {
     closeAllWindows()
 })
 
-// Add this new IPC handler for schedule updates
 ipcMain.on('schedule-updated', () => {
-    clearTimer() // Clear existing timer
-    startWorkTimer() // Restart timer with new schedule
+    clearTimer()
+    startWorkTimer()
     updateTooltip()
 })
 
