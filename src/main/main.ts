@@ -64,6 +64,7 @@ ipcMain.on('break-skip', () => {
     updateBreakStats(true)
     closeAllWindows()
     startWorkTimer()
+    updateTooltip()
 })
 
 ipcMain.on('break-complete', () => {
