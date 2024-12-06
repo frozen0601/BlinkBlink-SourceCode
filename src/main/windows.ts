@@ -180,7 +180,6 @@ class WindowManager {
     }
 
     showBreakView() {
-        trackEvent('view_shown', { type: 'break' })
         const displays = screen.getAllDisplays()
         displays.forEach((display) => {
             this.createOrUpdateWindow({
@@ -194,7 +193,6 @@ class WindowManager {
     }
 
     showSummaryView() {
-        trackEvent('view_shown', { type: 'summary' })
         const displays = screen.getAllDisplays()
         const settings = getSettings()
         const duration = settings?.enableAutoDismiss ? settings.summaryDuration : Infinity
