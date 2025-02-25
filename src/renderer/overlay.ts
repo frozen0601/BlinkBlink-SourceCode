@@ -1,5 +1,5 @@
 import { ipcRenderer } from 'electron'
-import { trackEvent } from '@aptabase/electron/renderer'
+// import { trackEvent } from '@aptabase/electron/renderer'
 
 // Types
 interface Stats {
@@ -73,13 +73,13 @@ class UnifiedUI {
         })
 
         // Track user interactions
-        document.getElementById('skipButton')?.addEventListener('click', () => {
-            trackEvent('user_interaction', { action: 'skip_clicked' })
-        })
+        // document.getElementById('skipButton')?.addEventListener('click', () => {
+        //     trackEvent('user_interaction', { action: 'skip_clicked' })
+        // })
 
-        document.getElementById('completeButton')?.addEventListener('click', () => {
-            trackEvent('user_interaction', { action: 'complete_clicked' })
-        })
+        // document.getElementById('completeButton')?.addEventListener('click', () => {
+        //     trackEvent('user_interaction', { action: 'complete_clicked' })
+        // })
     }
 
     private initializeIpcEvents() {

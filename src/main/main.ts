@@ -60,7 +60,6 @@ ipcMain.on('start-break-countdown', () => {
 })
 
 ipcMain.on('break-skip', () => {
-    trackEvent('break_skipped')
     updateBreakStats(true)
     closeAllWindows()
     startWorkTimer()

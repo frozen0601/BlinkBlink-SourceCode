@@ -3,7 +3,6 @@
 import { BrowserWindow, screen, ipcMain, nativeTheme } from 'electron'
 import * as path from 'path'
 import { getSettings, getBreakDuration } from './store'
-import { trackEvent } from '@aptabase/electron/main'
 
 interface WindowWithInterval {
     window: BrowserWindow
