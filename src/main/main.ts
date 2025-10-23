@@ -1,5 +1,6 @@
 import { app, ipcMain, powerMonitor, nativeImage } from 'electron'
 import * as path from 'path'
+import 'dotenv/config'
 import { updateStats, updateLastBreakEndTime, getSettings, getWorkDuration, updateSettings, getStats, hasCompletedFirstRun } from './store'
 import { Settings } from './types'
 import * as fs from 'fs'
@@ -7,16 +8,12 @@ import { startWorkTimer, clearTimer, isRunning } from './timer'
 import { showBreakView, showSummaryView, closeAllWindows } from './windows'
 import { createTray, destroyTray, updateTooltip } from './tray'
 import { checkForUpdates, startAutoUpdateTimer, stopAutoUpdateTimer } from './updater'
-import { initialize, trackEvent } from '@aptabase/electron/main'
+import { initialize } from '@aptabase/electron/main'
 import { showTutorial } from './tutorial'
 import { playNotificationSound, getAvailableSounds } from './sound'
 
 // Stats Management
 export function updateBreakStats(skipped: boolean) {
-    trackEvent('break_action', {
-        type: skipped ? 'skipped' : 'completed',
-        streak_count: getStats().breakStreakCount,
-    })
     const stats = getStats()
     const currentTime = Date.now()
 
@@ -118,21 +115,6 @@ ipcMain.handle('check-for-updates', () => checkForUpdates(false))
 ipcMain.handle('get-available-sounds', () => getAvailableSounds())
 
 function trackSettingsState(settings: Settings) {
-    trackEvent('settings_values', {
-        startOnBoot: settings.startOnBoot ? 1 : 0,
-        autoDismiss: settings.enableAutoDismiss ? 1 : 0,
-        summaryDuration: settings.summaryDuration,
-        breakNotification: settings.enableBreakNotification ? 1 : 0,
-        breakNotificationOffset: settings.breakPreNotificationOffset,
-        scheduleEnabled: settings.scheduleEnabled ? 1 : 0,
-        autoUpdate: settings.autoUpdate ? 1 : 0,
-        soundNotification: settings.enableSoundNotification ? 1 : 0,
-        notificationSound: settings.notificationSound,
-    })
-    // we track the language setting separately as being a string value mess up aptabase dashboard
-    // trackEvent('language_setting', {
-    //     value: settings.language,
-    // })
 }
 
 // IPC Handlers - Settings
@@ -149,15 +131,11 @@ ipcMain.on('save-settings', (event, settings: Partial<Settings>) => {
 })
 
 // App Lifecycle Events
-initialize('process.env.APTABASE_API_KEY')
+if (process.env.APTABASE_API_KEY) {
+    initialize(process.env.APTABASE_API_KEY)
+}
 app.whenReady().then(() => {
     const firstRun = !hasCompletedFirstRun()
-
-    trackEvent('app_started', {
-        platform: process.platform,
-        version: app.getVersion(),
-        first_run: firstRun ? 1 : 0,
-    })
 
     const settings = getSettings()
     if (firstRun) {
@@ -200,7 +178,6 @@ destroyTray()
 
 // Gracefully handle app quitting
 app.on('before-quit', () => {
-    trackEvent('app_quit')
     stopAutoUpdateTimer()
     clearTimer()
     closeAllWindows()
