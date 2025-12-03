@@ -22,11 +22,7 @@
 
 ## 🚀 Installation
 
-Download the latest version for your operating system from the [Releases Page](https://github.com/frozen0601/BlinkBlink-Releases/releases).
-
-*   **Windows**: Download the `.exe` installer.
-*   **macOS**: Download the `.dmg` file.
-*   **Linux**: Download the `.snap` or `.AppImage` file.
+Download [here](https://blinkblinkapp.github.io/#download) and follow the instructions.
 
 ## 🛠️ Development
 
