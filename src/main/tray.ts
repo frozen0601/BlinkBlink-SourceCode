@@ -20,8 +20,9 @@ function createWindow(options: Electron.BrowserWindowConstructorOptions, filePat
         backgroundColor: nativeTheme.shouldUseDarkColors ? '#1a1a1a' : '#f5f5f5',
         icon: getIconPath(),
         webPreferences: {
-            nodeIntegration: true,
-            contextIsolation: false,
+            nodeIntegration: false,
+            contextIsolation: true,
+            preload: path.join(__dirname, 'preload.js'),
             ...(process.platform === 'darwin' && { scrollBounce: true }),
         },
     })

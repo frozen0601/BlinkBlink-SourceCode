@@ -3,7 +3,6 @@
 import Store from 'electron-store'
 import { BrowserWindow, screen } from 'electron'
 import { StoreSchema, Settings, Stats, TrayWindowPosition, WeeklySchedule, DaySchedule } from './types'
-import { startAutoUpdateTimer, stopAutoUpdateTimer } from './updater'
 import { v4 as uuidv4 } from 'uuid'
 
 const DEFAULT_SCHEDULE: WeeklySchedule = {
@@ -115,20 +114,7 @@ export function getBreakDuration(): number {
 
 export function updateSettings(settings: Partial<Settings>) {
     const current = getSettings()
-    const autoUpdateChanged = current.autoUpdate !== settings.autoUpdate
-
-    if (autoUpdateChanged) {
-        if (settings.autoUpdate) {
-            startAutoUpdateTimer()
-        } else {
-            stopAutoUpdateTimer()
-        }
-    }
     store.set('settings', { ...current, ...settings })
-
-    // Trigger timer and tooltip updates when schedule changes
-    const { ipcMain } = require('electron')
-    ipcMain.emit('schedule-updated')
 }
 
 // Last break time management

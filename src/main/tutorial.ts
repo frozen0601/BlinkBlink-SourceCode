@@ -20,8 +20,9 @@ export function showTutorial() {
         resizable: true,
         show: false,
         webPreferences: {
-            nodeIntegration: true,
-            contextIsolation: false,
+            nodeIntegration: false,
+            contextIsolation: true,
+            preload: path.join(__dirname, 'preload.js'),
             ...(process.platform === 'darwin' && { scrollBounce: true }),
         },
     })

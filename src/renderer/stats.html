@@ -28,10 +28,7 @@
             </div>
         </div>
         <script>
-            const { ipcRenderer } = require('electron')
-            const { intervalToDuration } = require('date-fns')
-
-            ipcRenderer.invoke('get-stats').then((stats) => {
+            window.api.getStats().then((stats) => {
                 // Current streak
                 document.getElementById('break-streak-count').textContent = stats.breakStreakCount || '0'
                 document.getElementById('break-streak-duration').textContent = formatTime(stats.breakStreakDuration)
@@ -52,22 +49,26 @@
 
             function formatTime(ms) {
                 if (!ms) return '0 seconds'
-                const duration = intervalToDuration({ start: 0, end: ms })
+                
+                const seconds = Math.floor((ms / 1000) % 60);
+                const minutes = Math.floor((ms / (1000 * 60)) % 60);
+                const hours = Math.floor((ms / (1000 * 60 * 60)) % 24);
+                const days = Math.floor(ms / (1000 * 60 * 60 * 24));
 
                 const parts = []
 
-                if (duration.days) {
-                    parts.push(`${duration.days} ${duration.days === 1 ? 'day' : 'days'}`)
+                if (days) {
+                    parts.push(`${days} ${days === 1 ? 'day' : 'days'}`)
                 }
-                if (duration.hours) {
-                    parts.push(`${duration.hours} ${duration.hours === 1 ? 'hour' : 'hours'}`)
+                if (hours) {
+                    parts.push(`${hours} ${hours === 1 ? 'hour' : 'hours'}`)
                 }
-                if (duration.minutes) {
-                    parts.push(`${duration.minutes} ${duration.minutes === 1 ? 'minute' : 'minutes'}`)
+                if (minutes) {
+                    parts.push(`${minutes} ${minutes === 1 ? 'minute' : 'minutes'}`)
                 }
                 // Only show seconds if no larger units exist
                 if (!parts.length) {
-                    parts.push(`${duration.seconds} ${duration.seconds === 1 ? 'second' : 'seconds'}`)
+                    parts.push(`${seconds} ${seconds === 1 ? 'second' : 'seconds'}`)
                 }
 
                 return parts.join(' ')

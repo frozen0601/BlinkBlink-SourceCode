@@ -26,12 +26,9 @@ function showPage(index) {
     updateButtons()
 }
 
-// Add settings management
-const { ipcRenderer } = require('electron')
-
 async function updateTrayImage() {
     const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-    const isMac = process.platform === 'darwin'
+    const isMac = window.api.platform === 'darwin'
 
     const trayImage = document.querySelector('.tray-screenshot')
     if (trayImage) {
@@ -72,12 +69,12 @@ function createRipple(e) {
 }
 
 async function saveQuickSettings(setting, value) {
-    const settings = await ipcRenderer.invoke('get-settings')
+    const settings = await window.api.getSettings()
     const updatedSettings = {
         ...settings,
         [setting]: value,
     }
-    ipcRenderer.send('save-settings', updatedSettings)
+    window.api.saveSettings(updatedSettings)
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -89,7 +86,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', updateTrayImage)
 
     // Load and apply settings
-    const settings = await ipcRenderer.invoke('get-settings')
+    const settings = await window.api.getSettings()
 
     // Update setting cards state
     document.querySelectorAll('.setting-card').forEach((card) => {

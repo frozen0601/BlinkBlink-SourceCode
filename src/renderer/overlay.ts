@@ -1,4 +1,4 @@
-import { ipcRenderer } from 'electron'
+export {}
 
 // Types
 interface Stats {
@@ -11,9 +11,27 @@ enum View {
     Summary = 'summary',
 }
 
+interface IElectronAPI {
+    onShowView: (callback: (view: View) => void) => void
+    onStartCountdown: (callback: (duration: number) => void) => void
+    onCountdownUpdate: (callback: (countdown: number) => void) => void
+    dismissSummary: () => void
+    skipBreak: () => void
+    getStats: () => Promise<Stats>
+    getSettings: () => Promise<any>
+    getSoundPath: (filename: string) => Promise<string>
+}
+
+declare global {
+    interface Window {
+        api: IElectronAPI
+    }
+}
+
 class UnifiedUI {
     private skipConfirmed = false
     private summaryDuration: number = 0
+    private currentView: View = View.Break
     private elements: {
         progressBar: HTMLElement
         progressTracker: HTMLElement
@@ -23,7 +41,7 @@ class UnifiedUI {
         warningText: HTMLElement
     }
 
-    constructor(private ipc: typeof ipcRenderer = ipcRenderer) {
+    constructor() {
         this.elements = this.getDOMElements()
         this.initializeEventListeners()
     }
@@ -53,7 +71,8 @@ class UnifiedUI {
     }
 
     private initializeViewSwitching() {
-        this.ipc.on('show-view', (_, view: View) => {
+        window.api.onShowView((view: View) => {
+            this.currentView = view // Update the current view
             document.body.className = `ready show-${view}`
 
             if (view === View.Summary) {
@@ -67,17 +86,20 @@ class UnifiedUI {
     private initializeButtonHandlers() {
         this.elements.skipButton?.addEventListener('click', () => this.handleSkipClick())
         this.elements.dismissButton?.addEventListener('click', () => {
-            this.ipc.send('summary-dismissed')
+            window.api.dismissSummary()
             window.close()
         })
     }
 
     private initializeIpcEvents() {
-        this.ipc.on('start-countdown', (_, duration: number) => this.startProgress(duration))
-        this.ipc.on('countdown-update', (_, countdown: number) => {
+        window.api.onStartCountdown((duration: number) => this.startProgress(duration))
+        window.api.onCountdownUpdate((countdown: number) => {
             if (countdown <= 0) {
-                this.ipc.send('summary-dismissed')
-                window.close()
+                // Only dismiss if currently in Summary View
+                if (this.currentView === View.Summary) {
+                    window.api.dismissSummary()
+                    window.close()
+                } // Otherwise, let the main process handle the transition (Break -> Summary)
             }
         })
     }
@@ -97,13 +119,13 @@ class UnifiedUI {
 
     private async handleSkipClick() {
         if (!this.skipConfirmed) {
-            const stats = (await this.ipc.invoke('get-stats')) as Stats
+            const stats = await window.api.getStats()
             this.elements.warningText.textContent = `You're on a streak of ${stats.breakStreakCount} breaks. Skipping will reset it. Continue?`
             this.elements.warningText.style.display = 'block'
             this.elements.skipButton.textContent = 'Confirm'
             this.skipConfirmed = true
         } else {
-            this.ipc.send('break-skip')
+            window.api.skipBreak()
             window.close()
         }
     }
@@ -116,12 +138,24 @@ class UnifiedUI {
 
     private async initializeSummary() {
         try {
-            const stats = (await this.ipc.invoke('get-stats')) as Stats
+            const stats = await window.api.getStats()
             this.updateProgressTracker(stats.breakStreakCount)
             this.elements.progressBar.style.transform = 'scaleX(0)'
 
             // Get settings first to check if auto-dismiss is enabled
-            const settings = await this.ipc.invoke('get-settings')
+            const settings = await window.api.getSettings()
+
+            // Play notification sound if enabled
+            if (settings?.enableSoundNotification) {
+                try {
+                    const soundPath = await window.api.getSoundPath(settings.notificationSound)
+                    const audio = new Audio(`file://${soundPath}`)
+                    await audio.play()
+                } catch (error) {
+                    console.error('Failed to play notification sound:', error)
+                }
+            }
+
             if (!settings?.enableAutoDismiss) return
 
             // Only initialize progress bar if auto-dismiss is enabled

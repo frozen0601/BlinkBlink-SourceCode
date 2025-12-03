@@ -90,9 +90,7 @@
             <div class="progress-text" id="progress-text">Downloading update...</div>
         </div>
         <script>
-            const { ipcRenderer } = require('electron')
-
-            ipcRenderer.on('download-progress', (event, progress) => {
+            window.api.onDownloadProgress((progress) => {
                 const percent = Math.round(progress.percent * 100)
                 document.getElementById('progress').style.width = `${percent}%`
                 const downloaded = (progress.transferredBytes / 1048576).toFixed(1)

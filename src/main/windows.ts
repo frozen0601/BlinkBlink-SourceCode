@@ -1,8 +1,9 @@
 // src/windows.ts
 
-import { BrowserWindow, screen, ipcMain, nativeTheme } from 'electron'
+import { BrowserWindow, screen, nativeTheme } from 'electron'
 import * as path from 'path'
 import { getSettings, getBreakDuration } from './store'
+import { handleBreakComplete, handleSummaryDismissed } from './controller'
 
 interface WindowWithInterval {
     window: BrowserWindow
@@ -74,8 +75,9 @@ class WindowManager {
             enableLargerThanScreen: true,
             visualEffectState: 'active',
             webPreferences: {
-                nodeIntegration: true,
-                contextIsolation: false,
+                nodeIntegration: false,
+                contextIsolation: true,
+                preload: path.join(__dirname, 'preload.js'),
             },
         }
     }
@@ -186,7 +188,7 @@ class WindowManager {
                 display,
                 duration: getBreakDuration(),
                 autoDismiss: true,
-                onComplete: () => ipcMain.emit('break-complete'),
+                onComplete: () => handleBreakComplete(),
             })
         })
     }
@@ -206,7 +208,7 @@ class WindowManager {
                 display,
                 duration,
                 autoDismiss,
-                onComplete: () => ipcMain.emit('summary-dismissed'),
+                onComplete: () => handleSummaryDismissed(),
             })
         })
     }

@@ -163,7 +163,6 @@
         </div>
 
         <script>
-            const { ipcRenderer } = require('electron')
             function formatTimeForInput(timeString) {
                 // Use 24-hour format for time inputs
                 const date = new Date(`2000-01-01T${timeString}`)
@@ -175,7 +174,7 @@
             }
 
             // Load initial settings
-            ipcRenderer.invoke('get-settings').then((settings) => {
+            window.api.getSettings().then((settings) => {
                 document.getElementById('startOnBoot').checked = settings.startOnBoot
                 document.getElementById('enableAutoDismiss').checked = settings.enableAutoDismiss
                 document.getElementById('summaryDuration').value = settings.summaryDuration / 1000
@@ -283,7 +282,7 @@
                     autoUpdate: document.getElementById('autoUpdate').checked,
                     language: document.getElementById('languageSelect').value,
                 }
-                ipcRenderer.send('save-settings', settings)
+                window.api.saveSettings(settings)
             }
 
             // Add change event listeners to all inputs
@@ -453,7 +452,7 @@
             }
 
             // Load available sounds
-            ipcRenderer.invoke('get-available-sounds').then((sounds) => {
+            window.api.getAvailableSounds().then((sounds) => {
                 const soundSelect = document.getElementById('notificationSound')
                 
                 // Clear existing options first
@@ -468,15 +467,21 @@
                 })
 
                 // After populating sounds, set the current value from settings
-                ipcRenderer.invoke('get-settings').then((settings) => {
+                window.api.getSettings().then((settings) => {
                     soundSelect.value = settings.notificationSound
                 })
 
                 // Play sound and save settings when selection changes
-                soundSelect.addEventListener('change', () => {
+                soundSelect.addEventListener('change', async () => {
                     if (document.getElementById('enableSoundNotification').checked) {
                         const selectedSound = soundSelect.value
-                        ipcRenderer.send('play-sound', selectedSound)
+                        try {
+                            const soundPath = await window.api.getSoundPath(selectedSound)
+                            const audio = new Audio(`file://${soundPath}`)
+                            await audio.play()
+                        } catch (error) {
+                            console.error('Failed to play sound:', error)
+                        }
                         saveSettings()
                     }
                 })

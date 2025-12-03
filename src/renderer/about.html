@@ -26,9 +26,7 @@
             <p><a href="https://2ly.link/216p8" target="_blank" class="paypal">Donate via PayPal</a></p>
         </div>
         <script>
-            const { ipcRenderer, shell } = require('electron')
-
-            ipcRenderer.invoke('get-app-info').then((appInfo) => {
+            window.api.getAppInfo().then((appInfo) => {
                 document.getElementById('version').innerText = appInfo.version
                 document.getElementById('author').innerText = `BlinkBlink © ${new Date().getFullYear()}`
                 document.getElementById('description').innerText = appInfo.description
@@ -45,8 +43,8 @@
             updateButton.innerText = 'Check for updates'
             updateButton.addEventListener('click', () => {
                 updateButton.innerText = 'Checking...'
-                ipcRenderer
-                    .invoke('check-for-updates')
+                window.api
+                    .checkForUpdates()
                     .then((result) => {
                         if (result && result.updateInfo) {
                             updateButton.innerText = 'Update available'
@@ -61,25 +59,25 @@
 
             document.getElementById('website').addEventListener('click', (event) => {
                 event.preventDefault()
-                shell.openExternal(event.target.href)
+                window.api.openExternal(event.target.href)
             })
 
             const buyMeCoffeeButton = document.querySelector('.buy-me-coffee')
             buyMeCoffeeButton.addEventListener('click', (event) => {
                 event.preventDefault()
-                shell.openExternal(event.target.href)
+                window.api.openExternal(event.target.href)
             })
 
             const koFiButton = document.querySelector('.ko-fi')
             koFiButton.addEventListener('click', (event) => {
                 event.preventDefault()
-                shell.openExternal(event.target.href)
+                window.api.openExternal(event.target.href)
             })
 
             const paypalButton = document.querySelector('.paypal')
             paypalButton.addEventListener('click', (event) => {
                 event.preventDefault()
-                shell.openExternal(event.target.href)
+                window.api.openExternal(event.target.href)
             })
         </script>
     </body>

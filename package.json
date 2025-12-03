@@ -77,7 +77,7 @@
         "name": "Wei-Cheng Huang",
         "email": "andywh1996@gmail.com"
     },
-    "license": "Proprietary",
+    "license": "UNLICENSED",
     "description": "Healthy Eyes, Happy Life",
     "devDependencies": {
         "@types/electron": "^1.4.38",
