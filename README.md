@@ -2,7 +2,7 @@
   <img src="assets/icon.png" alt="BlinkBlink Logo" width="128" height="128">
 </p>
 
-# BlinkBlink
+# [BlinkBlink](https://blinkblinkapp.github.io/)
 
 > **Healthy Eyes, Happy Life**
 
