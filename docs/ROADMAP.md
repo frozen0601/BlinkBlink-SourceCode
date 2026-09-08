@@ -17,7 +17,6 @@ lives in a separate repository, so it cannot be fixed from here.
 Until it is done, either publish one architecture per platform or point the
 buttons at the Releases page.
 
-
 ### 1. macOS code signing — highest user-visible payoff
 
 Everything else about the release pipeline is automated now; this is the one
