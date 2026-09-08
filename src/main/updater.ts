@@ -14,27 +14,14 @@
 import { app, BrowserWindow, dialog, shell } from 'electron'
 import { download } from 'electron-dl'
 import * as path from 'path'
-import * as semver from 'semver'
 import { getSettings } from './store'
 import { isAppImage, isLinux, isMac, isSnap } from './platform'
+import { isNewerVersion, pickAssetForArch, ReleaseAsset, pickLatestRelease, ReleaseSummary } from '../core/update'
 
 const RELEASES_API = 'https://api.github.com/repos/frozen0601/BlinkBlink-Releases/releases'
 const INSTALL_GUIDE_URL = 'https://2ly.link/216pI'
 const CHECK_INTERVAL_MS = 4 * 60 * 60 * 1000
 const FETCH_TIMEOUT_MS = 15_000
-
-interface GitHubAsset {
-    name: string
-    browser_download_url: string
-}
-
-interface GitHubRelease {
-    tag_name: string
-    assets: GitHubAsset[]
-    prerelease: boolean
-    draft: boolean
-    published_at: string
-}
 
 let autoUpdateTimer: NodeJS.Timeout | null = null
 
@@ -51,7 +38,7 @@ async function showDialog(options: Electron.MessageBoxOptions): Promise<Electron
  * Sorted by version rather than publication date so that re-publishing an old
  * release cannot advertise it as an update.
  */
-export async function getLatestReleaseFromGitHub(): Promise<GitHubRelease> {
+export async function getLatestReleaseFromGitHub(): Promise<ReleaseSummary> {
     const response = await fetch(RELEASES_API, {
         headers: { Accept: 'application/vnd.github+json', 'User-Agent': `BlinkBlink/${app.getVersion()}` },
         signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
@@ -59,15 +46,9 @@ export async function getLatestReleaseFromGitHub(): Promise<GitHubRelease> {
 
     if (!response.ok) throw new Error(`GitHub returned ${response.status} ${response.statusText}`)
 
-    const releases = (await response.json()) as GitHubRelease[]
-    const usable = releases
-        .filter((release) => !release.draft && !release.prerelease)
-        .map((release) => ({ release, version: semver.coerce(release.tag_name) }))
-        .filter((entry): entry is { release: GitHubRelease; version: semver.SemVer } => entry.version !== null)
-        .sort((a, b) => semver.rcompare(a.version, b.version))
-
-    if (usable.length === 0) throw new Error('No published releases found')
-    return usable[0].release
+    const latest = pickLatestRelease((await response.json()) as ReleaseSummary[])
+    if (!latest) throw new Error('No published releases found')
+    return latest
 }
 
 function createProgressWindow(): BrowserWindow {
@@ -100,7 +81,7 @@ function createProgressWindow(): BrowserWindow {
     return progressWindow
 }
 
-async function downloadMacOSUpdate(asset: GitHubAsset): Promise<void> {
+async function downloadMacOSUpdate(asset: ReleaseAsset): Promise<void> {
     // `electron-dl` needs a window to attach the download session to.
     let host = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0]
     let temporaryHost: BrowserWindow | null = null
@@ -181,10 +162,10 @@ export async function checkForUpdates(silent = false): Promise<{ updateAvailable
         }
 
         const latest = await getLatestReleaseFromGitHub()
-        const latestVersion = semver.coerce(latest.tag_name)?.version
-        const currentVersion = semver.coerce(app.getVersion())?.version
+        const currentVersion = app.getVersion()
+        const latestVersion = latest.tag_name.replace(/^v/, '')
 
-        if (!latestVersion || !currentVersion || !semver.gt(latestVersion, currentVersion)) {
+        if (!isNewerVersion(latest.tag_name, currentVersion)) {
             if (!silent) await showDialog({ type: 'info', title: 'No Updates', message: 'You are using the latest version.' })
             return { updateAvailable: false }
         }
@@ -201,9 +182,9 @@ export async function checkForUpdates(silent = false): Promise<{ updateAvailable
             })
 
             if (response === 0) {
-                // Prefer a DMG matching this machine's architecture.
-                const assets = latest.assets.filter((asset) => asset.name.endsWith('.dmg'))
-                const asset = assets.find((candidate) => candidate.name.includes(process.arch)) ?? assets[0]
+                // An arm64 build will not launch at all on an Intel Mac, so the
+                // architecture has to match rather than "whatever came first".
+                const asset = pickAssetForArch(latest.assets, '.dmg', process.arch)
 
                 if (!asset) {
                     await showDialog({ type: 'error', title: 'Update Unavailable', message: 'This release has no macOS download.' })
