@@ -5,8 +5,9 @@ name: Test build
 # repository. Use it to try a build before cutting a release.
 #
 # Two ways to start one:
-#   - Actions -> Test build -> Run workflow (pick a branch)
-#   - git tag testbuild-<anything> && git push origin testbuild-<anything>
+#   - Actions -> Test build -> Run workflow (once this file is on the default
+#     branch; GitHub only lists workflow_dispatch workflows from there)
+#   - put [test-build] anywhere in a commit message and push
 #
 # Downloads appear under "Artifacts" at the bottom of the run summary page.
 # They are unsigned, so macOS needs the usual Gatekeeper step and Windows will
@@ -15,7 +16,7 @@ name: Test build
 on:
   workflow_dispatch:
   push:
-    tags: ['testbuild-*']
+    branches: [main, 'claude/**']
 
 permissions:
   contents: read
@@ -26,6 +27,9 @@ env:
 jobs:
   build:
     name: ${{ matrix.name }}
+    # Opt in per commit: a full installer build on three runners is far too
+    # slow to run on every push, and a skipped job costs nothing.
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[test-build]')
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
