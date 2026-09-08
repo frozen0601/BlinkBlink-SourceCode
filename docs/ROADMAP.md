@@ -5,6 +5,19 @@ value-for-effort, with an honest assessment of moving off Electron at the end.
 
 ## Near term
 
+### 0. Update the marketing site for multi-architecture releases — do this first
+
+Releases now carry a `.dmg` and an `.exe` per architecture, and the download
+page picks assets with `assets.find(a => a.name.endsWith('.dmg'))`. That returns
+whichever the API lists first, so about half of macOS visitors would be handed
+a build for the wrong processor. See
+[`marketing-site-followup.md`](marketing-site-followup.md) for the patch — it
+lives in a separate repository, so it cannot be fixed from here.
+
+Until it is done, either publish one architecture per platform or point the
+buttons at the Releases page.
+
+
 ### 1. macOS code signing — highest user-visible payoff
 
 Everything else about the release pipeline is automated now; this is the one
