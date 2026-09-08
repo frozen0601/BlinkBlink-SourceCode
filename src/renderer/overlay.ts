@@ -1,259 +1,240 @@
 export {}
 
-// Types
-interface Stats {
-    breakStreakCount: number
-    breakStreakDuration: number
+/**
+ * The full-screen break / summary overlay.
+ *
+ * The backdrop mode chosen by the main process arrives as a query parameter and
+ * is stamped onto `<html>` before anything paints, so the stylesheet can pick
+ * the right treatment without a flash of the wrong one.
+ */
+
+const View = { Break: 'break', Summary: 'summary' } as const
+type ViewName = (typeof View)[keyof typeof View]
+
+const MILESTONE_LADDER_SIZE = 5
+
+function calculateMilestones(streak: number): number[] {
+    if (streak <= 50) return [0, 3, 10, 20, 50]
+    const setNumber = Math.floor((streak - 51) / 100)
+    const base = 50 + setNumber * 100
+    return [base, base + 25, base + 50, base + 75, base + 100]
 }
 
-enum View {
-    Break = 'break',
-    Summary = 'summary',
-}
+function milestoneProgress(streak: number, milestones: number[]): number {
+    const first = milestones[0]
+    const last = milestones[milestones.length - 1]
+    if (streak <= first) return 0
+    if (streak >= last) return 1
 
-interface IElectronAPI {
-    onShowView: (callback: (view: View) => void) => void
-    onStartCountdown: (callback: (duration: number) => void) => void
-    onCountdownUpdate: (callback: (countdown: number) => void) => void
-    dismissSummary: () => void
-    skipBreak: () => void
-    getStats: () => Promise<Stats>
-    getSettings: () => Promise<any>
-    getSoundPath: (filename: string) => Promise<string>
-}
-
-declare global {
-    interface Window {
-        api: IElectronAPI
+    let index = 0
+    for (let i = 0; i < milestones.length - 1; i++) {
+        if (streak >= milestones[i] && streak < milestones[i + 1]) {
+            index = i
+            break
+        }
     }
+
+    const segmentWidth = 1 / (milestones.length - 1)
+    const within = (streak - milestones[index]) / (milestones[index + 1] - milestones[index])
+    return index * segmentWidth + within * segmentWidth
 }
 
-class UnifiedUI {
-    private skipConfirmed = false
-    private summaryDuration: number = 0
-    private currentView: View = View.Break
-    private elements: {
-        progressBar: HTMLElement
-        progressTracker: HTMLElement
-        centralCircle: HTMLElement
-        skipButton: HTMLElement
-        dismissButton: HTMLElement
-        warningText: HTMLElement
-    }
+class OverlayUI {
+    #skipArmed = false
+    #currentView: ViewName = View.Break
+
+    readonly #progressBar = document.getElementById('progress-bar')
+    readonly #progressTracker = document.getElementById('progress-tracker')
+    readonly #centralCircle = document.getElementById('central-circle')
+    readonly #skipButton = document.getElementById('skip-button')
+    readonly #dismissButton = document.getElementById('dismiss-button')
+    readonly #warningText = document.getElementById('warning-text')
+    readonly #countdownLabel = document.getElementById('countdown-label')
 
     constructor() {
-        this.elements = this.getDOMElements()
-        this.initializeEventListeners()
+        this.#applyBackdrop()
+        this.#bindButtons()
+        this.#bindKeyboard()
+        this.#bindMainProcessEvents()
+
+        const initialView = new URLSearchParams(window.location.search).get('view')
+        this.#setView(initialView === View.Summary ? View.Summary : View.Break)
+
+        window.addEventListener('load', () => document.body.classList.add('ready'))
     }
 
-    private getDOMElements() {
-        const getElement = (id: string): HTMLElement => {
-            const element = document.getElementById(id)
-            if (!element) throw new Error(`Element ${id} not found`)
-            return element
-        }
-
-        return {
-            progressBar: getElement('progress-bar'),
-            progressTracker: getElement('progress-tracker'),
-            centralCircle: getElement('central-circle'),
-            skipButton: getElement('skip-button'),
-            dismissButton: getElement('dismiss-button'),
-            warningText: getElement('warning-text'),
-        }
+    /** Stamps the backdrop mode so the stylesheet can select its treatment. */
+    #applyBackdrop(): void {
+        const backdrop = new URLSearchParams(window.location.search).get('backdrop') ?? 'solid'
+        const known = ['vibrancy', 'acrylic', 'translucent', 'solid']
+        document.documentElement.dataset.backdrop = known.includes(backdrop) ? backdrop : 'solid'
     }
 
-    private initializeEventListeners() {
-        this.initializeViewSwitching()
-        this.initializeButtonHandlers()
-        this.initializeIpcEvents()
-        this.initializeWindowLoad()
+    #bindButtons(): void {
+        this.#skipButton?.addEventListener('click', () => void this.#handleSkipClick())
+        this.#dismissButton?.addEventListener('click', () => this.#dismiss())
     }
 
-    private initializeViewSwitching() {
-        window.api.onShowView((view: View) => {
-            this.currentView = view // Update the current view
-            document.body.className = `ready show-${view}`
+    /**
+     * Keyboard access to both actions.
+     *
+     * The overlay covers the whole screen; requiring a mouse to get out of it
+     * is a poor deal for anyone who does not use one.
+     */
+    #bindKeyboard(): void {
+        document.addEventListener('keydown', (event) => {
+            if (event.key !== 'Escape') return
+            if (this.#currentView === View.Summary) this.#dismiss()
+            else void this.#handleSkipClick()
+        })
+    }
 
-            if (view === View.Summary) {
-                this.initializeSummary()
-            } else {
-                this.initializeBreak()
+    #bindMainProcessEvents(): void {
+        window.api.onShowView((view) => this.#setView(view === View.Summary ? View.Summary : View.Break))
+        window.api.onStartCountdown((duration) => this.#startProgress(duration))
+        window.api.onCountdownUpdate((seconds) => this.#updateCountdown(seconds))
+    }
+
+    #setView(view: ViewName): void {
+        this.#currentView = view
+        document.body.className = `ready show-${view}`
+
+        if (view === View.Summary) void this.#initializeSummary()
+        else this.#initializeBreak()
+    }
+
+    #dismiss(): void {
+        window.api.dismissSummary()
+    }
+
+    #startProgress(duration: number): void {
+        if (!this.#progressBar) return
+        this.#progressBar.style.transition = 'none'
+        this.#progressBar.style.transform = 'scaleX(0)'
+        this.#progressBar.style.display = 'block'
+        void this.#progressBar.offsetHeight // Force a reflow so the reset applies.
+        this.#progressBar.style.transition = `transform ${duration}ms linear`
+        requestAnimationFrame(() => {
+            if (this.#progressBar) this.#progressBar.style.transform = 'scaleX(1)'
+        })
+    }
+
+    /**
+     * The countdown is display only.
+     *
+     * The main process owns the transition out of each view; a renderer that
+     * also acted on reaching zero produced two dismissals on a multi-monitor
+     * setup.
+     */
+    #updateCountdown(seconds: number): void {
+        if (!this.#countdownLabel) return
+        this.#countdownLabel.textContent = seconds > 0 ? String(seconds) : ''
+    }
+
+    async #handleSkipClick(): Promise<void> {
+        if (this.#currentView !== View.Break) return
+
+        if (!this.#skipArmed) {
+            const stats = await window.api.getStats().catch(() => ({ breakStreakCount: 0, breakStreakDuration: 0 }))
+            if (this.#warningText) {
+                this.#warningText.textContent =
+                    stats.breakStreakCount > 0
+                        ? `You're on a streak of ${stats.breakStreakCount} breaks. Skipping will reset it. Continue?`
+                        : 'Skip this break?'
+                this.#warningText.style.display = 'block'
             }
-        })
-    }
-
-    private initializeButtonHandlers() {
-        this.elements.skipButton?.addEventListener('click', () => this.handleSkipClick())
-        this.elements.dismissButton?.addEventListener('click', () => {
-            window.api.dismissSummary()
-            window.close()
-        })
-    }
-
-    private initializeIpcEvents() {
-        window.api.onStartCountdown((duration: number) => this.startProgress(duration))
-        window.api.onCountdownUpdate((countdown: number) => {
-            if (countdown <= 0) {
-                // Only dismiss if currently in Summary View
-                if (this.currentView === View.Summary) {
-                    window.api.dismissSummary()
-                    window.close()
-                } // Otherwise, let the main process handle the transition (Break -> Summary)
-            }
-        })
-    }
-
-    private initializeWindowLoad() {
-        window.addEventListener('load', () => {
-            document.body.classList.add('ready')
-        })
-    }
-
-    private startProgress(duration: number) {
-        const { progressBar } = this.elements
-        progressBar.style.transition = `transform ${duration / 1000}s linear`
-        progressBar.style.display = 'block'
-        requestAnimationFrame(() => (progressBar.style.transform = 'scaleX(1)'))
-    }
-
-    private async handleSkipClick() {
-        if (!this.skipConfirmed) {
-            const stats = await window.api.getStats()
-            this.elements.warningText.textContent = `You're on a streak of ${stats.breakStreakCount} breaks. Skipping will reset it. Continue?`
-            this.elements.warningText.style.display = 'block'
-            this.elements.skipButton.textContent = 'Confirm'
-            this.skipConfirmed = true
-        } else {
-            window.api.skipBreak()
-            window.close()
+            if (this.#skipButton) this.#skipButton.textContent = 'Confirm skip'
+            this.#skipArmed = true
+            return
         }
+
+        window.api.skipBreak()
     }
 
-    private initializeBreak() {
-        this.elements.warningText.style.display = 'none'
-        this.elements.skipButton.textContent = 'Skip'
-        this.skipConfirmed = false
+    #initializeBreak(): void {
+        if (this.#warningText) this.#warningText.style.display = 'none'
+        if (this.#skipButton) this.#skipButton.textContent = 'Skip'
+        this.#skipArmed = false
     }
 
-    private async initializeSummary() {
+    async #initializeSummary(): Promise<void> {
         try {
-            const stats = await window.api.getStats()
-            this.updateProgressTracker(stats.breakStreakCount)
-            this.elements.progressBar.style.transform = 'scaleX(0)'
+            const [stats, settings] = await Promise.all([window.api.getStats(), window.api.getSettings()])
 
-            // Get settings first to check if auto-dismiss is enabled
-            const settings = await window.api.getSettings()
+            this.#renderProgressTracker(stats.breakStreakCount)
+            if (this.#progressBar) this.#progressBar.style.transform = 'scaleX(0)'
 
-            // Play notification sound if enabled
-            if (settings?.enableSoundNotification) {
-                try {
-                    const soundPath = await window.api.getSoundPath(settings.notificationSound)
-                    const audio = new Audio(`file://${soundPath}`)
-                    await audio.play()
-                } catch (error) {
-                    console.error('Failed to play notification sound:', error)
-                }
-            }
-
-            if (!settings?.enableAutoDismiss) return
-
-            // Only initialize progress bar if auto-dismiss is enabled
-            const progressBar = this.elements.dismissButton.querySelector('.progress-bar')
-            if (progressBar) {
-                const progressFill = progressBar.querySelector('.progress-fill') || progressBar
-                if (progressFill instanceof HTMLElement) {
-                    progressFill.style.transition = 'none'
-                    progressFill.style.transform = 'scaleX(0)'
-                    progressFill.offsetHeight // Force a reflow
-                    progressFill.style.transition = `transform ${settings.summaryDuration}ms linear`
-                    progressFill.style.transform = 'scaleX(1)'
-                }
-            }
+            if (settings?.enableSoundNotification) await this.#playSound(settings.notificationSound)
+            if (settings?.enableAutoDismiss) this.#animateDismissButton(settings.summaryDuration)
         } catch (error) {
-            console.error('Failed to initialize summary:', error)
+            console.error('Failed to initialise the summary view:', error)
         }
     }
 
-    private updateMilestoneMarkers(count: number, milestones: number[]): void {
-        const container = this.elements.progressTracker
-        const hitMilestone = milestones.some((m) => m === count)
-        const nextMilestone = !hitMilestone ? milestones.find((m) => m > count) : null
-
-        // Find current segment
-        let currentSegmentStart = milestones[0]
-        let currentSegmentEnd = milestones[1]
-
-        for (let i = 0; i < milestones.length - 1; i++) {
-            if (count >= milestones[i] && count <= milestones[i + 1]) {
-                currentSegmentStart = milestones[i]
-                currentSegmentEnd = milestones[i + 1]
-                break
-            }
-        }
-
-        // Calculate segment-based progress
-        const segmentProgress = (count - currentSegmentStart) / (currentSegmentEnd - currentSegmentStart)
-        const segmentWidth = 100 / (milestones.length - 1)
-        const completedSegments = milestones.findIndex((m) => m === currentSegmentStart)
-        const totalProgress = completedSegments * segmentWidth + segmentWidth * segmentProgress
-
-        container.innerHTML = `
-            <div class="milestone-markers">
-                ${milestones
-                    .map((milestone, index) => {
-                        const isHit = count === milestone
-                        const isNext = milestone === nextMilestone
-                        // Position based on index instead of value
-                        const positionPercent = (index / (milestones.length - 1)) * 100
-
-                        return `
-                            <div class="milestone-marker
-                                ${count >= milestone ? 'reached' : ''}
-                                ${isHit ? 'milestone-hit' : ''}
-                                ${isNext ? 'next-milestone' : ''}"
-                                style="left: ${positionPercent}%; transform: translateX(-50%);">
-                                ${milestone}
-                            </div>
-                        `
-                    })
-                    .join('')}
-            </div>
-            <div class="progress-bar">
-                <div class="progress-fill" style="width: ${Math.min(totalProgress, 100)}%;"></div>
-            </div>
-        `
-
-        const progressFill = container.querySelector('.progress-fill') as HTMLElement
-        if (progressFill) {
-            progressFill.style.width = `${Math.min(totalProgress, 100)}%`
+    async #playSound(name: string): Promise<void> {
+        try {
+            const soundPath = await window.api.getSoundPath(name)
+            if (!soundPath) return
+            const audio = new Audio(`file://${soundPath}`)
+            await audio.play()
+        } catch (error) {
+            // Autoplay policy or a missing codec; never worth blocking the view.
+            console.error('Failed to play the notification sound:', error)
         }
     }
 
-    private updateCentralCircle(count: number, prevMilestone: number, nextMilestone: number): void {
-        const numberElement = this.elements.centralCircle.querySelector('.number')
-        if (numberElement) numberElement.textContent = count.toString()
+    #animateDismissButton(durationMs: number): void {
+        const progressBar = this.#dismissButton?.querySelector('.progress-bar')
+        const fill = progressBar?.querySelector('.progress-fill') ?? progressBar
+        if (!(fill instanceof HTMLElement)) return
+
+        fill.style.transition = 'none'
+        fill.style.transform = 'scaleX(0)'
+        void fill.offsetHeight
+        fill.style.transition = `transform ${durationMs}ms linear`
+        fill.style.transform = 'scaleX(1)'
     }
 
-    private calculateMilestones(currentStreak: number): number[] {
-        if (currentStreak <= 50) {
-            return [0, 3, 10, 20, 50]
-        }
+    /**
+     * Renders the milestone ladder.
+     *
+     * Built from DOM nodes rather than an HTML string so the streak value never
+     * reaches an `innerHTML` parse, and so the CSP does not need loosening.
+     */
+    #renderProgressTracker(streak: number): void {
+        if (!this.#progressTracker) return
 
-        const setNumber = Math.floor((currentStreak - 51) / 100)
-        const baseNumber = 50 + setNumber * 100
-        return [baseNumber, baseNumber + 25, baseNumber + 50, baseNumber + 75, baseNumber + 100]
-    }
+        const milestones = calculateMilestones(streak)
+        const nextMilestone = milestones.find((value) => value > streak) ?? null
 
-    private updateProgressTracker(count: number) {
-        const milestones = this.calculateMilestones(count)
-        const nextMilestone = milestones.find((m) => m > count) || milestones[milestones.length - 1]
-        const prevMilestone = milestones.filter((m) => m <= count).pop() || 0
+        this.#progressTracker.replaceChildren()
 
-        this.updateMilestoneMarkers(count, milestones)
-        this.updateCentralCircle(count, prevMilestone, nextMilestone)
+        const markers = document.createElement('div')
+        markers.className = 'milestone-markers'
+
+        milestones.forEach((milestone, index) => {
+            const marker = document.createElement('div')
+            marker.className = 'milestone-marker'
+            marker.classList.toggle('reached', streak >= milestone)
+            marker.classList.toggle('milestone-hit', streak === milestone)
+            marker.classList.toggle('next-milestone', milestone === nextMilestone)
+            marker.style.left = `${(index / (MILESTONE_LADDER_SIZE - 1)) * 100}%`
+            marker.textContent = String(milestone)
+            markers.appendChild(marker)
+        })
+
+        const bar = document.createElement('div')
+        bar.className = 'progress-bar'
+        const fill = document.createElement('div')
+        fill.className = 'progress-fill'
+        fill.style.width = `${Math.min(100, milestoneProgress(streak, milestones) * 100)}%`
+        bar.appendChild(fill)
+
+        this.#progressTracker.append(markers, bar)
+
+        const number = this.#centralCircle?.querySelector('.number')
+        if (number) number.textContent = String(streak)
     }
 }
 
-// Initialize the unified UI
-new UnifiedUI()
+new OverlayUI()

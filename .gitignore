@@ -115,3 +115,8 @@ Desktop.ini
 *.ntvs*
 *.njsproj
 *.sln
+# Test output
+/test-results
+/playwright-report
+/blob-report
+/coverage

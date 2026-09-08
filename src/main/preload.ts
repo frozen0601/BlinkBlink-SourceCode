@@ -1,31 +1,63 @@
-import { contextBridge, ipcRenderer, shell } from 'electron'
+/**
+ * The renderer-facing API surface.
+ *
+ * Deliberately narrow: every entry is an explicit, named operation rather than
+ * a passthrough. Nothing here touches Node or Electron modules beyond
+ * `contextBridge`/`ipcRenderer`, which is what lets every window run with
+ * `sandbox: true`.
+ *
+ * `openExternal` in particular is an IPC call rather than a direct `shell`
+ * invocation, so the main process gets to vet the URL scheme before anything is
+ * handed to the operating system.
+ */
 
-contextBridge.exposeInMainWorld('api', {
-    // System
+import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron'
+import type { Settings, Stats } from '../core/types'
+
+type Unsubscribe = () => void
+
+function subscribe<T>(channel: string, callback: (value: T) => void): Unsubscribe {
+    const listener = (_event: IpcRendererEvent, value: T) => callback(value)
+    ipcRenderer.on(channel, listener)
+    return () => ipcRenderer.off(channel, listener)
+}
+
+const api = {
     platform: process.platform,
 
-    // Data Access
-    getSettings: () => ipcRenderer.invoke('get-settings'),
-    getStats: () => ipcRenderer.invoke('get-stats'),
+    // Reads
+    getSettings: (): Promise<Settings> => ipcRenderer.invoke('get-settings'),
+    getStats: (): Promise<Stats> => ipcRenderer.invoke('get-stats'),
     getAppInfo: () => ipcRenderer.invoke('get-app-info'),
     getAvailableSounds: () => ipcRenderer.invoke('get-available-sounds'),
-    getSoundPath: (filename: string) => ipcRenderer.invoke('get-sound-path', filename),
+    getSoundPath: (filename: string): Promise<string | null> => ipcRenderer.invoke('get-sound-path', filename),
+    getCapabilities: () => ipcRenderer.invoke('get-capabilities'),
 
-    // Actions
-    saveSettings: (settings: any) => ipcRenderer.send('save-settings', settings),
+    // Writes
+    saveSettings: (settings: Partial<Settings>): Promise<Settings> => ipcRenderer.invoke('save-settings', settings),
     checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
-    openExternal: (url: string) => shell.openExternal(url),
-    
-    // Window/Break Actions
+    openExternal: (url: string): Promise<boolean> => ipcRenderer.invoke('open-external', url),
+
+    // Overlay actions
     dismissSummary: () => ipcRenderer.send('summary-dismissed'),
     skipBreak: () => ipcRenderer.send('break-skip'),
-    
-    // Listeners
-    onShowView: (callback: (view: any) => void) => ipcRenderer.on('show-view', (_, view) => callback(view)),
-    onStartCountdown: (callback: (duration: number) => void) => ipcRenderer.on('start-countdown', (_, duration) => callback(duration)),
-    onCountdownUpdate: (callback: (countdown: number) => void) => ipcRenderer.on('countdown-update', (_, countdown) => callback(countdown)),
-    onDownloadProgress: (callback: (progress: any) => void) => ipcRenderer.on('download-progress', (_, progress) => callback(progress)),
-    
-    // Cleanup listeners
-    removeAllListeners: (channel: string) => ipcRenderer.removeAllListeners(channel)
-})
+
+    // Reminder toast actions
+    reminderSkip: () => ipcRenderer.send('reminder-skip'),
+    reminderStartNow: () => ipcRenderer.send('reminder-start-now'),
+    reminderDismiss: () => ipcRenderer.send('reminder-dismiss'),
+
+    // Tutorial
+    finishTutorial: () => ipcRenderer.send('tutorial-finished'),
+
+    // Subscriptions; each returns its own unsubscribe function.
+    onShowView: (callback: (view: string) => void) => subscribe<string>('show-view', callback),
+    onStartCountdown: (callback: (duration: number) => void) => subscribe<number>('start-countdown', callback),
+    onCountdownUpdate: (callback: (countdown: number) => void) => subscribe<number>('countdown-update', callback),
+    onDownloadProgress: (callback: (progress: { percent: number; transferredBytes: number; totalBytes: number }) => void) =>
+        subscribe<{ percent: number; transferredBytes: number; totalBytes: number }>('download-progress', callback),
+}
+
+export type BlinkBlinkApi = typeof api
+
+contextBridge.exposeInMainWorld('api', api)

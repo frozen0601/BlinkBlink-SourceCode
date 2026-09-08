@@ -1,173 +1,269 @@
-import { ipcMain, Notification } from 'electron'
-import { closeAllWindows } from './windows'
-import { getSettings, getWorkDuration } from './store'
-import { scheduleManager } from './scheduler'
+/**
+ * The break timer.
+ *
+ * All the decisions live in `core/timer-plan`; this file only arms real
+ * `setTimeout`s against them, re-planning whenever the world changes: settings
+ * are saved, the machine wakes up, a skip expires, or the wall clock moves
+ * without time having passed.
+ */
+
+import { appEvents } from './events'
+import { getSettings } from './store'
+import { clampDelay, clockJumped, planNextBreak, planReminder, TimerPlan } from '../core/timer-plan'
+
+/** How often the watchdog checks that the armed timer still makes sense. */
+const WATCHDOG_INTERVAL_MS = 30_000
+
+/** Firing within this margin of the target counts as "on time". */
+const FIRE_TOLERANCE_MS = 500
+
+export type TimerMode = 'break' | 'wait' | 'idle'
+
+export interface TimerStatus {
+    mode: TimerMode
+    /** When the next break is due, when `mode` is `break`. */
+    nextBreakAt: Date | null
+    /** When the timer will next re-plan, when `mode` is `wait`. */
+    resumesAt: Date | null
+    /** Active skip, if any. */
+    skipUntil: Date | null
+}
 
 class TimerManager {
-    private static instance: TimerManager
-    #currentTimer?: NodeJS.Timeout
-    #nextBreakTime?: Date
-    #skipUntil?: Date
-    #notificationTimer?: NodeJS.Timeout
+    #mainTimer?: NodeJS.Timeout
+    #reminderTimer?: NodeJS.Timeout
+    #watchdog?: NodeJS.Timeout
 
-    private constructor() {}
+    #mode: TimerMode = 'idle'
+    #nextBreakAt: Date | null = null
+    #resumesAt: Date | null = null
+    #skipUntil: Date | null = null
 
-    static getInstance(): TimerManager {
-        if (!TimerManager.instance) {
-            TimerManager.instance = new TimerManager()
-        }
-        return TimerManager.instance
+    /** Wall clock reading at the last watchdog tick, for jump detection. */
+    #lastWatchdogAt = Date.now()
+
+    // Lifecycle ---------------------------------------------------------
+
+    start(): void {
+        this.plan()
+        this.#startWatchdog()
     }
 
-    // Timer state management
+    stop(): void {
+        this.#clearTimers()
+        if (this.#watchdog) {
+            clearInterval(this.#watchdog)
+            this.#watchdog = undefined
+        }
+        this.#mode = 'idle'
+        this.#nextBreakAt = null
+        this.#resumesAt = null
+    }
+
+    // Queries -----------------------------------------------------------
+
     isRunning(): boolean {
-        return !!this.#currentTimer
+        return this.#mode === 'break' && this.#nextBreakAt !== null
     }
 
-    clearTimer(): void {
-        if (this.#currentTimer) {
-            clearTimeout(this.#currentTimer)
-            this.#currentTimer = undefined
+    getStatus(): TimerStatus {
+        return {
+            mode: this.#mode,
+            nextBreakAt: this.#nextBreakAt,
+            resumesAt: this.#resumesAt,
+            skipUntil: this.#skipUntil,
         }
-        if (this.#notificationTimer) {
-            clearTimeout(this.#notificationTimer)
-            this.#notificationTimer = undefined
-        }
-    }
-
-    // Timer calculations
-    private scheduleBreakNotification(breakTime: Date): void {
-        const settings = getSettings()
-        if (!settings.enableBreakNotification) return
-
-        const now = Date.now()
-        const breakTimeMs = breakTime.getTime()
-        const notificationTime = breakTimeMs - settings.breakPreNotificationOffset
-
-        // Don't schedule if break is too soon or already passed
-        if (notificationTime <= now) return
-
-        this.#notificationTimer = setTimeout(() => {
-            const notification = new Notification({
-                title: 'Break Reminder',
-                body: `Your break is starting in ${Math.round(settings.breakPreNotificationOffset / 1000)} seconds`,
-                actions: [{ type: 'button', text: 'Skip this break' }],
-            })
-
-            notification.on('action', () => {
-                this.skipBreaksFor(Math.floor(getWorkDuration() / (60 * 1000)))
-                notification.close()
-            })
-
-            notification.show()
-        }, notificationTime - now)
-    }
-
-    private setNextBreakTime(date: Date): void {
-        // Don't set a break if it's equal to or after the current range end time
-        const currentRangeEnd = scheduleManager.getCurrentRangeEnd(new Date())
-        if (currentRangeEnd && date >= currentRangeEnd) {
-            this.clearTimer()
-            return
-        }
-
-        this.#nextBreakTime = date
-        const timeoutDuration = date.getTime() - Date.now()
-
-        this.clearTimer()
-        this.scheduleBreakNotification(date)
-
-        // Only set timer if it's within today's schedule
-        if (scheduleManager.isWithinActiveHours(date)) {
-            this.#currentTimer = setTimeout(async () => {
-                try {
-                    ipcMain.emit('start-break-countdown')
-                } catch (error) {
-                    console.error('Error during break countdown:', error)
-                }
-            }, timeoutDuration)
-        }
-    }
-
-    private shouldSetTimer(date: Date): boolean {
-        const currentRangeEnd = scheduleManager.getCurrentRangeEnd(date)
-        return !currentRangeEnd || date < currentRangeEnd
     }
 
     getRemainingTimeInMinutes(): number {
-        if (!this.#nextBreakTime) return 0
-        const remaining = (this.#nextBreakTime.getTime() - Date.now()) / (60 * 1000)
+        if (!this.#nextBreakAt || this.#mode !== 'break') return 0
+        const remaining = (this.#nextBreakAt.getTime() - Date.now()) / 60_000
         return Math.ceil(Math.max(0, remaining))
     }
 
-    // Public timer operations
-    startWorkTimer(): void {
+    isSkipping(): boolean {
+        return this.#skipUntil !== null && this.#skipUntil.getTime() > Date.now()
+    }
+
+    // Commands ----------------------------------------------------------
+
+    /** Recomputes the plan from current settings and re-arms accordingly. */
+    plan(): void {
+        this.#clearTimers()
+
+        const settings = getSettings()
         const now = new Date()
 
-        // 1. Handle schedule restrictions
-        if (!scheduleManager.isWithinActiveHours(now)) {
-            const nextActive = scheduleManager.getNextActiveTime()
-            if (nextActive) {
-                this.setNextBreakTime(nextActive)
-            } else {
-                this.clearTimer()
-            }
-            return
+        if (this.#skipUntil && this.#skipUntil.getTime() <= now.getTime()) {
+            this.#skipUntil = null
         }
 
-        // 2. Handle skip conditions
-        if (this.#skipUntil && this.#skipUntil > now) {
-            if (scheduleManager.isWithinActiveHours(this.#skipUntil)) {
-                this.setNextBreakTime(this.#skipUntil)
-                return
-            }
-        }
+        const plan = planNextBreak({
+            now,
+            workDuration: settings.workDuration,
+            scheduleEnabled: settings.scheduleEnabled,
+            schedule: settings.schedule,
+            skipUntil: this.#skipUntil,
+        })
 
-        // 3. Calculate next break
-        const proposedBreak = new Date(now.getTime() + getWorkDuration())
-        if (!this.shouldSetTimer(proposedBreak)) {
-            const currentRangeEnd = scheduleManager.getCurrentRangeEnd(now)
-            if (currentRangeEnd) {
-                this.setNextBreakTime(currentRangeEnd)
-                return
-            }
-        }
-
-        // 4. Set normal timer
-        this.#skipUntil = undefined
-        this.setNextBreakTime(proposedBreak)
+        this.#apply(plan, settings.enableBreakNotification ? settings.breakPreNotificationOffset : 0, now)
+        appEvents.emit('timer-changed')
     }
 
+    /** Suppresses breaks for `minutes`, then resumes the normal cycle. */
     skipBreaksFor(minutes: number): void {
-        const nextBreak = new Date(Date.now() + minutes * 60 * 1000)
-        this.#skipUntil = nextBreak
-        this.setNextBreakTime(nextBreak)
-        closeAllWindows()
+        this.#skipUntil = new Date(Date.now() + Math.max(1, minutes) * 60_000)
+        this.plan()
     }
 
+    /**
+     * Suppresses breaks until local midnight.
+     *
+     * The timer stays armed for the boundary and re-plans there, so the app
+     * comes back by itself the next day instead of staying dead until restart.
+     */
     skipBreaksUntilEndOfDay(): void {
         const endOfDay = new Date()
         endOfDay.setHours(23, 59, 59, 999)
         this.#skipUntil = endOfDay
-        this.clearTimer() // Don't set a timer if skipping
-        closeAllWindows()
+        this.plan()
+    }
+
+    /** Cancels an active skip. */
+    resumeBreaks(): void {
+        this.#skipUntil = null
+        this.plan()
     }
 
     isSkippedUntilEndOfDay(): boolean {
         if (!this.#skipUntil) return false
-        const now = new Date()
         const endOfDay = new Date()
         endOfDay.setHours(23, 59, 59, 999)
-        return this.#skipUntil.getTime() === endOfDay.getTime()
+        return Math.abs(this.#skipUntil.getTime() - endOfDay.getTime()) < 1000
+    }
+
+    // Internals ---------------------------------------------------------
+
+    #clearTimers(): void {
+        if (this.#mainTimer) {
+            clearTimeout(this.#mainTimer)
+            this.#mainTimer = undefined
+        }
+        if (this.#reminderTimer) {
+            clearTimeout(this.#reminderTimer)
+            this.#reminderTimer = undefined
+        }
+    }
+
+    #apply(plan: TimerPlan, reminderOffset: number, now: Date): void {
+        this.#mode = plan.kind
+
+        if (plan.kind === 'idle') {
+            this.#nextBreakAt = null
+            this.#resumesAt = null
+            return
+        }
+
+        if (plan.kind === 'wait') {
+            this.#nextBreakAt = null
+            this.#resumesAt = plan.until
+            this.#armAt(plan.until, () => this.plan())
+            return
+        }
+
+        this.#nextBreakAt = plan.at
+        this.#resumesAt = null
+        this.#armAt(plan.at, () => this.#fireBreak())
+
+        const reminderAt = planReminder(plan.at, reminderOffset, now)
+        if (reminderAt) {
+            const breakAt = plan.at
+            this.#reminderTimer = setTimeout(
+                () => {
+                    this.#reminderTimer = undefined
+                    appEvents.emit('reminder-due', { breakAt })
+                },
+                clampDelay(reminderAt.getTime() - now.getTime())
+            )
+        }
+    }
+
+    /**
+     * Arms `action` for `target`.
+     *
+     * `setTimeout` cannot represent delays beyond ~24 days, so a long wait is
+     * armed in clamped hops that re-check the target when they fire.
+     */
+    #armAt(target: Date, action: () => void): void {
+        const schedule = () => {
+            const delay = target.getTime() - Date.now()
+            this.#mainTimer = setTimeout(() => {
+                this.#mainTimer = undefined
+                if (Date.now() < target.getTime() - FIRE_TOLERANCE_MS) {
+                    schedule() // Clamped hop; keep going.
+                    return
+                }
+                action()
+            }, clampDelay(delay))
+        }
+
+        schedule()
+    }
+
+    #fireBreak(): void {
+        this.#skipUntil = null
+        appEvents.emit('break-due')
+    }
+
+    /**
+     * Catches the cases a plain `setTimeout` cannot.
+     *
+     * A suspended laptop, a resumed VM or a user correcting the clock all leave
+     * an armed timer pointing at the wrong instant. `powerMonitor` covers the
+     * common suspend/resume path, but not every environment emits it — notably
+     * a good many Linux desktops — so this compares elapsed wall-clock time
+     * against elapsed interval time and re-plans when they disagree.
+     */
+    #startWatchdog(): void {
+        if (this.#watchdog) clearInterval(this.#watchdog)
+        this.#lastWatchdogAt = Date.now()
+
+        this.#watchdog = setInterval(() => {
+            const now = Date.now()
+            const elapsed = now - this.#lastWatchdogAt
+            this.#lastWatchdogAt = now
+
+            if (clockJumped(WATCHDOG_INTERVAL_MS, elapsed)) {
+                console.info('[timer] clock jump detected, re-planning')
+                this.plan()
+                return
+            }
+
+            // An overdue target means the timeout never fired (a suspended
+            // process, typically). Re-plan rather than waiting indefinitely.
+            const target = this.#mode === 'break' ? this.#nextBreakAt : this.#resumesAt
+            if (target && now > target.getTime() + WATCHDOG_INTERVAL_MS) {
+                console.info('[timer] armed timer is overdue, re-planning')
+                this.plan()
+            }
+        }, WATCHDOG_INTERVAL_MS)
+
+        // A watchdog interval should never hold the process open on its own.
+        this.#watchdog.unref?.()
     }
 }
 
-// Export singleton interface
-const timerManager = TimerManager.getInstance()
-export const startWorkTimer = () => timerManager.startWorkTimer()
-export const clearTimer = () => timerManager.clearTimer()
+const timerManager = new TimerManager()
+
+export const startWorkTimer = () => timerManager.plan()
+export const startTimer = () => timerManager.start()
+export const stopTimer = () => timerManager.stop()
+export const clearTimer = () => timerManager.stop()
 export const isRunning = () => timerManager.isRunning()
+export const getTimerStatus = () => timerManager.getStatus()
 export const skipBreaksFor = (minutes: number) => timerManager.skipBreaksFor(minutes)
 export const skipBreaksUntilEndOfDay = () => timerManager.skipBreaksUntilEndOfDay()
+export const resumeBreaks = () => timerManager.resumeBreaks()
 export const getRemainingTimeInMinutes = () => timerManager.getRemainingTimeInMinutes()
 export const isSkippedUntilEndOfDay = () => timerManager.isSkippedUntilEndOfDay()
+export const isSkipping = () => timerManager.isSkipping()

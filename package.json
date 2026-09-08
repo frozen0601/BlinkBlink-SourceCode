@@ -1,111 +1,123 @@
 {
-    "name": "blinkblink",
-    "version": "0.1.3",
-    "main": "dist/main.js",
-    "scripts": {
-        "start": "cross-env NODE_ENV=development webpack --config webpack.config.js && electron .",
-        "build": "cross-env NODE_ENV=production webpack --config webpack.config.js",
-        "dist": "npm run build && electron-builder",
-        "dist:linux": "npm run build && electron-builder --linux"
-    },
-    "build": {
-        "appId": "blinkblink",
-        "productName": "BlinkBlink",
-        "files": [
-            "dist/**/*",
-            "node_modules/**/*",
-            "package.json",
-            "assets/**/*",
-            "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}",
-            "!**/node_modules/*/{test,__tests__,tests,powered-test,example,examples}",
-            "!**/node_modules/.bin",
-            "!**/*.{map,ts}"
-        ],
-        "extraResources": [
-            {
-                "from": "assets/",
-                "to": "assets/",
-                "filter": [
-                    "**/*"
-                ]
-            }
-        ],
-        "directories": {
-            "buildResources": "build",
-            "output": "release"
-        },
-        "publish": {
-            "provider": "github",
-            "owner": "frozen0601",
-            "repo": "BlinkBlink-Releases"
-        },
-        "win": {
-            "appId": "blinkblink",
-            "target": "nsis",
-            "icon": "assets/icon.ico",
-            "artifactName": "${productName}.Setup.${version}.${ext}"
-        },
-        "mac": {
-            "appId": "blinkblink",
-            "target": "dmg",
-            "icon": "assets/icon.icns",
-            "artifactName": "${productName}.Setup.${version}.${ext}"
-        },
-        "linux": {
-            "target": [
-                "snap"
-            ],
-            "icon": "assets/icon.png",
-            "artifactName": "${productName}.Setup.${version}.${ext}",
-            "category": "Utility"
-        }
-    },
-    "homepage": "https://blinkblinkapp.github.io/",
-    "keywords": [
-        "202020",
-        "20-20-20",
-        "vision",
-        "eye health",
-        "productivity",
-        "break reminder",
-        "desktop app",
-        "health",
-        "wellness",
-        "well-being"
+  "name": "blinkblink",
+  "version": "0.1.3",
+  "main": "dist/main.js",
+  "scripts": {
+    "start": "npm run build:dev && electron .",
+    "build:dev": "cross-env NODE_ENV=development webpack --config webpack.config.js",
+    "build": "cross-env NODE_ENV=production webpack --config webpack.config.js",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "verify": "npm run typecheck && npm run lint && npm run format:check && npm run test",
+    "dist": "npm run build && electron-builder",
+    "dist:mac": "npm run build && electron-builder --mac",
+    "dist:win": "npm run build && electron-builder --win",
+    "dist:linux": "npm run build && electron-builder --linux",
+    "dist:dir": "npm run build && electron-builder --dir",
+    "test:e2e": "npm run build && playwright test",
+    "test:e2e:headless": "npm run build && xvfb-run -a --server-args=\"-screen 0 1600x1000x24\" playwright test"
+  },
+  "build": {
+    "appId": "blinkblink",
+    "productName": "BlinkBlink",
+    "files": [
+      "dist/**/*",
+      "node_modules/**/*",
+      "package.json",
+      "assets/**/*",
+      "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}",
+      "!**/node_modules/*/{test,__tests__,tests,powered-test,example,examples}",
+      "!**/node_modules/.bin",
+      "!**/*.{map,ts}"
     ],
-    "author": {
-        "name": "Wei-Cheng Huang",
-        "email": "andywh1996@gmail.com"
+    "extraResources": [
+      {
+        "from": "assets/",
+        "to": "assets/",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "directories": {
+      "buildResources": "build",
+      "output": "release"
     },
-    "license": "UNLICENSED",
-    "description": "Healthy Eyes, Happy Life",
-    "devDependencies": {
-        "@types/electron": "^1.4.38",
-        "@types/node": "^22.9.0",
-        "@types/node-fetch": "^2.6.12",
-        "@types/semver": "^7.5.8",
-        "@types/sound-play": "^1.1.3",
-        "copy-webpack-plugin": "^12.0.2",
-        "cross-env": "^7.0.3",
-        "electron": "^38.4.0",
-        "electron-builder": "^25.1.8",
-        "ts-loader": "^9.5.1",
-        "typescript": "^5.6.3",
-        "webpack": "^5.96.1",
-        "webpack-cli": "^5.1.4"
+    "publish": {
+      "provider": "github",
+      "owner": "frozen0601",
+      "repo": "BlinkBlink-Releases"
     },
-    "dependencies": {
-        "@aptabase/electron": "^0.3.1",
-        "date-fns": "^4.1.0",
-        "dotenv": "^17.2.3",
-        "electron-dl": "^4.0.0",
-        "electron-store": "^8.2.0",
-        "electron-updater": "^6.3.9",
-        "node-fetch": "^3.3.2",
-        "play-sound": "^1.1.6",
-        "semver": "^7.6.3",
-        "sound-play": "^1.1.0",
-        "universal-analytics": "^0.5.3",
-        "uuid": "^11.0.3"
+    "win": {
+      "appId": "blinkblink",
+      "target": "nsis",
+      "icon": "assets/icon.ico",
+      "artifactName": "${productName}.Setup.${version}.${ext}"
+    },
+    "mac": {
+      "appId": "blinkblink",
+      "target": "dmg",
+      "icon": "assets/icon.icns",
+      "artifactName": "${productName}.Setup.${version}.${ext}"
+    },
+    "linux": {
+      "target": [
+        "snap"
+      ],
+      "icon": "assets/icon.png",
+      "artifactName": "${productName}.Setup.${version}.${ext}",
+      "category": "Utility"
     }
+  },
+  "homepage": "https://blinkblinkapp.github.io/",
+  "keywords": [
+    "202020",
+    "20-20-20",
+    "vision",
+    "eye health",
+    "productivity",
+    "break reminder",
+    "desktop app",
+    "health",
+    "wellness",
+    "well-being"
+  ],
+  "author": {
+    "name": "Wei-Cheng Huang",
+    "email": "andywh1996@gmail.com"
+  },
+  "license": "UNLICENSED",
+  "description": "Healthy Eyes, Happy Life",
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "@playwright/test": "^1.63.0",
+    "@types/node": "^22.9.0",
+    "@types/semver": "^7.5.8",
+    "copy-webpack-plugin": "^12.0.2",
+    "cross-env": "^7.0.3",
+    "electron": "^38.4.0",
+    "electron-builder": "^25.1.8",
+    "eslint": "^9.39.5",
+    "eslint-config-prettier": "^10.1.8",
+    "playwright": "^1.63.0",
+    "prettier": "^3.9.6",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.6.3",
+    "typescript-eslint": "^8.70.0",
+    "vitest": "^3.2.7",
+    "webpack": "^5.96.1",
+    "webpack-cli": "^5.1.4"
+  },
+  "dependencies": {
+    "electron-dl": "^4.0.0",
+    "electron-store": "^8.2.0",
+    "electron-updater": "^6.3.9",
+    "semver": "^7.6.3"
+  }
 }

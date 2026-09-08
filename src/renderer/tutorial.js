@@ -96,7 +96,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         // Make the entire card clickable
-        card.addEventListener('click', async (e) => {
+        card.addEventListener('click', async () => {
             const newState = !card.classList.contains('active')
             card.classList.toggle('active', newState)
             await saveQuickSettings(setting, newState)

@@ -1,6 +1,9 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
     <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'" />
+        <title>Downloading update</title>
         <style>
             :root {
                 color-scheme: light dark;
@@ -89,14 +92,6 @@
             </div>
             <div class="progress-text" id="progress-text">Downloading update...</div>
         </div>
-        <script>
-            window.api.onDownloadProgress((progress) => {
-                const percent = Math.round(progress.percent * 100)
-                document.getElementById('progress').style.width = `${percent}%`
-                const downloaded = (progress.transferredBytes / 1048576).toFixed(1)
-                const total = (progress.totalBytes / 1048576).toFixed(1)
-                document.getElementById('progress-text').textContent = `${percent}% · ${downloaded} MB of ${total} MB`
-            })
-        </script>
+        <script src="progress.js"></script>
     </body>
 </html>

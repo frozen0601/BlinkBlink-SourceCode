@@ -1,7 +1,11 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
+        <meta
+            http-equiv="Content-Security-Policy"
+            content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: file:; media-src 'self' file:"
+        />
         <title>About</title>
         <link rel="stylesheet" href="about.css" />
     </head>
@@ -25,60 +29,6 @@
             <p><a href="https://2ly.link/216p4" target="_blank" class="ko-fi">Support on Ko-fi</a></p>
             <p><a href="https://2ly.link/216p8" target="_blank" class="paypal">Donate via PayPal</a></p>
         </div>
-        <script>
-            window.api.getAppInfo().then((appInfo) => {
-                document.getElementById('version').innerText = appInfo.version
-                document.getElementById('author').innerText = `BlinkBlink © ${new Date().getFullYear()}`
-                document.getElementById('description').innerText = appInfo.description
-                document.getElementById('license').innerText = appInfo.license
-                const websiteLink = document.getElementById('website')
-                websiteLink.href = appInfo.website
-                websiteLink.innerText = 'BlinkBlink Website'
-                const supportLink = document.getElementById('support')
-                supportLink.href = `mailto:${appInfo.supportEmail}`
-                supportLink.innerText = appInfo.supportEmail
-            })
-
-            const updateButton = document.getElementById('update-button')
-            updateButton.innerText = 'Check for updates'
-            updateButton.addEventListener('click', () => {
-                updateButton.innerText = 'Checking...'
-                window.api
-                    .checkForUpdates()
-                    .then((result) => {
-                        if (result && result.updateInfo) {
-                            updateButton.innerText = 'Update available'
-                        } else {
-                            updateButton.innerText = 'Up-to-date ✔'
-                        }
-                    })
-                    .catch(() => {
-                        updateButton.innerText = 'Check for updates'
-                    })
-            })
-
-            document.getElementById('website').addEventListener('click', (event) => {
-                event.preventDefault()
-                window.api.openExternal(event.target.href)
-            })
-
-            const buyMeCoffeeButton = document.querySelector('.buy-me-coffee')
-            buyMeCoffeeButton.addEventListener('click', (event) => {
-                event.preventDefault()
-                window.api.openExternal(event.target.href)
-            })
-
-            const koFiButton = document.querySelector('.ko-fi')
-            koFiButton.addEventListener('click', (event) => {
-                event.preventDefault()
-                window.api.openExternal(event.target.href)
-            })
-
-            const paypalButton = document.querySelector('.paypal')
-            paypalButton.addEventListener('click', (event) => {
-                event.preventDefault()
-                window.api.openExternal(event.target.href)
-            })
-        </script>
+        <script src="about.js"></script>
     </body>
 </html>
