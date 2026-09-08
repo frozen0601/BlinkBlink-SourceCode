@@ -10,6 +10,13 @@ export interface LaunchOptions {
     args?: string[]
     /** Settings to seed into a fresh store before the app starts. */
     settings?: Partial<Settings>
+    /**
+     * A built executable to run instead of the source tree.
+     *
+     * Set by the packaged smoke test: only a real package exercises the asar
+     * layout and `process.resourcesPath`, where the bundled sounds live.
+     */
+    executablePath?: string
 }
 
 export interface LaunchedApp {
@@ -47,7 +54,9 @@ export async function launchApp(options: LaunchOptions = {}): Promise<LaunchedAp
     const chunks: string[] = []
 
     const app = await electron.launch({
-        args: [projectRoot, ...(options.args ?? [])],
+        ...(options.executablePath
+            ? { executablePath: options.executablePath, args: options.args ?? [] }
+            : { args: [projectRoot, ...(options.args ?? [])] }),
         cwd: projectRoot,
         env: {
             ...process.env,
@@ -84,7 +93,12 @@ export async function waitForWindow(app: ElectronApplication, fragment: string, 
         await new Promise((resolve) => setTimeout(resolve, 200))
     }
 
-    throw new Error(`Timed out waiting for a window matching "${fragment}". Open windows: ${app.windows().map((w) => w.url()).join(', ')}`)
+    throw new Error(
+        `Timed out waiting for a window matching "${fragment}". Open windows: ${app
+            .windows()
+            .map((w) => w.url())
+            .join(', ')}`
+    )
 }
 
 /** Parses a CSS colour into RGBA components. */

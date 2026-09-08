@@ -44,11 +44,11 @@ export function platformFacts(): PlatformFacts {
 /**
  * Whether the running app is code signed.
  *
- * Only macOS is interesting here — an unsigned bundle cannot show notification
- * action buttons. Electron gives no direct answer, so this is a conservative
- * approximation: an unpackaged dev build is never signed, and a packaged macOS
- * build counts as signed only when the build explicitly said so via
- * `BLINKBLINK_SIGNED`, which the release workflow sets when signing succeeds.
+ * Only macOS is interesting here — an unsigned bundle never shows notification
+ * action buttons. Electron offers no runtime answer, so the build tells us:
+ * webpack inlines `process.env.BLINKBLINK_SIGNED` at compile time, and the
+ * release workflow sets it only when a signing certificate was supplied. An
+ * unpackaged dev build is never signed.
  */
 export function isCodeSigned(): boolean {
     if (!app.isPackaged) return false

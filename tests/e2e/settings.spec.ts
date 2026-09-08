@@ -40,9 +40,7 @@ test('an out-of-range duration is clamped rather than accepted', async () => {
     await settings.locator('#workDuration').fill('0')
     await settings.locator('#workDuration').blur()
 
-    await expect
-        .poll(async () => (await settings.evaluate(() => window.api.getSettings())).workDuration, { timeout: 10_000 })
-        .toBe(60_000)
+    await expect.poll(async () => (await settings.evaluate(() => window.api.getSettings())).workDuration, { timeout: 10_000 }).toBe(60_000)
 })
 
 test('the schedule editor writes overnight ranges through unchanged', async () => {

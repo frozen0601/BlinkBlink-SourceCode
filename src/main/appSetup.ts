@@ -14,12 +14,19 @@ import { startAutoUpdateTimer, stopAutoUpdateTimer } from './updater'
 import { closeAllWindows } from './windows'
 
 /**
- * Reverse-DNS application identity.
+ * Windows Application User Model ID.
  *
- * Windows needs this for toast notifications to be attributed to the app at
- * all; it must match the `appId` in the electron-builder config.
+ * Windows will not deliver a toast unless this matches the AppUserModelID
+ * stamped on the app's Start Menu shortcut, which electron-builder takes from
+ * `build.appId`. It previously read 'BlinkBLink' against an `appId` of
+ * 'blinkblink' — a mismatch, so Windows notifications were dropped on the
+ * floor. Keep this string identical to `build.appId` in package.json.
+ *
+ * (A reverse-DNS id would be more conventional, but changing `appId` now would
+ * orphan the NSIS uninstall entry and break in-place upgrades for existing
+ * installs. See docs/ROADMAP.md.)
  */
-const APP_USER_MODEL_ID = 'com.blinkblink.app'
+const APP_USER_MODEL_ID = 'blinkblink'
 
 function applyPlatformIdentity(): void {
     if (isWindows) {

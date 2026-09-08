@@ -26,22 +26,22 @@
   "build": {
     "appId": "blinkblink",
     "productName": "BlinkBlink",
+    "copyright": "Copyright \u00a9 2024-2026 Wei-Cheng Huang",
+    "asar": true,
     "files": [
       "dist/**/*",
-      "node_modules/**/*",
       "package.json",
-      "assets/**/*",
-      "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}",
-      "!**/node_modules/*/{test,__tests__,tests,powered-test,example,examples}",
-      "!**/node_modules/.bin",
-      "!**/*.{map,ts}"
+      "!**/*.{map,ts,tsx}",
+      "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme,LICENSE,LICENSE.txt,NOTICE}",
+      "!**/node_modules/*/{test,__tests__,tests,powered-test,example,examples,doc,docs}",
+      "!**/node_modules/.bin"
     ],
     "extraResources": [
       {
-        "from": "assets/",
-        "to": "assets/",
+        "from": "assets/sounds",
+        "to": "assets/sounds",
         "filter": [
-          "**/*"
+          "**/*.wav"
         ]
       }
     ],
@@ -49,30 +49,149 @@
       "buildResources": "build",
       "output": "release"
     },
-    "publish": {
-      "provider": "github",
-      "owner": "frozen0601",
-      "repo": "BlinkBlink-Releases"
-    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "frozen0601",
+        "repo": "BlinkBlink-Releases",
+        "releaseType": "release"
+      }
+    ],
     "win": {
-      "appId": "blinkblink",
-      "target": "nsis",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
       "icon": "assets/icon.ico",
-      "artifactName": "${productName}.Setup.${version}.${ext}"
+      "artifactName": "${productName}-${version}-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "deleteAppDataOnUninstall": false,
+      "createDesktopShortcut": false,
+      "createStartMenuShortcut": true,
+      "shortcutName": "BlinkBlink"
     },
     "mac": {
-      "appId": "blinkblink",
-      "target": "dmg",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
       "icon": "assets/icon.icns",
-      "artifactName": "${productName}.Setup.${version}.${ext}"
+      "category": "public.app-category.healthcare-fitness",
+      "artifactName": "${productName}-${version}-${arch}.${ext}",
+      "darkModeSupport": true,
+      "extendInfo": {
+        "LSUIElement": true,
+        "NSUserNotificationAlertStyle": "alert"
+      },
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false
+    },
+    "dmg": {
+      "artifactName": "${productName}-${version}-${arch}.${ext}"
     },
     "linux": {
       "target": [
-        "snap"
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "deb",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "rpm",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "snap",
+          "arch": [
+            "x64"
+          ]
+        }
       ],
       "icon": "assets/icon.png",
-      "artifactName": "${productName}.Setup.${version}.${ext}",
-      "category": "Utility"
+      "artifactName": "${productName}-${version}-${arch}.${ext}",
+      "category": "Utility;Health",
+      "synopsis": "Healthy Eyes, Happy Life",
+      "description": "BlinkBlink reminds you to follow the 20-20-20 rule: every 20 minutes, look at something 20 feet away for 20 seconds.",
+      "desktop": {
+        "entry": {
+          "Name": "BlinkBlink",
+          "Comment": "Healthy Eyes, Happy Life",
+          "Categories": "Utility;",
+          "StartupWMClass": "blinkblink"
+        }
+      }
+    },
+    "deb": {
+      "depends": [
+        "libgtk-3-0",
+        "libnotify4",
+        "libnss3",
+        "libxss1",
+        "libxtst6",
+        "xdg-utils",
+        "libatspi2.0-0",
+        "libsecret-1-0"
+      ]
+    },
+    "rpm": {
+      "depends": [
+        "gtk3",
+        "libnotify",
+        "nss",
+        "libXScrnSaver",
+        "libXtst",
+        "xdg-utils",
+        "at-spi2-core",
+        "libsecret"
+      ]
+    },
+    "snap": {
+      "grade": "stable",
+      "confinement": "strict",
+      "plugs": [
+        "default",
+        "desktop",
+        "desktop-legacy",
+        "wayland",
+        "x11",
+        "unity7",
+        "browser-support",
+        "network",
+        "audio-playback",
+        "opengl"
+      ]
     }
   },
   "homepage": "https://blinkblinkapp.github.io/",

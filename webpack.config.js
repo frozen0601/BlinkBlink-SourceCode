@@ -1,5 +1,29 @@
 const path = require('path')
+const webpack = require('webpack')
 const CopyPlugin = require('copy-webpack-plugin')
+
+/**
+ * Whether this build was produced with real macOS signing credentials.
+ *
+ * Baked in at build time because the app has to know at *runtime*, on the
+ * user's machine, whether it may promise a notification action button — and an
+ * environment variable set on a CI runner is long gone by then. The release
+ * workflow sets this only when a signing certificate was actually supplied.
+ */
+const isSignedBuild = process.env.BLINKBLINK_SIGNED === '1'
+
+/**
+ * Runtime dependencies are required from `node_modules` rather than bundled.
+ *
+ * Two reasons. Bundling duplicated every dependency — once inside `main.js` and
+ * again in the asar, which ships `node_modules` regardless. And `ajv`, reached
+ * through electron-store, builds `require()` paths at runtime that webpack
+ * cannot see statically; leaving these external means such requires resolve
+ * normally instead of against a bundle that never contained them.
+ */
+const runtimeExternals = Object.fromEntries(
+    Object.keys(require('./package.json').dependencies ?? {}).map((name) => [name, `commonjs ${name}`])
+)
 
 const mode = process.env.NODE_ENV === 'production' ? 'production' : 'development'
 const isProduction = mode === 'production'
@@ -43,8 +67,12 @@ const mainConfig = {
     name: 'main',
     entry: { main: './src/main/main.ts' },
     target: 'electron-main',
+    externals: runtimeExternals,
     output: { path: path.resolve(__dirname, 'dist'), filename: '[name].js' },
     plugins: [
+        new webpack.DefinePlugin({
+            'process.env.BLINKBLINK_SIGNED': JSON.stringify(isSignedBuild ? '1' : '0'),
+        }),
         new CopyPlugin({
             patterns: [
                 { from: 'assets/icon.png', to: 'icon.png' },

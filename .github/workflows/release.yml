@@ -1,0 +1,271 @@
+name: Release
+
+# Publishing a release used to mean building by hand on a Windows box, a Mac
+# and a Linux box, uploading the installers to the releases repository by hand,
+# and pushing the snap separately. This does all of it from a tag.
+#
+# Usage:  npm version patch && git push --follow-tags
+#         (or run this workflow manually with a tag name)
+#
+# Required repository secrets:
+#   RELEASES_TOKEN            Fine-grained PAT with contents:write on
+#                             frozen0601/BlinkBlink-Releases. Required.
+#   SNAPCRAFT_STORE_CREDENTIALS  Snap Store token. Optional; when absent the
+#                             snap is built and attached to the release but not
+#                             pushed to the store.
+#   MAC_CSC_LINK / MAC_CSC_KEY_PASSWORD  Base64 .p12 and its password. Optional;
+#                             without them the macOS build is unsigned, exactly
+#                             as it is today.
+#   APPLE_ID / APPLE_APP_SPECIFIC_PASSWORD / APPLE_TEAM_ID  Optional
+#                             notarisation credentials; only used when signing.
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing tag to build (e.g. v0.2.0)'
+        required: true
+        type: string
+      prerelease:
+        description: 'Mark the release as a prerelease'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: '22'
+  RELEASES_OWNER: frozen0601
+  RELEASES_REPO: BlinkBlink-Releases
+
+jobs:
+  prepare:
+    name: Prepare the draft release
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.resolve.outputs.tag }}
+      version: ${{ steps.resolve.outputs.version }}
+    steps:
+      - id: resolve
+        run: |
+          set -euo pipefail
+          TAG="${{ inputs.tag || github.ref_name }}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
+          echo "Releasing $TAG"
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.resolve.outputs.tag }}
+
+      - name: Refuse to build a tag that disagrees with package.json
+        run: |
+          set -euo pipefail
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          if [ "$PKG_VERSION" != "${{ steps.resolve.outputs.version }}" ]; then
+            echo "::error::Tag ${{ steps.resolve.outputs.tag }} does not match package.json version $PKG_VERSION"
+            exit 1
+          fi
+
+      # Creating the draft up front means the three build jobs upload into an
+      # existing release instead of racing to create one.
+      - name: Create the draft release if it does not exist
+        env:
+          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+          TAG: ${{ steps.resolve.outputs.tag }}
+        run: |
+          set -euo pipefail
+          API="https://api.github.com/repos/${RELEASES_OWNER}/${RELEASES_REPO}"
+
+          status=$(curl -sS -o /tmp/existing.json -w '%{http_code}' \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "${API}/releases/tags/${TAG}")
+
+          if [ "$status" = "200" ]; then
+            echo "Release ${TAG} already exists; build jobs will upload into it."
+            exit 0
+          fi
+
+          curl -sS -X POST \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "${API}/releases" \
+            -d "$(jq -n --arg tag "$TAG" --argjson pre ${{ inputs.prerelease && 'true' || 'false' }} \
+                  '{tag_name: $tag, name: $tag, draft: true, prerelease: $pre, generate_release_notes: true}')" \
+            | jq -r '"Created draft release: " + .html_url'
+
+  build:
+    name: Build ${{ matrix.name }}
+    needs: prepare
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macOS (Intel + Apple Silicon)
+            os: macos-latest
+            builder_args: --mac --x64 --arm64
+            artifact: macos
+          - name: Windows (x64 + ARM64)
+            os: windows-latest
+            builder_args: --win --x64 --arm64
+            artifact: windows
+          - name: Linux (AppImage, deb, rpm, snap)
+            os: ubuntu-latest
+            builder_args: --linux --x64
+            artifact: linux
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.tag }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      # electron-builder shells out to snapcraft to assemble the snap.
+      - name: Install snapcraft
+        if: matrix.artifact == 'linux'
+        run: sudo snap install snapcraft --classic
+
+      - name: Decide whether this macOS build can be signed
+        if: matrix.artifact == 'macos'
+        id: signing
+        env:
+          CSC_LINK: ${{ secrets.MAC_CSC_LINK }}
+        run: |
+          if [ -n "${CSC_LINK}" ]; then
+            echo "signed=1" >> "$GITHUB_OUTPUT"
+            echo "This build will be signed."
+          else
+            echo "signed=0" >> "$GITHUB_OUTPUT"
+            echo "::warning::No macOS signing certificate configured; shipping an unsigned build. Users will need 'xattr -c', and notification action buttons will not appear."
+          fi
+
+      - name: Build and publish
+        shell: bash
+        env:
+          # electron-builder publishes to the releases repository, which is a
+          # different repository from this one, so GITHUB_TOKEN will not do.
+          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+          # Only macOS reads this: it decides whether the app may offer a
+          # notification action button, which an unsigned bundle cannot show.
+          BLINKBLINK_SIGNED: ${{ steps.signing.outputs.signed || '0' }}
+          CSC_LINK: ${{ secrets.MAC_CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.MAC_CSC_KEY_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          CSC_IDENTITY_AUTO_DISCOVERY: ${{ matrix.artifact == 'macos' && steps.signing.outputs.signed == '1' && 'true' || 'false' }}
+        run: |
+          set -euo pipefail
+          npm run build
+          npx electron-builder ${{ matrix.builder_args }} --publish always
+
+      - name: Keep the installers for the summary and the snap upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: installers-${{ matrix.artifact }}
+          path: |
+            release/*.dmg
+            release/*.zip
+            release/*.exe
+            release/*.AppImage
+            release/*.deb
+            release/*.rpm
+            release/*.snap
+            release/*.yml
+          if-no-files-found: error
+          retention-days: 14
+
+  publish-snap:
+    name: Push the snap to the Snap Store
+    needs: [prepare, build]
+    runs-on: ubuntu-latest
+    # Without the store credentials the snap still ships as a release asset;
+    # only the store upload is skipped.
+    if: ${{ !cancelled() && needs.build.result == 'success' }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: installers-linux
+          path: release
+
+      - name: Check for store credentials
+        id: check
+        env:
+          CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
+        run: |
+          if [ -n "${CREDENTIALS}" ]; then
+            echo "available=1" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=0" >> "$GITHUB_OUTPUT"
+            echo "::warning::SNAPCRAFT_STORE_CREDENTIALS is not set; the snap was built but not pushed to the Snap Store."
+          fi
+
+      - name: Locate the snap
+        if: steps.check.outputs.available == '1'
+        id: snap
+        run: echo "path=$(ls release/*.snap | head -n1)" >> "$GITHUB_OUTPUT"
+
+      - name: Upload to the stable channel
+        if: steps.check.outputs.available == '1'
+        uses: snapcore/action-publish@v1
+        env:
+          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
+        with:
+          snap: ${{ steps.snap.outputs.path }}
+          release: stable
+
+  finalize:
+    name: Publish the release
+    needs: [prepare, build, publish-snap]
+    runs-on: ubuntu-latest
+    if: ${{ !cancelled() && needs.build.result == 'success' }}
+    steps:
+      # The marketing site reads the newest non-draft release from the GitHub
+      # API, so undrafting here is what makes the download buttons update.
+      - name: Undraft the release
+        env:
+          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+          TAG: ${{ needs.prepare.outputs.tag }}
+        run: |
+          set -euo pipefail
+          API="https://api.github.com/repos/${RELEASES_OWNER}/${RELEASES_REPO}"
+
+          RELEASE_ID=$(curl -sS \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "${API}/releases/tags/${TAG}" | jq -r '.id')
+
+          if [ -z "$RELEASE_ID" ] || [ "$RELEASE_ID" = "null" ]; then
+            echo "::error::Could not find release ${TAG} in ${RELEASES_OWNER}/${RELEASES_REPO}"
+            exit 1
+          fi
+
+          curl -sS -X PATCH \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "${API}/releases/${RELEASE_ID}" \
+            -d '{"draft": false, "make_latest": "true"}' \
+            | jq -r '"Published: " + .html_url'
+
+      - name: Summarise
+        env:
+          TAG: ${{ needs.prepare.outputs.tag }}
+        run: |
+          {
+            echo "## BlinkBlink ${TAG} published"
+            echo
+            echo "- Release: https://github.com/${RELEASES_OWNER}/${RELEASES_REPO}/releases/tag/${TAG}"
+            echo "- The marketing site picks this up automatically on next load."
+            echo "- Snap Store: ${{ needs.publish-snap.result == 'success' && 'pushed' || 'not pushed (see the job log)' }}"
+          } >> "$GITHUB_STEP_SUMMARY"
