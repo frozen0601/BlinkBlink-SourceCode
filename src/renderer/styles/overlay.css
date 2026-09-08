@@ -428,6 +428,30 @@ button,
     overflow: hidden;
 }
 
+/*
+ * How much of the break is left, along the bottom edge of the screen.
+ *
+ * The element used to sit inside the summary view, styled by a selector that
+ * never matched it, so it rendered as an invisible empty div and the break had
+ * no progress indicator at all.
+ */
+.break-progress {
+    position: fixed;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    height: 4px;
+    display: none;
+    background: var(--accent-color);
+    transform: scaleX(0);
+    transform-origin: left center;
+    z-index: 1100;
+}
+
+.show-summary .break-progress {
+    display: none !important;
+}
+
 .dismiss-button .progress-bar,
 #dismiss-button .progress {
     position: absolute;

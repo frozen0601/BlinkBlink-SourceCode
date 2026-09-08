@@ -74,6 +74,26 @@ test('the overlay is interactive: skip asks for confirmation, then closes', asyn
     await expect.poll(() => overlay.isClosed(), { timeout: 15_000 }).toBe(true)
 })
 
+test('the countdown reaches a window that was still loading when it started', async () => {
+    // The overlay window is created and its countdown started in the same tick,
+    // so the first `webContents.send` lands before the renderer exists and is
+    // dropped. Without catching the window up, the very first break of a
+    // session showed a frozen progress bar and no seconds remaining.
+    launched = await launchApp({ args: ['--take-break'], settings: { breakDuration: 30_000 } })
+    const overlay = await waitForWindow(launched.app, 'overlay.html')
+
+    await expect.poll(() => overlay.locator('#countdown-label').textContent(), { timeout: 10_000 }).toMatch(/^\d+$/)
+
+    const progress = overlay.locator('#progress-bar')
+    await expect.poll(() => progress.evaluate((el) => getComputedStyle(el).display), { timeout: 10_000 }).toBe('block')
+
+    // A running CSS transition means the bar is animating rather than parked.
+    const scaleAt = () => progress.evaluate((el) => new DOMMatrixReadOnly(getComputedStyle(el).transform).a)
+    const first = await scaleAt()
+    await overlay.waitForTimeout(1500)
+    expect(await scaleAt()).toBeGreaterThan(first)
+})
+
 test('the content security policy does not block the overlay script', async () => {
     launched = await launchApp({ args: ['--take-break'] })
     const overlay = await waitForWindow(launched.app, 'overlay.html')

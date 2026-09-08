@@ -73,6 +73,8 @@ function backdropWindowOptions(mode: BackdropMode): Electron.BrowserWindowConstr
 class WindowManager {
     #windowsByDisplay = new Map<number, OverlayWindow>()
     #countdownInterval?: NodeJS.Timeout
+    /** When the running countdown ends, or null when none is running. */
+    #countdownEndsAt: number | null = null
     #activeConfig: ShowConfig | null = null
     #displayListenersBound = false
 
@@ -184,7 +186,24 @@ class WindowManager {
             // Re-assert after showing: some window managers drop the hint when
             // the window is first mapped.
             window.setAlwaysOnTop(true, 'screen-saver')
+
+            // A countdown that started while this window was still loading
+            // never reached it — `webContents.send` to an unloaded renderer is
+            // dropped. Catch the window up with the time that is actually left,
+            // so its progress bar animates over the correct remainder.
+            this.#sendCountdownState(window)
         })
+    }
+
+    /** Brings one window up to date with the countdown already in progress. */
+    #sendCountdownState(window: BrowserWindow): void {
+        if (this.#countdownEndsAt === null || window.isDestroyed()) return
+
+        const remainingMs = this.#countdownEndsAt - Date.now()
+        if (remainingMs <= 0) return
+
+        window.webContents.send('start-countdown', remainingMs)
+        window.webContents.send('countdown-update', Math.ceil(remainingMs / 1000))
     }
 
     /**
@@ -268,12 +287,15 @@ class WindowManager {
      * first decided the transition.
      */
     #startCountdown(config: ShowConfig): void {
-        const endsAt = Date.now() + config.durationMs
+        // Recorded on the instance so a window that finishes loading mid-count
+        // can be caught up; see #sendCountdownState.
+        this.#countdownEndsAt = Date.now() + config.durationMs
+
         this.#broadcast('start-countdown', config.durationMs)
         this.#broadcast('countdown-update', Math.ceil(config.durationMs / 1000))
 
         this.#countdownInterval = setInterval(() => {
-            const remainingMs = endsAt - Date.now()
+            const remainingMs = (this.#countdownEndsAt ?? 0) - Date.now()
 
             if (remainingMs <= 0) {
                 this.#stopCountdown()
@@ -286,6 +308,7 @@ class WindowManager {
     }
 
     #stopCountdown(): void {
+        this.#countdownEndsAt = null
         if (this.#countdownInterval) {
             clearInterval(this.#countdownInterval)
             this.#countdownInterval = undefined
