@@ -25,9 +25,14 @@ The **Release** workflow picks up the `v*` tag and:
 
     | Runner           | Artifacts                                  |
     | ---------------- | ------------------------------------------ |
-    | `macos-latest`   | `.dmg` and `.zip`, both **x64 and arm64**  |
-    | `windows-latest` | NSIS `.exe`, x64 and arm64                 |
+    | `macos-latest`   | `.dmg` and `.zip`, both **universal**      |
+    | `windows-latest` | NSIS `.exe`, x64 only                      |
     | `ubuntu-latest`  | `.AppImage`, `.deb`, `.rpm`, `.snap` (x64) |
+
+    One macOS build rather than one per architecture, and no ARM64 Windows
+    build: both are deliberate, and
+    [`ROADMAP.md`](ROADMAP.md) and the release plan carry the reasoning.
+    Expect **seven** installers in the draft, not ten.
 
 3. Uploads every artifact into the draft release, along with the `latest*.yml`
    files `electron-updater` needs.
