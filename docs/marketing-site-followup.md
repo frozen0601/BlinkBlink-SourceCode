@@ -25,7 +25,7 @@ The site is bilingual: **every new string needs an entry in both
 `src/i18n/locales/en.json` and `src/i18n/locales/zh.json`** (Traditional
 Chinese).
 
-## 1. macOS downloads must match the processor — the only blocking one
+## 1. macOS downloads must match the processor
 
 `src/components/sections/Download.vue` picks a download like this:
 
@@ -34,16 +34,21 @@ const assetExtension = platform === 'windows' ? '.exe' : '.dmg'
 const asset = release.assets.find((a) => a.name.endsWith(assetExtension))
 ```
 
-That was correct when a release carried exactly one `.dmg`. Releases now carry
-two:
+`find` returns whichever `.dmg` the GitHub API lists first, with no
+architecture check. The day a release carries two —
 
 ```
 BlinkBlink-<version>-arm64.dmg      BlinkBlink-<version>-x64.dmg
 ```
 
-`find` returns whichever the GitHub API lists first, so roughly half of macOS
-visitors would get a build for the wrong processor. An arm64 build on an Intel
-Mac does not launch at all.
+— roughly half of macOS visitors get a build for the wrong processor, and an
+arm64 build on an Intel Mac does not launch at all.
+
+0.2.0 deliberately ships **one universal DMG** so that this cannot happen
+today: users on 0.1.2 run an updater with the same no-architecture-check bug,
+and that code is already on their machines. The fix below is what makes it safe
+to go back to per-architecture builds later, and the `pickAsset` fallbacks
+handle a universal asset correctly in the meantime.
 
 **Windows is unaffected** — it ships x64 only, deliberately, because
 electron-updater's `latest.yml` has no per-architecture entry and would hand

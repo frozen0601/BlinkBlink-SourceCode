@@ -35,9 +35,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: macOS (Intel + Apple Silicon)
+          - name: macOS (universal)
             os: macos-latest
-            args: --mac dmg --x64 --arm64
+            args: --mac dmg --universal
             artifact: macos
           - name: Windows
             os: windows-latest

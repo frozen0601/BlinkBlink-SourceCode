@@ -5,17 +5,19 @@ value-for-effort, with an honest assessment of moving off Electron at the end.
 
 ## Near term
 
-### 0. Update the marketing site for multi-architecture releases — do this first
+### 0. Update the marketing site before the next release
 
-Releases now carry a `.dmg` and an `.exe` per architecture, and the download
-page picks assets with `assets.find(a => a.name.endsWith('.dmg'))`. That returns
-whichever the API lists first, so about half of macOS visitors would be handed
-a build for the wrong processor. See
+The download page picks assets with `assets.find(a => a.name.endsWith('.dmg'))`
+— first match wins, no architecture check — sends every Linux visitor to the
+Snap Store, can advertise a prerelease as the current version, and tells people
+to run `xattr -c`. See
 [`marketing-site-followup.md`](marketing-site-followup.md) for the patch — it
-lives in a separate repository, so it cannot be fixed from here.
+lives in a separate repository, so it cannot be pushed from here.
 
-Until it is done, either publish one architecture per platform or point the
-buttons at the Releases page.
+The `find` call is not immediately dangerous, because 0.2.0 ships a single
+universal DMG precisely so that no client, old or new, can pick the wrong one.
+It becomes dangerous again the day macOS goes back to per-architecture builds,
+which is why the patch fixes it now.
 
 ### 1. Make the macOS install less frightening — without paying Apple
 

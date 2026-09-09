@@ -107,13 +107,19 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: macOS (Intel + Apple Silicon)
+          # One universal DMG rather than one per architecture: users on 0.1.2
+          # run an updater that picks the first asset ending in .dmg with no
+          # architecture check, so two DMGs would be a coin flip for them.
+          - name: macOS (universal)
             os: macos-latest
-            builder_args: --mac --x64 --arm64
+            builder_args: --mac --universal
             artifact: macos
-          - name: Windows (x64 + ARM64)
+          # x64 only: electron-updater reads one arch-agnostic latest.yml and
+          # picks by extension, so an ARM64 installer would be offered to x64
+          # machines. Windows on ARM runs the x64 build under emulation.
+          - name: Windows (x64)
             os: windows-latest
-            builder_args: --win --x64 --arm64
+            builder_args: --win --x64
             artifact: windows
           - name: Linux (AppImage, deb, rpm, snap)
             os: ubuntu-latest

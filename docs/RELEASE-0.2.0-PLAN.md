@@ -1,174 +1,217 @@
 # Shipping 0.2.0 — the first release through the new pipeline
 
-Several things change at once here: a new version, more download formats, a new
-CI/CD pipeline, and a marketing site that has to understand the new release
-shape. The order matters, because each piece assumes the one before it.
+Several things land at once: a new version, more download formats, a new CI/CD
+pipeline, and a marketing site that has to understand the new release shape.
+Order matters, because each piece assumes the one before it.
+
+The last **published** release is **0.1.2**. `package.json` said 0.1.3, but that
+version was never released, so 0.1.2 is what every existing user is running.
 
 Delete this file once 0.2.0 is out.
 
 ---
 
-## The one decision to make first
+## What only you can do
 
-### macOS: two DMGs, or one universal DMG?
+Two links, about two minutes. Everything else is automated.
 
-This is the only genuinely risky part of the release, and it is worth
-understanding before picking.
+### A. Create the token
 
-Existing users are on **0.1.3, whose updater picks a macOS download with
-`assets.find(a => a.name.endsWith('.dmg'))`** — first match wins, no
-architecture check. That code is already installed on their machines and cannot
-be fixed retroactively. So the moment a release contains two DMGs, every
-existing Mac user who clicks "Check for updates" gets a coin flip, and an arm64
-build on an Intel Mac **does not launch at all**.
+GitHub does not let anything but you mint a credential for your account, so
+this one step is unavoidable.
 
-|                               | Two DMGs (current config)                        | One universal DMG                   |
-| ----------------------------- | ------------------------------------------------ | ----------------------------------- |
-| Existing 0.1.3 users updating | Coin flip; Intel users can get a broken download | Always correct                      |
-| New users via the site        | Correct (site detects arch)                      | Always correct                      |
-| Download size                 | ~120 MB                                          | ~190 MB                             |
-| Config change needed          | none                                             | `mac.target` arch → `["universal"]` |
+**Click:** https://github.com/settings/tokens/new?scopes=repo&description=BlinkBlink%20release%20automation
 
-**Recommendation: ship 0.2.0 as a universal DMG.** It removes the only failure
-mode that can hand a user a build that will not start, and it costs bandwidth
-that GitHub gives away. The new code already handles it: `pickAssetForArch`
-falls back to an asset with no architecture marker, and there is a test for
-exactly the `BlinkBlink-universal.dmg` case.
+That link pre-fills a classic token named "BlinkBlink release automation" with
+the `repo` scope, which is what the release needs.
 
-Once nobody is left on a pre-0.2.0 updater, switching back to per-architecture
-DMGs is safe and saves the size. That is a decision for 0.3.0 or later.
+1. Set **Expiration** to whatever you are comfortable with — "No expiration" is
+   simplest; 1 year means redoing this once a year.
+2. Scroll down, click **Generate token**.
+3. Copy the token. It is shown once.
 
-To do it, change `build.mac.target` in `package.json`:
+<details>
+<summary>If you would rather use a fine-grained token</summary>
 
-```json
-{ "target": "dmg", "arch": ["universal"] }
-```
+Go to https://github.com/settings/personal-access-tokens/new, then:
 
-If you would rather keep two DMGs, that is defensible — just say so in the
-release notes and expect a few "it says the app is damaged" reports from Intel
-Mac users.
-
----
-
-## Step by step
-
-### 1. Add the `RELEASES_TOKEN` secret — nothing works without it
-
-**This is the only hard blocker, and only you can do it.**
-
-Create a fine-grained personal access token with **Contents: Read and write** on
-both `frozen0601/BlinkBlink-Releases` and `frozen0601/BlinkBlink-SourceCode`,
-then add it as `RELEASES_TOKEN` under Settings → Secrets and variables →
-Actions in `BlinkBlink-SourceCode`.
+- **Repository access** → Only select repositories → pick
+  `frozen0601/BlinkBlink-Releases` **and** `frozen0601/BlinkBlink-SourceCode`
+- **Permissions** → Repository permissions → **Contents: Read and write**
 
 Both repositories, because the release publishes to one and the version-bump
-workflow pushes a tag to the other. A push made with the default `GITHUB_TOKEN`
+workflow pushes a tag to the other. A push made with GitHub's built-in token
 deliberately does not trigger further workflows, so the tag would never start a
 release.
 
-Optional: `SNAPCRAFT_STORE_CREDENTIALS` (`snapcraft export-login`). Without it
-the snap is still built and attached to the release; only the store push is
-skipped, with a warning rather than a failure.
+</details>
 
-### 2. Merge the marketing site PR **before** publishing anything
+### B. Save it as a secret
 
-The site reads the newest non-draft release live. Publish first and the old page
-serves wrong-architecture downloads for however long the gap lasts.
+**Click:** https://github.com/frozen0601/BlinkBlink-SourceCode/settings/secrets/actions/new
 
-If you go universal, this is less urgent — but merge it anyway, since it also
-fixes the Linux formats, the prerelease banner bug, and the `xattr -c`
-instruction.
+1. **Name:** `RELEASES_TOKEN` — exactly this, it is case sensitive.
+2. **Secret:** paste the token.
+3. **Add secret**.
 
-### 3. Merge the app PR to `main`
+That is the whole setup. Nothing else is required to cut a release.
+
+### Optional: the Snap Store
+
+Only if you want the snap pushed automatically. On your Fedora machine:
+
+```bash
+snapcraft export-login --snaps=blinkblink \
+  --acls package_access,package_push,package_update,package_release -
+```
+
+Paste the output as a second secret named `SNAPCRAFT_STORE_CREDENTIALS`.
+
+Skip it and nothing breaks: the `.snap` is still built and attached to the
+release, the workflow logs a warning instead of failing, and you can upload it
+by hand as before.
+
+---
+
+## Then, in order
+
+### 1. Merge the marketing site PR
+
+The site reads the newest published release live, so it should understand the
+new release shape before one exists. It also fixes the Linux download options,
+a bug where a prerelease could be shown as the current version, and the
+`xattr -c` instruction.
+
+### 2. Merge the app PR into `main`
 
 Two things only work from the default branch: the **Run workflow** button for
 Test build, and the **Bump version and tag** workflow.
 
-### 4. Take one last test build and actually install it
+### 3. Take a final test build and install it over your current app
 
-From Actions → Test build → Run workflow, or a commit containing `[test-build]`.
-Then, on your Mac:
+Actions → **Test build** → **Run workflow**. When it finishes, download the
+macOS artifact from the run summary.
 
-- Install over your existing 0.1.3 rather than onto a clean machine. This is the
-  path every real user takes, and it is the one that exercises the store
-  migration.
-- Check your settings and streaks survived. `schemaVersion` 2 normalises the old
-  file on first launch; a lost streak would be a migration bug worth catching
-  now.
-- Watch a full cycle: reminder toast → break overlay → summary. Confirm the
-  vibrancy backdrop looks right and the countdown bar animates.
-- Leave the machine idle past the threshold and confirm the break waits for you.
-- Open Settings and confirm nothing is disabled that should not be.
+Install it **over your existing 0.1.2**, not onto a clean machine — that is the
+path every real user takes, and the one that exercises the settings migration.
+Then check:
 
-### 5. Cut the release
+- Your settings and streaks survived. The store migrates on first launch; a
+  lost streak would be a migration bug worth catching now.
+- A full cycle: reminder toast → break overlay → summary. The blur should look
+  right and the countdown bar should animate.
+- Leave the machine idle past five minutes and confirm the break waits for you
+  rather than firing at an empty chair.
+- Settings opens and nothing is disabled that should not be.
+
+### 4. Cut the release
 
 ```bash
 npm version minor && git push --follow-tags
 ```
 
 0.1.3 → 0.2.0. Minor rather than patch: new settings, new packaging formats, a
-new reminder mechanism.
+new reminder mechanism. (The version in `package.json` is already 0.1.3 even
+though 0.1.3 was never published, so this produces 0.2.0 either way.)
 
-Or run **Bump version and tag** from the Actions tab and pick `minor`.
+Or run **Bump version and tag** from the Actions tab and pick `minor`, which
+does the same thing on a runner.
 
-### 6. Watch it, and check the draft before it goes public
+### 5. Watch it, and look at the draft before it goes public
 
-The release workflow creates a draft, builds on three runners, uploads, pushes
-the snap, then undrafts. If a build fails the release stays a draft, so a
+The workflow creates a draft release, builds on three runners, uploads, pushes
+the snap, then undrafts. If any build fails the release stays a draft, so a
 half-finished release never becomes visible.
 
-Between the builds finishing and the undraft, look at the draft's asset list.
-Expect a `.dmg` (universal, or one per architecture), a `.exe`, `.AppImage`,
-`.deb`, `.rpm`, `.snap`, and the `latest*.yml` files `electron-updater` needs.
+Before it undrafts, the asset list should hold: one `.dmg` and one `.zip` (both
+universal), one `.exe`, an `.AppImage`, `.deb`, `.rpm`, `.snap`, and the
+`latest*.yml` files `electron-updater` reads. The `.zip` is not a download
+option on the site; `electron-updater` needs it.
 
-### 7. After it is public
+### 6. Afterwards
 
-- Load the site and download from it on your Mac. It is reading the real
-  release now.
-- From an installed 0.1.3, use **Check for updates** and confirm it offers 0.2.0
-  and downloads something that opens.
+- Download from the site on your Mac. It is reading the real release now.
+- From an installed 0.1.2, use **Check for updates** and confirm it offers
+  0.2.0 and downloads something that opens.
 - Check the Snap Store listing picked up the new revision.
 
 ---
 
-## Known risks, and what was done about them
+## Decisions already made for you, and why
 
-**Windows upgrades cannot be tested before release.** The NSIS config is
-deliberately kept at the settings 0.1.3 shipped with — one-click installer,
-per-user, desktop and Start Menu shortcuts. Switching installer type mid-upgrade
-is the classic way to end up with two copies installed side by side, and this is
-the one platform with no way to check. `appId` is unchanged for the same reason:
-NSIS derives its uninstall registry key from it.
+### macOS ships one universal DMG, not one per architecture
+
+This was the only part of the release that could hand someone a build that does
+not start.
+
+Users on 0.1.2 run an updater that picks a macOS download with
+`assets.find(a => a.name.endsWith('.dmg'))` — first match wins, no architecture
+check. That code is already on their machines and cannot be fixed
+retroactively. With two DMGs in a release, every existing Mac user who clicks
+**Check for updates** gets a coin flip, and an arm64 build on an Intel Mac does
+not launch at all.
+
+A single universal DMG cannot be picked wrongly, by old clients or new ones.
+The cost is size: roughly 190 MB instead of 120 MB, on bandwidth GitHub gives
+away.
+
+Reverting to per-architecture builds is a one-line change in `package.json`
+once nobody is left on a pre-0.2.0 updater. `pickAssetForArch` already handles
+both shapes, and there is a test for the universal case.
+
+### Windows keeps the installer 0.1.2 shipped with
+
+One-click, per-user, desktop and Start Menu shortcuts — exactly as before.
+Switching installer type mid-upgrade is the classic way to end up with two
+copies installed side by side, and Windows is the one platform neither of us
+can test. `appId` is unchanged for the same reason: NSIS derives its uninstall
+registry key from it.
 
 The one Windows change that matters is that `setAppUserModelId` now matches
 `appId`, so toasts are no longer silently dropped. That needs the Start Menu
 shortcut, which the installer creates.
 
-**Old macOS clients.** Covered above; the universal DMG is the mitigation.
+### Windows ships x64 only
 
-**Linux users on the snap** are unaffected — snap upgrades independently, and
-the app tells them so rather than pretending to self-update.
+`electron-updater` reads a single `latest.yml` with no per-architecture entry
+and picks by file extension alone, so publishing an ARM64 installer alongside
+would hand it to x64 machines on auto-update. Windows on ARM runs the x64 build
+under emulation, so nothing is lost.
 
-**Settings migration** runs on every existing install. It is written to be
-tolerant of anything the old version could have written, and clamps values the
-timer could not honour, but step 4 is where you would actually notice a problem.
+---
 
-**First snap upload through CI** may need the store credentials to carry the
-right ACLs. If it fails, the release still completes — only the store push is
-skipped — and the `.snap` is attached to the release for manual upload.
+## Other risks, and what was done about them
+
+**Settings migration** runs on every existing install. It is written to tolerate
+anything the old version could have written and clamps values the timer could
+not honour — but step 3 is where you would actually notice a problem.
+
+**Linux snap users** are unaffected: snap upgrades on its own, and the app now
+says so rather than pretending to self-update.
+
+**The first snap upload through CI** may need the store credentials to carry the
+right ACLs. If it fails the release still completes; only the store push is
+skipped, and the `.snap` is attached to the release for manual upload.
 
 ---
 
 ## If something goes wrong
 
-**Release stuck as a draft.** A build failed. Fix it, delete the draft, re-run
-the workflow with the same tag; `prepare` reuses an existing release rather than
-duplicating it.
+**"Tag v0.2.0 does not match package.json version".** The tag was made without
+`npm version`. Delete the tag, fix the version, tag again.
 
-**Published something broken.** Delete the release and the tag, then re-cut.
-Clients only ever see the newest non-draft release, so removing it rolls
-everyone back to 0.1.3.
+**Release stuck as a draft.** A build failed. Fix it, delete the draft, and
+re-run the workflow with the same tag — it reuses an existing release rather
+than creating a duplicate.
+
+**Published something broken.** Delete the release and the tag. Clients only
+ever see the newest published release, so removing it rolls everyone back to
+0.1.2.
 
 **Site still shows the old version.** It reads the GitHub API on load and the
-response is cached; hard-refresh. If it persists, check the release is actually
+response is cached; hard-refresh. If it persists, check the release actually
 undrafted — a draft is invisible to anonymous API callers.
+
+**Workflow fails with a 403 or "not found" on the releases repo.** The token is
+missing, misnamed, or lacks access to `BlinkBlink-Releases`. The secret must be
+named exactly `RELEASES_TOKEN`.
