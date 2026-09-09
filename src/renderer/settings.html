@@ -43,6 +43,29 @@
                     </div>
                 </div>
 
+                <h2 class="section-title">While You're Away</h2>
+                <div class="setting-item" data-setting="skipBreakWhenIdle">
+                    <div class="setting-item-text">
+                        <span class="setting-label">Hold breaks while away</span>
+                        <span class="helper-text">
+                            Wait for you to come back instead of showing a break to an empty chair, then start a fresh work interval.
+                        </span>
+                    </div>
+                    <div class="setting-control">
+                        <input type="checkbox" id="skipBreakWhenIdle" />
+                    </div>
+                </div>
+                <div class="setting-item" data-setting="idleThreshold">
+                    <div class="setting-item-text">
+                        <span class="setting-label">Count as away after</span>
+                        <span class="helper-text">How long without keyboard or mouse activity counts as being away (1-60 minutes).</span>
+                    </div>
+                    <div class="setting-control">
+                        <input type="number" id="idleThreshold" min="1" max="60" step="1" />
+                        <span class="input-unit">min</span>
+                    </div>
+                </div>
+
                 <h2 class="section-title">Break Summary</h2>
                 <div class="setting-item">
                     <div class="setting-item-text">

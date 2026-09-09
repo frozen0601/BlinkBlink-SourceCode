@@ -222,6 +222,8 @@ function collectSettings(): Partial<Settings> {
         enableBreakNotification: input('enableBreakNotification')?.checked ?? true,
         reminderStyle: (select('reminderStyle')?.value as ReminderStyle) ?? 'in-app',
         breakPreNotificationOffset: numberValue('breakPreNotificationOffset', 30) * 1000,
+        skipBreakWhenIdle: input('skipBreakWhenIdle')?.checked ?? true,
+        idleThreshold: numberValue('idleThreshold', 5) * 60 * 1000,
         enableSoundNotification: input('enableSoundNotification')?.checked ?? true,
         notificationSound: select('notificationSound')?.value ?? 'system',
         scheduleEnabled: input('scheduleEnabled')?.checked ?? false,
@@ -256,6 +258,7 @@ function applyClampedValues(saved: Settings): void {
     assign('breakDuration', saved.breakDuration / 1000)
     assign('summaryDuration', saved.summaryDuration / 1000)
     assign('breakPreNotificationOffset', saved.breakPreNotificationOffset / 1000)
+    assign('idleThreshold', saved.idleThreshold / 60_000)
 }
 
 // Dependent-control state ----------------------------------------------
@@ -265,6 +268,7 @@ function refreshDependentStates(): void {
     const reminders = input('enableBreakNotification')?.checked ?? false
     const sound = input('enableSoundNotification')?.checked ?? false
 
+    setDisabled('idleThreshold', !(input('skipBreakWhenIdle')?.checked ?? false))
     setDisabled('summaryDuration', !autoDismiss)
     setDisabled('breakPreNotificationOffset', !reminders)
     setDisabled('reminderStyle', !reminders)
@@ -317,10 +321,12 @@ async function initialise(): Promise<void> {
     setChecked('scheduleEnabled', settings.scheduleEnabled)
     setChecked('autoUpdate', settings.autoUpdate)
     setChecked('enableSoundNotification', settings.enableSoundNotification)
+    setChecked('skipBreakWhenIdle', settings.skipBreakWhenIdle)
 
     setValue('summaryDuration', String(settings.summaryDuration / 1000))
     setValue('breakPreNotificationOffset', String(settings.breakPreNotificationOffset / 1000))
     setValue('workDuration', String(settings.workDuration / 60_000))
+    setValue('idleThreshold', String(settings.idleThreshold / 60_000))
     setValue('breakDuration', String(settings.breakDuration / 1000))
     setValue('languageSelect', settings.language)
     setValue('notificationSound', settings.notificationSound)

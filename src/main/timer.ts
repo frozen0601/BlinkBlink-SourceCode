@@ -7,17 +7,22 @@
  * without time having passed.
  */
 
+import { powerMonitor } from 'electron'
 import { appEvents } from './events'
 import { getSettings } from './store'
 import { clampDelay, clockJumped, planNextBreak, planReminder, TimerPlan } from '../core/timer-plan'
+import { shouldDeferBreak } from '../core/idle'
 
 /** How often the watchdog checks that the armed timer still makes sense. */
 const WATCHDOG_INTERVAL_MS = 30_000
 
+/** How often to look for the user coming back, while a break is held. */
+const RETURN_POLL_MS = 5_000
+
 /** Firing within this margin of the target counts as "on time". */
 const FIRE_TOLERANCE_MS = 500
 
-export type TimerMode = 'break' | 'wait' | 'idle'
+export type TimerMode = 'break' | 'wait' | 'idle' | 'deferred'
 
 export interface TimerStatus {
     mode: TimerMode
@@ -27,6 +32,8 @@ export interface TimerStatus {
     resumesAt: Date | null
     /** Active skip, if any. */
     skipUntil: Date | null
+    /** True while a due break is being held back until the user returns. */
+    awaitingReturn: boolean
 }
 
 class TimerManager {
@@ -38,6 +45,7 @@ class TimerManager {
     #nextBreakAt: Date | null = null
     #resumesAt: Date | null = null
     #skipUntil: Date | null = null
+    #returnPoll?: NodeJS.Timeout
 
     /** Wall clock reading at the last watchdog tick, for jump detection. */
     #lastWatchdogAt = Date.now()
@@ -72,6 +80,7 @@ class TimerManager {
             nextBreakAt: this.#nextBreakAt,
             resumesAt: this.#resumesAt,
             skipUntil: this.#skipUntil,
+            awaitingReturn: this.#returnPoll !== undefined,
         }
     }
 
@@ -145,6 +154,10 @@ class TimerManager {
     // Internals ---------------------------------------------------------
 
     #clearTimers(): void {
+        if (this.#returnPoll) {
+            clearInterval(this.#returnPoll)
+            this.#returnPoll = undefined
+        }
         if (this.#mainTimer) {
             clearTimeout(this.#mainTimer)
             this.#mainTimer = undefined
@@ -212,7 +225,58 @@ class TimerManager {
 
     #fireBreak(): void {
         this.#skipUntil = null
+
+        // A break shown to an empty chair is missed, and worse, it starts the
+        // next work interval from the wrong moment so the following break
+        // arrives too early. Hold it until the user comes back.
+        if (shouldDeferBreak(this.#idleMs(), this.#idlePolicy())) {
+            console.info('[timer] user is away; holding the break until they return')
+            this.#mode = 'deferred'
+            this.#nextBreakAt = null
+            this.#waitForReturn()
+            appEvents.emit('timer-changed')
+            return
+        }
+
         appEvents.emit('break-due')
+    }
+
+    #idlePolicy() {
+        const settings = getSettings()
+        return { enabled: settings.skipBreakWhenIdle, thresholdMs: settings.idleThreshold }
+    }
+
+    /** Seconds since the last input, in milliseconds. */
+    #idleMs(): number {
+        try {
+            return powerMonitor.getSystemIdleTime() * 1000
+        } catch (error) {
+            // Not every Linux session exposes an idle time; assume present.
+            console.warn('[timer] could not read the system idle time:', error)
+            return 0
+        }
+    }
+
+    /**
+     * Polls until the user is back, then starts a fresh work interval.
+     *
+     * Time away is not credited to the break streak: that counts breaks
+     * actually taken with the app, and awarding one for walking away would
+     * make the number meaningless.
+     */
+    #waitForReturn(): void {
+        if (this.#returnPoll) clearInterval(this.#returnPoll)
+
+        this.#returnPoll = setInterval(() => {
+            if (shouldDeferBreak(this.#idleMs(), this.#idlePolicy())) return
+
+            console.info('[timer] user is back; starting a fresh work interval')
+            clearInterval(this.#returnPoll)
+            this.#returnPoll = undefined
+            this.plan()
+        }, RETURN_POLL_MS)
+
+        this.#returnPoll.unref?.()
     }
 
     /**
