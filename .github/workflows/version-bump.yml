@@ -1,0 +1,53 @@
+name: Bump version and tag
+
+# Cuts a release from the GitHub UI, so no particular machine has to be on hand.
+# Bumps package.json, commits, and pushes the tag — which starts Release.
+#
+# Requires the RELEASES_TOKEN secret to also have contents:write on *this*
+# repository, because a push made with the default GITHUB_TOKEN deliberately
+# does not trigger other workflows.
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: 'Which part of the version to bump'
+        required: true
+        default: patch
+        type: choice
+        options: [patch, minor, major]
+
+permissions:
+  contents: read
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.RELEASES_TOKEN }}
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+
+      - run: npm ci
+
+      # Never tag something that would not have passed CI.
+      - name: Verify before tagging
+        run: npm run verify
+
+      - name: Bump, commit and tag
+        run: |
+          set -euo pipefail
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          NEW_VERSION=$(npm version ${{ inputs.bump }} -m "Release v%s")
+          echo "Tagged $NEW_VERSION"
+
+          git push --follow-tags origin HEAD
+          echo "### Tagged $NEW_VERSION — the Release workflow is now building it." >> "$GITHUB_STEP_SUMMARY"

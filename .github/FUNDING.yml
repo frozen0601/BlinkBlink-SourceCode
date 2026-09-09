@@ -1,0 +1,10 @@
+# Puts a "Sponsor" button on the repository page, pointing at the donation
+# links the app already offers from its tray menu and About window — where
+# almost nobody looks.
+#
+# `github:` is deliberately absent: add your username there once GitHub
+# Sponsors is enabled on the account, since it takes no platform fee.
+custom:
+  - https://2ly.link/216p3 # Buy Me a Coffee
+  - https://2ly.link/216p4 # Ko-fi
+  - https://2ly.link/216p8 # PayPal

@@ -1,0 +1,36 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: '/'
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 5
+    groups:
+      # Electron and its packager move together; splitting them across PRs
+      # produces combinations that were never tested as a pair.
+      electron:
+        patterns: ['electron', 'electron-builder', 'electron-updater', 'electron-store', 'electron-dl']
+      dev-tooling:
+        patterns:
+          [
+            '@types/*',
+            'eslint*',
+            'typescript*',
+            'prettier',
+            'vitest',
+            '@vitest/*',
+            'webpack*',
+            'ts-loader',
+            'copy-webpack-plugin',
+            'playwright',
+            '@playwright/*',
+          ]
+    commit-message:
+      prefix: 'deps'
+
+  - package-ecosystem: github-actions
+    directory: '/'
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: 'ci'

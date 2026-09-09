@@ -1,0 +1,246 @@
+/*
+ * Pre-break reminder toast.
+ *
+ * Sized to the window it lives in, so if a Linux compositor refuses the
+ * transparency the card still fills the frame instead of leaving a black
+ * border around rounded corners.
+ */
+
+:root {
+    color-scheme: light dark;
+
+    --toast-bg: rgba(252, 252, 253, 0.94);
+    --toast-border: rgba(0, 0, 0, 0.09);
+    --toast-shadow: 0 12px 34px rgba(0, 0, 0, 0.22);
+    --text-primary: #14161a;
+    --text-secondary: rgba(20, 22, 26, 0.62);
+    --accent: #2e9e5b;
+    --button-bg: rgba(0, 0, 0, 0.06);
+    --button-bg-hover: rgba(0, 0, 0, 0.11);
+    --progress-track: rgba(0, 0, 0, 0.08);
+    --radius: 16px;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --toast-bg: rgba(32, 34, 38, 0.94);
+        --toast-border: rgba(255, 255, 255, 0.1);
+        --toast-shadow: 0 12px 34px rgba(0, 0, 0, 0.5);
+        --text-primary: #f3f4f6;
+        --text-secondary: rgba(243, 244, 246, 0.62);
+        --accent: #4ade80;
+        --button-bg: rgba(255, 255, 255, 0.1);
+        --button-bg-hover: rgba(255, 255, 255, 0.18);
+        --progress-track: rgba(255, 255, 255, 0.12);
+    }
+}
+
+/* Square corners when the window could not be made transparent. */
+html[data-shape='square'] {
+    --radius: 0px;
+}
+
+html,
+body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background: transparent;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Ubuntu, Cantarell, system-ui, sans-serif;
+}
+
+.toast {
+    box-sizing: border-box;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 12px;
+    padding: 15px 16px 14px;
+    position: relative;
+    overflow: hidden;
+    background: var(--toast-bg);
+    border: 1px solid var(--toast-border);
+    border-radius: var(--radius);
+    box-shadow: var(--toast-shadow);
+    color: var(--text-primary);
+    opacity: 0;
+    transform: translateY(-6px);
+    transition:
+        opacity 0.18s ease-out,
+        transform 0.18s ease-out;
+}
+
+body.ready .toast {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+body.leaving .toast {
+    opacity: 0;
+    transform: translateY(-6px);
+}
+
+/*
+ * The dismiss affordance. It has to be a visible control: the toast window is
+ * `focusable: false` so it never receives key events, which rules out Escape.
+ * Kept quiet until pointed at, the way a notification's close button behaves.
+ */
+.toast-close {
+    position: absolute;
+    top: 7px;
+    right: 7px;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--text-secondary);
+    opacity: 0.55;
+    transition:
+        opacity 0.12s ease-out,
+        background 0.12s ease-out;
+}
+
+.toast-close svg {
+    width: 12px;
+    height: 12px;
+    stroke: currentColor;
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    fill: none;
+}
+
+.toast-close:hover {
+    opacity: 1;
+    background: var(--button-bg);
+}
+
+.toast-body {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    /* Clear of the close button, so a long title never slides under it. */
+    padding-right: 18px;
+}
+
+.toast-icon {
+    flex: 0 0 auto;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--accent) 18%, transparent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.eye {
+    width: 16px;
+    height: 10px;
+    border-radius: 50%;
+    border: 2px solid var(--accent);
+    position: relative;
+}
+
+.eye::after {
+    content: '';
+    position: absolute;
+    inset: 50% auto auto 50%;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--accent);
+    transform: translate(-50%, -50%);
+}
+
+.toast-text {
+    min-width: 0;
+}
+
+.toast-title {
+    margin: 0;
+    font-size: 13.5px;
+    font-weight: 600;
+    letter-spacing: -0.1px;
+}
+
+.toast-subtitle {
+    margin: 2px 0 0;
+    font-size: 12px;
+    color: var(--text-secondary);
+    /* The countdown rewrites this every 200ms; without fixed-width digits the
+       text visibly jitters as the seconds tick down. */
+    font-variant-numeric: tabular-nums;
+}
+
+.toast-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+button {
+    font: inherit;
+    font-size: 12px;
+    font-weight: 550;
+    color: var(--text-primary);
+    padding: 5px 12px;
+    border: none;
+    border-radius: 7px;
+    background: var(--button-bg);
+    cursor: pointer;
+    transition: background 0.12s ease-out;
+}
+
+button:hover {
+    background: var(--button-bg-hover);
+}
+
+button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+button.ghost {
+    background: transparent;
+    color: var(--text-secondary);
+}
+
+button.ghost:hover {
+    background: var(--button-bg);
+    color: var(--text-primary);
+}
+
+.toast-progress {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 2px;
+    background: var(--progress-track);
+    border-bottom-left-radius: var(--radius);
+    border-bottom-right-radius: var(--radius);
+    overflow: hidden;
+}
+
+.toast-progress-fill {
+    height: 100%;
+    width: 100%;
+    background: var(--accent);
+    transform-origin: left center;
+    transform: scaleX(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .toast,
+    .toast-progress-fill {
+        transition: none;
+    }
+}

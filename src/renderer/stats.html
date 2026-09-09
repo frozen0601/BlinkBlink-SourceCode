@@ -1,8 +1,12 @@
 <!-- stats.html -->
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
+        <meta
+            http-equiv="Content-Security-Policy"
+            content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: file:; media-src 'self' file:"
+        />
         <title>Break Stats</title>
         <link rel="stylesheet" href="stats.css" />
     </head>
@@ -27,52 +31,6 @@
                 </div>
             </div>
         </div>
-        <script>
-            window.api.getStats().then((stats) => {
-                // Current streak
-                document.getElementById('break-streak-count').textContent = stats.breakStreakCount || '0'
-                document.getElementById('break-streak-duration').textContent = formatTime(stats.breakStreakDuration)
-                document.getElementById('current-work-streak-start-time').textContent = stats.streakStartTime
-                    ? new Date(stats.streakStartTime).toLocaleString()
-                    : 'Not started'
-
-                // Highest streak
-                document.getElementById('highest-streak-count').textContent = stats.highestStreakCount || '0'
-                document.getElementById('highest-streak-duration').textContent = formatTime(stats.highestStreakDuration)
-                document.getElementById('highest-streak-start-time').textContent = stats.highestStreakStartTime
-                    ? new Date(stats.highestStreakStartTime).toLocaleString()
-                    : 'No streak yet'
-                document.getElementById('highest-streak-end-time').textContent = stats.highestStreakEndTime
-                    ? new Date(stats.highestStreakEndTime).toLocaleString()
-                    : 'No streak yet'
-            })
-
-            function formatTime(ms) {
-                if (!ms) return '0 seconds'
-                
-                const seconds = Math.floor((ms / 1000) % 60);
-                const minutes = Math.floor((ms / (1000 * 60)) % 60);
-                const hours = Math.floor((ms / (1000 * 60 * 60)) % 24);
-                const days = Math.floor(ms / (1000 * 60 * 60 * 24));
-
-                const parts = []
-
-                if (days) {
-                    parts.push(`${days} ${days === 1 ? 'day' : 'days'}`)
-                }
-                if (hours) {
-                    parts.push(`${hours} ${hours === 1 ? 'hour' : 'hours'}`)
-                }
-                if (minutes) {
-                    parts.push(`${minutes} ${minutes === 1 ? 'minute' : 'minutes'}`)
-                }
-                // Only show seconds if no larger units exist
-                if (!parts.length) {
-                    parts.push(`${seconds} ${seconds === 1 ? 'second' : 'seconds'}`)
-                }
-
-                return parts.join(' ')
-            }
-        </script>
+        <script src="stats.js"></script>
     </body>
 </html>

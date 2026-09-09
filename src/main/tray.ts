@@ -1,80 +1,104 @@
-import { BrowserWindow, Tray, Menu, nativeTheme, app, screen, MenuItem } from 'electron'
+/**
+ * Menu-bar / system-tray presence.
+ *
+ * On Linux this depends on the desktop providing a StatusNotifier host (GNOME
+ * needs the AppIndicator extension). When the tray cannot be created the app
+ * says so rather than starting up invisible with no way to reach its settings.
+ */
+
+import { app, BrowserWindow, Menu, MenuItemConstructorOptions, nativeImage, nativeTheme, screen, shell, Tray } from 'electron'
 import { autoUpdater } from 'electron-updater'
-import path from 'path'
-import { skipBreaksFor, skipBreaksUntilEndOfDay, getRemainingTimeInMinutes, isRunning } from './timer'
+import * as path from 'path'
+import { getRemainingTimeInMinutes, getTimerStatus, isSkipping, resumeBreaks, skipBreaksFor, skipBreaksUntilEndOfDay } from './timer'
 import { getWindowPosition, saveWindowPosition } from './store'
-import { scheduleManager } from './scheduler'
+import { isLinux, isMac } from './platform'
+import { appEvents } from './events'
+import { showBreakView } from './windows'
+import { formatRemainingTime } from '../core/format'
+
+const TOOLTIP_REFRESH_MS = 30_000
+
+const DONATION_LINKS = [
+    { label: 'Buy Me a Coffee', url: 'https://2ly.link/216p3' },
+    { label: 'Ko-fi', url: 'https://2ly.link/216p4' },
+    { label: 'PayPal', url: 'https://2ly.link/216p8' },
+] as const
+
+const SUPPORT_EMAIL = 'theblinkblinkapp@gmail.com'
 
 let statsWindow: BrowserWindow | null = null
 let settingsWindow: BrowserWindow | null = null
 let aboutWindow: BrowserWindow | null = null
 let tray: Tray | null = null
 let tooltipUpdateInterval: NodeJS.Timeout | null = null
+let updateReady = false
 
-function createWindow(options: Electron.BrowserWindowConstructorOptions, filePath: string, onClose: () => void, windowName: string) {
+// Utility windows -------------------------------------------------------
+
+function createWindow(
+    options: Electron.BrowserWindowConstructorOptions,
+    fileName: string,
+    onClose: () => void,
+    windowName: string
+): BrowserWindow {
     const position = getWindowPosition(windowName)
+
     const window = new BrowserWindow({
         ...options,
-        ...(position.x && position.y ? position : {}),
+        x: position.x,
+        y: position.y,
         show: false,
         backgroundColor: nativeTheme.shouldUseDarkColors ? '#1a1a1a' : '#f5f5f5',
-        icon: getIconPath(),
+        icon: getWindowIconPath(),
         webPreferences: {
+            preload: path.join(__dirname, 'preload.js'),
             nodeIntegration: false,
             contextIsolation: true,
-            preload: path.join(__dirname, 'preload.js'),
-            ...(process.platform === 'darwin' && { scrollBounce: true }),
+            sandbox: true,
+            ...(isMac && { scrollBounce: true }),
         },
     })
 
-    if (windowName) {
-        window.on('moved', () => saveWindowPosition(window, windowName))
-        window.on('close', () => saveWindowPosition(window, windowName))
-    }
-
-    window.loadFile(path.join(__dirname, filePath))
+    window.on('moved', () => saveWindowPosition(window, windowName))
+    window.on('close', () => saveWindowPosition(window, windowName))
     window.on('closed', onClose)
     window.once('ready-to-show', () => window.show())
+
+    window.loadFile(path.join(__dirname, fileName))
 
     return window
 }
 
-export function createStatsWindow() {
-    if (statsWindow) {
+export function createStatsWindow(): void {
+    if (statsWindow && !statsWindow.isDestroyed()) {
         statsWindow.focus()
         return
     }
-    const position = getWindowPosition('stats')
 
     statsWindow = createWindow(
-        {
-            width: 600,
-            height: 660,
-            ...position,
-            resizable: false,
-            center: !position.x && !position.y,
-            autoHideMenuBar: true,
-        },
+        { width: 600, height: 660, resizable: false, autoHideMenuBar: true },
         'stats.html',
         () => (statsWindow = null),
         'stats'
     )
 }
 
-export function createSettingsWindow() {
-    if (settingsWindow) {
+export function createSettingsWindow(): void {
+    if (settingsWindow && !settingsWindow.isDestroyed()) {
         settingsWindow.focus()
         return
     }
-    const position = getWindowPosition('settings')
+
     const { width, height } = screen.getPrimaryDisplay().workAreaSize
     settingsWindow = createWindow(
         {
-            width: Math.min(800, width * 0.8),
-            height: Math.min(800, width * 0.8),
-            ...position,
+            width: Math.min(820, Math.round(width * 0.8)),
+            // Height was previously derived from the screen *width*, which made
+            // the window comically tall on ultrawide monitors.
+            height: Math.min(860, Math.round(height * 0.85)),
+            minWidth: 520,
+            minHeight: 480,
             resizable: true,
-            center: !position.x && !position.y,
             autoHideMenuBar: true,
         },
         'settings.html',
@@ -83,154 +107,165 @@ export function createSettingsWindow() {
     )
 }
 
-export function createAboutWindow() {
-    if (aboutWindow) {
+export function createAboutWindow(): void {
+    if (aboutWindow && !aboutWindow.isDestroyed()) {
         aboutWindow.focus()
         return
     }
-    const position = getWindowPosition('about')
 
     aboutWindow = createWindow(
-        {
-            width: 420,
-            height: 840,
-            ...position,
-            resizable: false,
-            center: !position.x && !position.y,
-            autoHideMenuBar: true,
-        },
+        { width: 420, height: 840, resizable: false, autoHideMenuBar: true },
         'about.html',
         () => (aboutWindow = null),
         'about'
     )
 }
 
-function createSkipBreaksSubmenu() {
+// Tray ------------------------------------------------------------------
+
+function getWindowIconPath(): string {
+    return path.join(__dirname, process.platform === 'win32' ? 'icon.ico' : 'icon.png')
+}
+
+/**
+ * Builds the tray image at the size each platform expects.
+ *
+ * macOS wants a 16pt template image so the icon inverts with the menu bar;
+ * Windows wants 16px; Linux indicator hosts scale for themselves.
+ */
+function createTrayImage(): Electron.NativeImage | null {
+    const image = nativeImage.createFromPath(path.join(__dirname, 'icon.png'))
+    if (image.isEmpty()) {
+        console.error('[tray] could not load the tray icon from', path.join(__dirname, 'icon.png'))
+        return null
+    }
+
+    if (isMac) {
+        const resized = image.resize({ width: 16, height: 16 })
+        resized.setTemplateImage(true)
+        return resized
+    }
+
+    if (process.platform === 'win32') return image.resize({ width: 16, height: 16 })
+
+    return image
+}
+
+function skipBreaksSubmenu(): MenuItemConstructorOptions[] {
     const durations = [30, 60, 120, 180]
-    return durations
-        .map((duration) => ({
-            label: duration >= 60 ? `${duration / 60} hr${duration > 60 ? 's' : ''}` : `${duration} mins`,
-            click: () => {
-                skipBreaksFor(duration)
-                updateTooltip()
-            },
-        }))
-        .concat([
-            {
-                label: 'Rest of the day',
-                click: () => {
-                    skipBreaksUntilEndOfDay()
-                    updateTooltip()
-                },
-            },
-        ])
+    const items: MenuItemConstructorOptions[] = durations.map((minutes) => ({
+        label: minutes >= 60 ? `${minutes / 60} hour${minutes > 60 ? 's' : ''}` : `${minutes} minutes`,
+        click: () => skipBreaksFor(minutes),
+    }))
+
+    items.push({ label: 'Rest of the day', click: () => skipBreaksUntilEndOfDay() })
+    return items
 }
 
-function getIconPath() {
-    switch (process.platform) {
-        case 'win32':
-            return path.join(__dirname, 'icon.ico')
-        case 'darwin':
-            return path.join(__dirname, 'icon.icns')
+function donateSubmenu(): MenuItemConstructorOptions[] {
+    return DONATION_LINKS.map(({ label, url }) => ({ label, click: () => void shell.openExternal(url) }))
+}
+
+function statusLabel(): string {
+    const status = getTimerStatus()
+
+    switch (status.mode) {
+        case 'break':
+            return `Next break in ${formatRemainingTime(getRemainingTimeInMinutes())}`
+        case 'wait':
+            return status.resumesAt
+                ? `Paused until ${status.resumesAt.toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}`
+                : 'Paused'
         default:
-            return path.join(__dirname, 'icon.png')
+            return 'No breaks scheduled'
     }
 }
 
-function formatRemainingTime(minutes: number): string {
-    if (minutes < 60) {
-        return `${minutes}m`
-    }
-    const hours = Math.floor(minutes / 60)
-    const mins = minutes % 60
-    return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`
-}
-
-export function updateTooltip() {
-    if (!tray) return
-
-    const now = new Date()
-    const isActive = scheduleManager.isWithinActiveHours(now)
-    const remainingMins = getRemainingTimeInMinutes()
-    let outputText = 'Zzz'
-
-    if (isActive && isRunning() && remainingMins > 0) {
-        outputText = formatRemainingTime(remainingMins)
-    }
-
-    if (process.platform === 'darwin') tray.setTitle(outputText)
-    tray.setToolTip(`BlinkBlink: ${outputText}`)
-}
-
-function createDonateSubmenu() {
-    return [
-        {
-            label: 'Buy Me a Coffee',
-            click: () => require('electron').shell.openExternal('https://2ly.link/216p3'),
-        },
-        {
-            label: 'Ko-fi',
-            click: () => require('electron').shell.openExternal('https://2ly.link/216p4'),
-        },
-        {
-            label: 'PayPal',
-            click: () => require('electron').shell.openExternal('https://2ly.link/216p8'),
-        },
+function buildMenu(): Menu {
+    const template: MenuItemConstructorOptions[] = [
+        { label: statusLabel(), enabled: false },
+        { type: 'separator' },
+        { label: 'Take a break now', click: () => showBreakView() },
+        { label: 'Skip breaks for', submenu: skipBreaksSubmenu() },
     ]
-}
 
-export function createTray() {
-    const { nativeImage, Notification } = require('electron')
-    let trayIcon = nativeImage.createFromPath(path.join(__dirname, 'icon.png'))
-    const iconSize = trayIcon.getSize()
-    if (iconSize.width === 0 && iconSize.height === 0) {
-        console.error('Failed to load tray icon:', getIconPath())
-        return
+    if (isSkipping()) {
+        template.push({ label: 'Resume breaks', click: () => resumeBreaks() })
     }
-    if (process.platform === 'darwin') trayIcon = trayIcon.resize({ width: 16 })
-    trayIcon.setTemplateImage(true)
-    tray = new Tray(trayIcon)
 
-    // Set up tooltip update interval
-    updateTooltip()
-    tooltipUpdateInterval = setInterval(updateTooltip, 30000) // Update every 30 seconds
-
-    let contextMenu = Menu.buildFromTemplate([
-        {
-            label: 'Skip Breaks',
-            submenu: createSkipBreaksSubmenu(),
-        },
+    template.push(
+        { type: 'separator' },
         { label: 'Statistics', click: createStatsWindow },
         { label: 'Settings', click: createSettingsWindow },
         { label: 'About', click: createAboutWindow },
         { type: 'separator' },
-        {
-            label: 'Feedback',
-            click: () => require('electron').shell.openExternal('mailto:theblinkblinkapp@gmail.com'),
-        },
-        {
-            label: 'Donate',
-            submenu: createDonateSubmenu(),
-        },
-        { type: 'separator' },
-        { label: 'Quit', click: () => app.quit() },
-    ])
-    tray.setToolTip('BlinkBlink')
-    tray.setContextMenu(contextMenu)
+        { label: 'Feedback', click: () => void shell.openExternal(`mailto:${SUPPORT_EMAIL}`) },
+        { label: 'Donate', submenu: donateSubmenu() }
+    )
 
-    // If an update is available, show restart/exit and install
-    autoUpdater.on('update-downloaded', () => {
-        const updateItem = new MenuItem({ label: 'Restart and Install Update', click: () => autoUpdater.quitAndInstall() })
-        const updatedMenu = contextMenu.items
-            .slice(0, -1)
-            .concat(updateItem, new MenuItem({ label: 'Exit and Install Update', click: () => app.quit() }))
-        contextMenu = Menu.buildFromTemplate(updatedMenu)
-        if (tray) tray.setContextMenu(contextMenu)
-    })
+    if (updateReady) {
+        template.push({ type: 'separator' }, { label: 'Restart and Install Update', click: () => autoUpdater.quitAndInstall() })
+    }
+
+    template.push({ type: 'separator' }, { label: 'Quit BlinkBlink', click: () => app.quit() })
+
+    return Menu.buildFromTemplate(template)
 }
 
-// Add cleanup function
-export function destroyTray() {
+/**
+ * Refreshes the tray title, tooltip and menu.
+ *
+ * `setTitle` is macOS only and `setToolTip` does nothing on most Linux
+ * indicator hosts, so on Linux the countdown lives in the menu's first row —
+ * which is why the menu is rebuilt rather than only the tooltip updated.
+ */
+export function updateTooltip(): void {
+    if (!tray) return
+
+    const status = getTimerStatus()
+    const remaining = getRemainingTimeInMinutes()
+    const title = status.mode === 'break' && remaining > 0 ? formatRemainingTime(remaining) : 'Zzz'
+
+    if (isMac) tray.setTitle(title)
+    tray.setToolTip(`BlinkBlink — ${statusLabel()}`)
+    tray.setContextMenu(buildMenu())
+}
+
+export function createTray(): boolean {
+    const image = createTrayImage()
+    if (!image) return false
+
+    try {
+        tray = new Tray(image)
+    } catch (error) {
+        console.error('[tray] could not create the tray icon:', error)
+        return false
+    }
+
+    tray.setToolTip('BlinkBlink')
+    tray.setContextMenu(buildMenu())
+
+    // Left-clicking an indicator does not open the menu on Linux, so give the
+    // click something useful to do on the platforms where it is delivered.
+    if (!isLinux) {
+        tray.on('click', () => tray?.popUpContextMenu())
+    }
+
+    updateTooltip()
+    tooltipUpdateInterval = setInterval(updateTooltip, TOOLTIP_REFRESH_MS)
+    tooltipUpdateInterval.unref?.()
+
+    autoUpdater.on('update-downloaded', () => {
+        updateReady = true
+        updateTooltip()
+    })
+
+    appEvents.on('timer-changed', () => updateTooltip())
+
+    return true
+}
+
+export function destroyTray(): void {
     if (tooltipUpdateInterval) {
         clearInterval(tooltipUpdateInterval)
         tooltipUpdateInterval = null
@@ -239,4 +274,8 @@ export function destroyTray() {
         tray.destroy()
         tray = null
     }
+}
+
+export function hasTray(): boolean {
+    return tray !== null
 }

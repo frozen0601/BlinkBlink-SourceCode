@@ -28,7 +28,8 @@
 }
 
 .transition-hover-lift {
-    transition: transform var(--animation-duration-normal) var(--transition-bouncy),
+    transition:
+        transform var(--animation-duration-normal) var(--transition-bouncy),
         box-shadow var(--animation-duration-normal) var(--transition-smooth);
     will-change: transform;
 }
@@ -58,7 +59,8 @@
 }
 
 .hover-lift {
-    transition: transform var(--animation-duration-normal) var(--transition-bouncy),
+    transition:
+        transform var(--animation-duration-normal) var(--transition-bouncy),
         box-shadow var(--animation-duration-normal) var(--transition-smooth);
     will-change: transform, box-shadow;
 }
@@ -285,7 +287,8 @@ body {
     padding-left: 2.5rem;
     position: relative;
     transform: translateX(-20px);
-    transition: transform var(--animation-duration-normal) var(--transition-bouncy),
+    transition:
+        transform var(--animation-duration-normal) var(--transition-bouncy),
         color var(--animation-duration-fast) var(--transition-smooth);
     font-size: 1.15rem;
     line-height: 1.4;
@@ -325,7 +328,8 @@ body {
     padding: 1.5rem 4rem 1.5rem 1.5rem;
     margin: 0;
     border: 1px solid transparent;
-    transition: all var(--animation-duration-normal) var(--transition-bouncy),
+    transition:
+        all var(--animation-duration-normal) var(--transition-bouncy),
         border-color var(--animation-duration-fast) var(--transition-smooth);
 }
 
@@ -413,7 +417,9 @@ body {
     border-radius: 50%;
     transform: translate(-50%, -50%) scale(0);
     opacity: 0;
-    transition: transform 0.4s ease, opacity 0.3s ease;
+    transition:
+        transform 0.4s ease,
+        opacity 0.3s ease;
     pointer-events: none;
 }
 
@@ -629,7 +635,8 @@ body {
 }
 
 .hover-move {
-    transition: transform var(--animation-duration-normal) var(--transition-bouncy),
+    transition:
+        transform var(--animation-duration-normal) var(--transition-bouncy),
         color var(--animation-duration-fast) var(--transition-smooth);
 }
 

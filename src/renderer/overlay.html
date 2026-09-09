@@ -1,7 +1,11 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
     <head>
         <meta charset="UTF-8" />
+        <meta
+            http-equiv="Content-Security-Policy"
+            content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: file:; media-src 'self' file:"
+        />
         <title>BlinkBlink</title>
         <link rel="stylesheet" href="overlay.css" />
     </head>
@@ -9,9 +13,9 @@
         <!-- Break view -->
         <div id="break-view">
             <div class="content-container">
-                <h1>Take A Break <img id="eye-animation" src="rolling_eyes.gif" alt="Eye Animation" /></h1>
+                <h1>Take A Break <img id="eye-animation" src="rolling_eyes.gif" alt="" /></h1>
                 <div id="warning-text">This action will reset your streak. Click again to confirm.</div>
-                <button id="skip-button">Skip</button>
+                <button id="skip-button" type="button">Skip</button>
             </div>
         </div>
 
@@ -26,13 +30,18 @@
                     </div>
                 </div>
                 <div id="progress-tracker"></div>
-                <button id="dismiss-button" class="dismiss-button">
+                <button id="dismiss-button" class="dismiss-button" type="button">
                     <span>Dismiss</span>
                     <div class="progress-bar"></div>
                 </button>
-                <div id="progress-bar" class="progress"></div>
             </div>
         </div>
+
+        <!--
+            Break progress, pinned to the bottom of the screen. A direct child
+            of body so it is not hidden along with whichever view is inactive.
+        -->
+        <div id="progress-bar" class="break-progress"></div>
         <script src="overlay.js"></script>
     </body>
 </html>

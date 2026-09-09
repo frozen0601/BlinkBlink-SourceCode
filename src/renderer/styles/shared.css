@@ -64,7 +64,9 @@ body {
     border-radius: var(--border-radius);
     box-shadow: var(--card-shadow);
     padding: var(--spacing-unit);
-    transition: transform var(--transition-speed), box-shadow var(--transition-speed);
+    transition:
+        transform var(--transition-speed),
+        box-shadow var(--transition-speed);
 }
 
 .card:hover {

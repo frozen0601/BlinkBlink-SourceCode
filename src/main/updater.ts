@@ -1,269 +1,232 @@
-import { autoUpdater } from 'electron-updater'
+/**
+ * Update checking.
+ *
+ * Three different stories, because the platforms genuinely differ:
+ *
+ * - Windows: NSIS builds carry a signature chain electron-updater can verify,
+ *   so updates download and install themselves.
+ * - macOS: Squirrel.Mac refuses to apply an update to an unsigned app, so the
+ *   app fetches the DMG, drops it in Downloads and points at the install steps.
+ * - Linux: snap, deb, rpm and AppImage are all owned by something else. The app
+ *   says where updates come from rather than pretending to manage them.
+ */
+
 import { app, BrowserWindow, dialog, shell } from 'electron'
 import { download } from 'electron-dl'
 import * as path from 'path'
-import fetch from 'node-fetch'
-import * as semver from 'semver'
 import { getSettings } from './store'
+import { isAppImage, isLinux, isMac, isSnap } from './platform'
+import { isNewerVersion, pickAssetForArch, ReleaseAsset, pickLatestRelease, ReleaseSummary } from '../core/update'
 
-// Interface definitions moved from main.ts
-interface GitHubAsset {
-    name: string
-    browser_download_url: string
+const RELEASES_API = 'https://api.github.com/repos/frozen0601/BlinkBlink-Releases/releases'
+const INSTALL_GUIDE_URL = 'https://2ly.link/216pI'
+const CHECK_INTERVAL_MS = 4 * 60 * 60 * 1000
+const FETCH_TIMEOUT_MS = 15_000
+
+let autoUpdateTimer: NodeJS.Timeout | null = null
+
+async function showDialog(options: Electron.MessageBoxOptions): Promise<Electron.MessageBoxReturnValue> {
+    const parent = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0]
+    const withIcon = { ...options, icon: path.join(__dirname, 'icon.png') }
+    // `showMessageBox` rejects a null parent, so branch rather than passing one.
+    return parent && !parent.isDestroyed() ? dialog.showMessageBox(parent, withIcon) : dialog.showMessageBox(withIcon)
 }
 
-interface GitHubRelease {
-    tag_name: string
-    assets: GitHubAsset[]
-    prerelease: boolean
-    published_at: string
-}
-
-// Export the update-related methods
-export async function showDialog(options: Electron.MessageBoxOptions): Promise<Electron.MessageBoxReturnValue> {
-    const win = BrowserWindow.getFocusedWindow() || BrowserWindow.getAllWindows()[0]
-    return dialog.showMessageBox(win, {
-        ...options,
-        icon: path.join(__dirname, 'icon.png'), // Add custom icon to all dialogs
-    })
-}
-
-export async function showUpdateInstructions(): Promise<void> {
-    const { response } = await showDialog({
-        type: 'info',
-        buttons: ['View Installation Guide', 'Later'],
-        defaultId: 0,
-        cancelId: 1,
-        title: 'Update Downloaded',
-        message: 'The update has been downloaded to your Downloads folder.',
-        detail: 'Click "View Installation Guide" to see step-by-step instructions.\n\nYou can complete the installation when you\'re ready to restart the app.',
+/**
+ * The newest published, non-draft, non-prerelease release.
+ *
+ * Sorted by version rather than publication date so that re-publishing an old
+ * release cannot advertise it as an update.
+ */
+export async function getLatestReleaseFromGitHub(): Promise<ReleaseSummary> {
+    const response = await fetch(RELEASES_API, {
+        headers: { Accept: 'application/vnd.github+json', 'User-Agent': `BlinkBlink/${app.getVersion()}` },
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     })
 
-    if (response === 0) {
-        const guideUrl = 'https://2ly.link/216pI'
-        await shell.openExternal(guideUrl)
-    }
+    if (!response.ok) throw new Error(`GitHub returned ${response.status} ${response.statusText}`)
+
+    const latest = pickLatestRelease((await response.json()) as ReleaseSummary[])
+    if (!latest) throw new Error('No published releases found')
+    return latest
 }
 
-export function createProgressWindow(): BrowserWindow {
-    const progressWin = new BrowserWindow({
-        width: 320,
-        height: 80,
+function createProgressWindow(): BrowserWindow {
+    const progressWindow = new BrowserWindow({
+        width: 340,
+        height: 92,
         frame: false,
         transparent: true,
+        backgroundColor: '#00000000',
         resizable: false,
         show: false,
         center: true,
         skipTaskbar: true,
+        alwaysOnTop: true,
         webPreferences: {
-            nodeIntegration: true,
-            contextIsolation: false,
+            // Previously this window had no preload at all while its page used
+            // `window.api`, so the progress bar never moved. It also ran with
+            // node integration enabled, which it never needed.
+            preload: path.join(__dirname, 'preload.js'),
+            nodeIntegration: false,
+            contextIsolation: true,
+            sandbox: true,
         },
-        vibrancy: 'menu', // macOS only
+        ...(isMac && { vibrancy: 'menu' as const }),
     })
 
-    progressWin.loadFile(path.join(__dirname, 'progress.html'))
-    progressWin.once('ready-to-show', () => {
-        progressWin.show()
-        progressWin.setVibrancy('menu') // Ensure vibrancy is applied
-    })
+    progressWindow.loadFile(path.join(__dirname, 'progress.html'))
+    progressWindow.once('ready-to-show', () => progressWindow.showInactive())
 
-    return progressWin
+    return progressWindow
 }
 
-export async function downloadMacOSUpdate(dmgAsset: GitHubAsset) {
-    let win = BrowserWindow.getFocusedWindow() || BrowserWindow.getAllWindows()[0]
-    let tempWindow: BrowserWindow | null = null
-    let progressWin: BrowserWindow | null = null
+async function downloadMacOSUpdate(asset: ReleaseAsset): Promise<void> {
+    // `electron-dl` needs a window to attach the download session to.
+    let host = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0]
+    let temporaryHost: BrowserWindow | null = null
+    let progressWindow: BrowserWindow | null = null
 
-    if (!win) {
-        tempWindow = new BrowserWindow({ show: false })
-        win = tempWindow
+    if (!host || host.isDestroyed()) {
+        temporaryHost = new BrowserWindow({ show: false })
+        host = temporaryHost
     }
 
     try {
-        progressWin = createProgressWindow()
+        progressWindow = createProgressWindow()
 
-        await download(win, dmgAsset.browser_download_url, {
+        await download(host, asset.browser_download_url, {
             onProgress: (progress) => {
-                if (progressWin && !progressWin.isDestroyed()) {
-                    progressWin.webContents.send('download-progress', progress)
+                if (progressWindow && !progressWindow.isDestroyed()) {
+                    progressWindow.webContents.send('download-progress', progress)
                 }
             },
         })
 
-        // Close progress window and wait a bit before showing next dialog
-        if (progressWin && !progressWin.isDestroyed()) {
-            progressWin.close()
-            await new Promise((resolve) => setTimeout(resolve, 500)) // Add 500ms delay
-        }
+        progressWindow.close()
+        progressWindow = null
 
-        const dmgPath = path.join(app.getPath('downloads'), dmgAsset.name)
-        await shell.openPath(dmgPath)
-        if (tempWindow) tempWindow.destroy()
-        await showUpdateInstructions()
+        await shell.openPath(path.join(app.getPath('downloads'), asset.name))
+        const { response } = await showDialog({
+            type: 'info',
+            buttons: ['View Installation Guide', 'Later'],
+            defaultId: 0,
+            cancelId: 1,
+            title: 'Update Downloaded',
+            message: 'The update has been downloaded to your Downloads folder.',
+            detail: 'Open the disk image and drag BlinkBlink to Applications. You can finish whenever you are ready to restart the app.',
+        })
+
+        if (response === 0) await shell.openExternal(INSTALL_GUIDE_URL)
     } catch (error) {
-        if (progressWin && !progressWin.isDestroyed()) {
-            progressWin.close()
-        }
-        if (tempWindow) tempWindow.destroy()
+        console.error('[updater] macOS download failed:', error)
         await showDialog({
             type: 'error',
             title: 'Download Failed',
-            message: 'Failed to download the update. Please try again later.',
+            message: 'Failed to download the update.',
+            detail: error instanceof Error ? error.message : 'Please try again later.',
         })
+    } finally {
+        if (progressWindow && !progressWindow.isDestroyed()) progressWindow.close()
+        if (temporaryHost && !temporaryHost.isDestroyed()) temporaryHost.destroy()
     }
 }
 
-export async function checkMacOSUpdate() {
-    const currentVersion = app.getVersion()
-    const latestRelease = await getLatestReleaseFromGitHub()
-    const latestVersion = latestRelease.tag_name.replace('v', '')
-
-    if (!semver.gt(latestVersion, currentVersion)) {
-        await showDialog({
-            type: 'info',
-            title: 'No Updates',
-            message: 'You are using the latest version.',
-        })
-        return
+function linuxUpdateMessage(): { message: string; detail: string } {
+    if (isSnap()) {
+        return { message: 'Updates are handled automatically by Snap.', detail: 'Run `snap refresh blinkblink` to check immediately.' }
     }
-
-    const { response } = await showDialog({
-        type: 'info',
-        buttons: ['Download', 'Later'],
-        defaultId: 0,
-        cancelId: 1,
-        title: 'Update Available',
-        message: `A new version (${latestVersion}) is available. Do you want to download it?`,
-    })
-
-    if (response !== 0) return
-
-    const dmgAsset = latestRelease.assets.find((asset) => asset.name.endsWith('.dmg'))
-    if (!dmgAsset) {
-        await showDialog({
-            type: 'error',
-            title: 'Error',
-            message: 'DMG file not found in the latest release.',
-        })
-        return
+    if (isAppImage()) {
+        return {
+            message: 'This is an AppImage build.',
+            detail: 'Download the latest AppImage from the BlinkBlink releases page and replace this file.',
+        }
     }
-
-    await downloadMacOSUpdate(dmgAsset)
+    return {
+        message: 'Updates are handled by your package manager.',
+        detail: 'Use your distribution’s updater to install the newest BlinkBlink package.',
+    }
 }
 
-function isRunningInSnap(): boolean {
-    return process.platform === 'linux' && process.env.SNAP !== undefined;
-}
-
-export async function checkForUpdates(silent = false) {
+/**
+ * Checks for a newer release.
+ *
+ * `silent` suppresses "you are up to date" and any error dialog, for the
+ * periodic background check.
+ */
+export async function checkForUpdates(silent = false): Promise<{ updateAvailable: boolean; version?: string }> {
     try {
-        // Skip update checks on Linux
-        if (process.platform === 'linux') {
-            if (!silent) {
-                if (isRunningInSnap()) {
-                    await showDialog({
-                        type: 'info',
-                        title: 'Updates',
-                        message: 'Updates are handled automatically by Snap.',
-                        detail: 'Your system will automatically update this application when updates are available.'
-                    });
-                } else {
-                    await showDialog({
-                        type: 'info',
-                        title: 'Updates',
-                        message: 'Please use your system package manager to update this application.'
-                    });
-                }
-            }
-            return;
+        if (isLinux) {
+            if (!silent) await showDialog({ type: 'info', title: 'Updates', ...linuxUpdateMessage() })
+            return { updateAvailable: false }
         }
 
-        if (process.platform === 'darwin') {
-            const currentVersion = app.getVersion()
-            const latestRelease = await getLatestReleaseFromGitHub()
-            const latestVersion = latestRelease.tag_name.replace('v', '')
+        const latest = await getLatestReleaseFromGitHub()
+        const currentVersion = app.getVersion()
+        const latestVersion = latest.tag_name.replace(/^v/, '')
 
-            if (!semver.gt(latestVersion, currentVersion)) {
-                if (!silent) {
-                    await showDialog({
-                        type: 'info',
-                        title: 'No Updates',
-                        message: 'You are using the latest version.',
-                    })
-                }
-                return
-            }
-
-            if (silent) {
-                // On startup, just show the download prompt without the "No Updates" message
-                const { response } = await showDialog({
-                    type: 'info',
-                    buttons: ['Download', 'Later'],
-                    defaultId: 0,
-                    cancelId: 1,
-                    title: 'Update Available',
-                    message: `A new version (${latestVersion}) is available. Do you want to download it?`,
-                })
-
-                if (response === 0) {
-                    const dmgAsset = latestRelease.assets.find((asset) => asset.name.endsWith('.dmg'))
-                    if (dmgAsset) {
-                        await downloadMacOSUpdate(dmgAsset)
-                    }
-                }
-            } else {
-                await checkMacOSUpdate() // Use existing detailed update flow for manual checks
-            }
-        } else {
-            await autoUpdater.checkForUpdatesAndNotify()
+        if (!isNewerVersion(latest.tag_name, currentVersion)) {
+            if (!silent) await showDialog({ type: 'info', title: 'No Updates', message: 'You are using the latest version.' })
+            return { updateAvailable: false }
         }
+
+        if (isMac) {
+            const { response } = await showDialog({
+                type: 'info',
+                buttons: ['Download', 'Later'],
+                defaultId: 0,
+                cancelId: 1,
+                title: 'Update Available',
+                message: `BlinkBlink ${latestVersion} is available.`,
+                detail: `You are running ${currentVersion}.`,
+            })
+
+            if (response === 0) {
+                // An arm64 build will not launch at all on an Intel Mac, so the
+                // architecture has to match rather than "whatever came first".
+                const asset = pickAssetForArch(latest.assets, '.dmg', process.arch)
+
+                if (!asset) {
+                    await showDialog({ type: 'error', title: 'Update Unavailable', message: 'This release has no macOS download.' })
+                    return { updateAvailable: true, version: latestVersion }
+                }
+
+                await downloadMacOSUpdate(asset)
+            }
+
+            return { updateAvailable: true, version: latestVersion }
+        }
+
+        // Windows: electron-updater downloads and installs.
+        const { autoUpdater } = await import('electron-updater')
+        await autoUpdater.checkForUpdatesAndNotify()
+        return { updateAvailable: true, version: latestVersion }
     } catch (error) {
-        console.error('Error checking for updates:', error)
+        console.error('[updater] update check failed:', error)
         if (!silent) {
             await showDialog({
                 type: 'error',
                 title: 'Update Check Failed',
-                message: 'Failed to check for updates. Please try again later.',
+                message: 'Could not check for updates.',
+                detail: error instanceof Error ? error.message : 'Please try again later.',
             })
         }
+        return { updateAvailable: false }
     }
 }
 
-export async function getLatestReleaseFromGitHub(): Promise<GitHubRelease> {
-    const response = await fetch('https://api.github.com/repos/frozen0601/BlinkBlink-Releases/releases')
-    if (!response.ok) {
-        throw new Error('Failed to fetch releases')
-    }
-    const releases = (await response.json()) as GitHubRelease[]
-    if (!releases.length) {
-        throw new Error('No releases found')
-    }
-    // Sort releases by published date to get the latest release
-    releases.sort((a, b) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime())
-    const latestRelease = releases[0]
-    return latestRelease
+export function startAutoUpdateTimer(): void {
+    stopAutoUpdateTimer()
+
+    if (isLinux) return
+    if (!getSettings().autoUpdate) return
+
+    void checkForUpdates(true)
+    autoUpdateTimer = setInterval(() => void checkForUpdates(true), CHECK_INTERVAL_MS)
+    autoUpdateTimer.unref?.()
 }
 
-let autoUpdateTimer: NodeJS.Timeout | null = null
-const FOUR_HOURS = 4 * 60 * 60 * 1000
-
-export function startAutoUpdateTimer() {
-    if (autoUpdateTimer) {
-        clearInterval(autoUpdateTimer)
-    }
-
-    const settings = getSettings()
-    if (settings.autoUpdate && process.platform !== 'linux') {
-        checkForUpdates(true)
-        autoUpdateTimer = setInterval(() => {
-            checkForUpdates(true)
-        }, FOUR_HOURS)
-    }
-}
-
-export function stopAutoUpdateTimer() {
+export function stopAutoUpdateTimer(): void {
     if (autoUpdateTimer) {
         clearInterval(autoUpdateTimer)
         autoUpdateTimer = null

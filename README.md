@@ -12,67 +12,110 @@
 
 ## ✨ Features
 
-*   **20-20-20 Rule Enforcement**: Automatically reminds you to take breaks with a non-intrusive notification or a strict full-screen overlay.
-*   **Fully Customizable**: Configure work duration, break duration, and notification sounds to fit your workflow.
-*   **Smart Schedule**: Set your daily working hours so BlinkBlink only alerts you when you're actually working.
-*   **Strict Mode**: Optional full-screen "Force Break" overlay that ensures you actually step away from the screen.
-*   **Stats Tracking**: Keep track of your break streaks and daily progress.
-*   **Cross-Platform**: Runs smoothly on **Windows**, **macOS**, and **Linux**.
-*   **System Tray Integration**: Stays out of your way until you need it.
+- **20-20-20 rule enforcement** — a full-screen break overlay on every monitor, or a gentle reminder toast beforehand.
+- **Fully customisable** — work duration, break duration, reminder lead time and notification sounds.
+- **Smart schedule** — per-day working hours, including overnight shifts, so BlinkBlink only interrupts you when you are actually working.
+- **Streak tracking** — current and best break streaks.
+- **Cross-platform** — Windows, macOS and Linux, with each platform's native window effects where they exist.
+- **System tray integration** — stays out of your way until you need it.
+- **Private by design** — no accounts, no telemetry, no network traffic beyond the update check.
 
 ## 🚀 Installation
 
-Download [here](https://blinkblinkapp.github.io/#download) and follow the instructions.
+Download from [the website](https://blinkblinkapp.github.io/#download), or straight from
+[Releases](https://github.com/frozen0601/BlinkBlink-Releases/releases).
+
+| Platform | Package                                                   |
+| -------- | --------------------------------------------------------- |
+| Windows  | `.exe` installer (x64, ARM64)                             |
+| macOS    | `.dmg` (Intel and Apple Silicon)                          |
+| Linux    | `.AppImage`, `.deb`, `.rpm`, or `snap install blinkblink` |
+
+macOS builds are unsigned (the Apple Developer Program costs $99/year, which
+this project does not yet earn), so macOS quarantines them. Either approve the
+app in **System Settings → Privacy & Security** after the first launch is
+refused, or clear the quarantine flag directly:
+
+```bash
+xattr -d com.apple.quarantine /Applications/BlinkBlink.app
+```
+
+That removes only the quarantine attribute, rather than every extended
+attribute as the older `xattr -c` instruction did.
 
 ## 🛠️ Development
 
-To build BlinkBlink from source, ensure you have [Node.js](https://nodejs.org/) installed.
+Requires [Node.js](https://nodejs.org/) 20 or newer.
 
-1.  **Clone the repository**
-    ```bash
-    git clone https://github.com/your-username/BlinkBlink-SourceCode.git
-    cd BlinkBlink-SourceCode
-    ```
+```bash
+git clone https://github.com/frozen0601/BlinkBlink-SourceCode.git
+cd BlinkBlink-SourceCode
+npm install
+npm start
+```
 
-2.  **Install dependencies**
-    ```bash
-    npm install
-    ```
+### Scripts
 
-3.  **Run in development mode**
-    ```bash
-    npm start
-    ```
+| Command                     | What it does                                             |
+| --------------------------- | -------------------------------------------------------- |
+| `npm start`                 | Build and run in development                             |
+| `npm run verify`            | Typecheck, lint, format check and unit tests             |
+| `npm test`                  | Unit tests                                               |
+| `npm run test:e2e`          | Playwright tests driving the real app                    |
+| `npm run test:e2e:headless` | The same, under Xvfb                                     |
+| `npm run dist:linux`        | Build AppImage, deb, rpm and snap                        |
+| `npm run dist:dir`          | Unpacked build — fastest way to check a packaging change |
 
-4.  **Build for production**
-    ```bash
-    # Build for your current OS
-    npm run dist
+`npm run dist:mac` and `npm run dist:win` only work on their own platforms.
+That is what CI is for — see below.
 
-    # Build specifically for Linux
-    npm run dist:linux
-    ```
+### Command-line flags
 
-## 🏗️ Tech Stack
+A second launch is handed to the running instance, so these work as a remote
+control and are worth binding to desktop shortcuts:
 
-*   **[Electron](https://www.electronjs.org/)**: Framework for building cross-platform desktop apps.
-*   **[TypeScript](https://www.typescriptlang.org/)**: For type-safe code.
-*   **[Webpack](https://webpack.js.org/)**: Module bundler.
-*   **[Electron Store](https://github.com/sindresorhus/electron-store)**: Simple data persistence.
+```bash
+blinkblink --take-break    # start a break now
+blinkblink --settings      # open settings
+blinkblink --stats         # open statistics
+```
+
+### Releasing
+
+```bash
+npm version patch && git push --follow-tags
+```
+
+GitHub Actions builds for all three platforms, publishes the installers to
+[BlinkBlink-Releases](https://github.com/frozen0601/BlinkBlink-Releases), pushes
+the snap to the Snap Store, and undrafts the release — at which point the
+marketing site picks it up on its own. See [`docs/RELEASING.md`](docs/RELEASING.md)
+for the required secrets and what to do when something fails.
+
+### Documentation
+
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — how it fits together, and the platform behaviour worth knowing before you change a window option
+- [`docs/RELEASING.md`](docs/RELEASING.md) — the release pipeline
+- [`docs/ROADMAP.md`](docs/ROADMAP.md) — what is next, and an assessment of moving off Electron
+
+## 🏗️ Tech stack
+
+- **[Electron](https://www.electronjs.org/)** — cross-platform desktop shell
+- **[TypeScript](https://www.typescriptlang.org/)** — strict mode throughout
+- **[Webpack](https://webpack.js.org/)** — bundling for main, preload and each renderer
+- **[Vitest](https://vitest.dev/)** and **[Playwright](https://playwright.dev/)** — unit and end-to-end tests
+- **[electron-store](https://github.com/sindresorhus/electron-store)** — persistence
 
 ## 📄 License
 
-**Source Available.**
-
-You are free to view, audit, and compile the code for personal use to ensure trust and transparency. However, **redistribution and commercial use are strictly prohibited** without permission.
-
-See the `LICENSE` file for full details.
+**Source Available.** You are free to view, audit, and compile the code for
+personal use. Redistribution and commercial use are prohibited without
+permission. See [`LICENSE`](LICENSE).
 
 ## 👨‍💻 Author
 
-**Wei-Cheng Huang**
-*   Email: andywh1996@gmail.com
-*   GitHub: [@frozen0601](https://github.com/frozen0601)
+**Wei-Cheng Huang** · [@frozen0601](https://github.com/frozen0601) · andywh1996@gmail.com
 
 ---
-*Made with ❤️ for healthy eyes.*
+
+_Made with ❤️ for healthy eyes._

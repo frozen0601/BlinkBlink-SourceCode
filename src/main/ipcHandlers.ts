@@ -1,92 +1,139 @@
-import { app, ipcMain } from 'electron'
-import * as path from 'path'
-import * as fs from 'fs'
-import { getSettings, updateSettings, getStats } from './store'
-import { Settings } from './types'
-import { isRunning } from './timer'
+/**
+ * IPC surface.
+ *
+ * Everything arriving from a renderer is treated as untrusted input: settings
+ * go through `normalizeSettings`, sound names through the filename whitelist,
+ * and external URLs through a scheme check before they reach `shell`.
+ */
+
+import { app, ipcMain, shell } from 'electron'
+import { isAutostartSupported, setAutostart } from './autostart'
+import { getSettings, getStats, getWorkDuration, setFirstRunCompleted, updateSettings } from './store'
+import { getRemainingTimeInMinutes, getTimerStatus, skipBreaksFor, startWorkTimer } from './timer'
 import { showBreakView } from './windows'
 import { checkForUpdates, startAutoUpdateTimer, stopAutoUpdateTimer } from './updater'
 import { getAvailableSounds, getSoundPath } from './sound'
-import { handleBreakComplete, handleBreakSkip, handleSummaryDismissed, handleScheduleUpdated } from './controller'
+import { handleBreakComplete, handleBreakSkip, handleScheduleUpdated, handleSummaryDismissed } from './controller'
+import { closeReminder } from './reminder'
+import { canShowNotificationActions, getBackdropMode, isLinux, isMac, isWindows } from './platform'
+import { SETTINGS_LIMITS } from '../core/settings'
 
-export function registerIpcHandlers() {
-    // Simplified IPC handlers
-    ipcMain.on('start-break-countdown', () => {
-        if (isRunning()) {
-            showBreakView()
-        }
+const SUPPORT_EMAIL = 'theblinkblinkapp@gmail.com'
+
+/** Only ever hand the OS a web URL or a mail link. */
+function isSafeExternalUrl(value: unknown): value is string {
+    if (typeof value !== 'string' || value.length > 2048) return false
+    try {
+        const url = new URL(value)
+        return url.protocol === 'https:' || url.protocol === 'http:' || url.protocol === 'mailto:'
+    } catch {
+        return false
+    }
+}
+
+export function registerIpcHandlers(): void {
+    // Break lifecycle ---------------------------------------------------
+
+    ipcMain.on('break-skip', () => handleBreakSkip())
+    ipcMain.on('break-complete', () => handleBreakComplete())
+    ipcMain.on('summary-dismissed', () => handleSummaryDismissed())
+    ipcMain.on('schedule-updated', () => handleScheduleUpdated())
+
+    // Reminder toast ----------------------------------------------------
+
+    ipcMain.on('reminder-skip', () => {
+        closeReminder()
+        skipBreaksFor(Math.max(1, Math.round(getWorkDuration() / 60_000)))
     })
 
-    ipcMain.on('break-skip', () => {
-        handleBreakSkip()
+    ipcMain.on('reminder-start-now', () => {
+        closeReminder()
+        showBreakView()
     })
 
-    ipcMain.on('break-complete', () => {
-        handleBreakComplete()
-    })
+    ipcMain.on('reminder-dismiss', () => closeReminder())
 
-    ipcMain.on('summary-dismissed', () => {
-        handleSummaryDismissed()
-    })
+    // Tutorial ----------------------------------------------------------
 
-    ipcMain.on('schedule-updated', () => {
-        handleScheduleUpdated()
-    })
+    ipcMain.on('tutorial-finished', () => setFirstRunCompleted())
 
-    // Data access handlers
+    // Reads -------------------------------------------------------------
+
     ipcMain.handle('get-stats', () => getStats())
     ipcMain.handle('get-settings', () => getSettings())
-    ipcMain.handle('get-sound-path', (event, filename) => getSoundPath(filename))
+    ipcMain.handle('get-available-sounds', () => getAvailableSounds())
+    ipcMain.handle('get-sound-path', (_event, filename: unknown) => getSoundPath(filename))
 
-    // IPC Handler - get app info from package.json
-    ipcMain.handle('get-app-info', () => {
-        const packageJsonPath = path.join(__dirname, '..', '..', 'package.json') // adjusted path assuming src/main/ipcHandlers.ts -> dist/main/ipcHandlers.js or similar
-        const packageJson = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf-8'))
+    ipcMain.handle('get-app-info', () => ({
+        // Read from Electron rather than re-reading package.json off disk: the
+        // old relative path only happened to resolve inside the asar.
+        version: app.getVersion(),
+        name: app.getName(),
+        description: 'Healthy Eyes, Happy Life',
+        license: 'Source Available (see LICENSE)',
+        website: 'https://blinkblinkapp.github.io/',
+        supportEmail: SUPPORT_EMAIL,
+        electron: process.versions.electron,
+        chrome: process.versions.chrome,
+        node: process.versions.node,
+        platform: process.platform,
+        arch: process.arch,
+    }))
+
+    /** Lets the settings window hide or explain options the platform cannot honour. */
+    ipcMain.handle('get-capabilities', () => ({
+        platform: process.platform,
+        isMac,
+        isWindows,
+        isLinux,
+        backdropMode: getBackdropMode(getSettings().overlayBackdrop),
+        autostartSupported: isAutostartSupported(),
+        notificationActionsSupported: canShowNotificationActions(),
+        // Linux packages are refreshed by snap/apt/dnf, not by the app.
+        autoUpdateManagedExternally: isLinux,
+        limits: SETTINGS_LIMITS,
+    }))
+
+    ipcMain.handle('get-timer-status', () => {
+        const status = getTimerStatus()
         return {
-            version: packageJson.version,
-            author: packageJson.author,
-            description: packageJson.description,
-            license: packageJson.license,
-            website: packageJson.homepage,
-            supportEmail: 'theblinkblinkapp@gmail.com',
+            mode: status.mode,
+            remainingMinutes: getRemainingTimeInMinutes(),
+            nextBreakAt: status.nextBreakAt?.getTime() ?? null,
+            resumesAt: status.resumesAt?.getTime() ?? null,
         }
     })
 
-    // IPC Handler - Check for updates (manual check)
-    ipcMain.handle('check-for-updates', () => checkForUpdates(false))
+    // Writes ------------------------------------------------------------
 
-    // Update the IPC handler to use imported function
-    ipcMain.handle('get-available-sounds', () => getAvailableSounds())
+    ipcMain.handle('save-settings', (_event, incoming: unknown) => {
+        const previous = getSettings()
+        const saved = updateSettings(incoming)
 
-    function trackSettingsState(settings: Settings) {
-    }
-
-    // IPC Handlers - Settings
-    ipcMain.on('save-settings', (event, settings: Partial<Settings>) => {
-        const currentSettings = getSettings()
-        const autoUpdateChanged = currentSettings.autoUpdate !== settings.autoUpdate
-
-        updateSettings(settings)
-        trackSettingsState(getSettings())
-
-        // Handle Auto Update side effect
-        if (autoUpdateChanged) {
-            if (settings.autoUpdate) {
-                startAutoUpdateTimer()
-            } else {
-                stopAutoUpdateTimer()
-            }
+        if (previous.autoUpdate !== saved.autoUpdate) {
+            if (saved.autoUpdate) startAutoUpdateTimer()
+            else stopAutoUpdateTimer()
         }
 
-        // Handle Schedule update side effect
-        // We call these directly instead of emitting 'schedule-updated'
-        handleScheduleUpdated()
+        if (previous.startOnBoot !== saved.startOnBoot) {
+            const result = setAutostart(saved.startOnBoot)
+            if (!result.ok) console.warn('[settings] could not change the startup setting:', result.reason)
+        }
 
-        // Configure auto-start behavior
-        app.setLoginItemSettings({
-            openAtLogin: settings.startOnBoot,
-            openAsHidden: true,
-            path: app.getPath('exe'),
-        })
+        // Durations and the schedule both feed the timer, so re-plan on any save.
+        startWorkTimer()
+
+        return saved
+    })
+
+    ipcMain.handle('check-for-updates', () => checkForUpdates(false))
+
+    ipcMain.handle('open-external', async (_event, url: unknown) => {
+        if (!isSafeExternalUrl(url)) {
+            console.warn('[ipc] refused to open an external URL with an unsupported scheme')
+            return false
+        }
+        await shell.openExternal(url)
+        return true
     })
 }

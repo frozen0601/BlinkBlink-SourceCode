@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta
+            http-equiv="Content-Security-Policy"
+            content="default-src 'none'; style-src 'self'; script-src 'self'; img-src 'self' data:"
+        />
+        <title>Break Reminder</title>
+        <link rel="stylesheet" href="reminder.css" />
+    </head>
+    <body>
+        <div class="toast" id="toast">
+            <button type="button" id="close" class="toast-close" aria-label="Dismiss reminder">
+                <svg viewBox="0 0 12 12" aria-hidden="true" focusable="false">
+                    <path d="M3 3l6 6M9 3l-6 6" />
+                </svg>
+            </button>
+            <div class="toast-body">
+                <div class="toast-icon" aria-hidden="true">
+                    <span class="eye"></span>
+                </div>
+                <div class="toast-text">
+                    <p class="toast-title">Break coming up</p>
+                    <p class="toast-subtitle" id="countdown">Starting shortly</p>
+                </div>
+            </div>
+            <div class="toast-actions">
+                <button type="button" id="start-now" class="ghost">Start now</button>
+                <button type="button" id="skip">Skip this break</button>
+            </div>
+            <div class="toast-progress"><div class="toast-progress-fill" id="progress"></div></div>
+        </div>
+        <script src="reminder.js"></script>
+    </body>
+</html>

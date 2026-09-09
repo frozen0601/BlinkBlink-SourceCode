@@ -1,0 +1,96 @@
+name: Test build
+
+# Builds real installers for all three platforms and attaches them to the
+# workflow run, without publishing anything or touching the releases
+# repository. Use it to try a build before cutting a release.
+#
+# Two ways to start one:
+#   - Actions -> Test build -> Run workflow (once this file is on the default
+#     branch; GitHub only lists workflow_dispatch workflows from there)
+#   - put [test-build] anywhere in a commit message and push
+#
+# Downloads appear under "Artifacts" at the bottom of the run summary page.
+# They are unsigned, so macOS needs the usual Gatekeeper step and Windows will
+# show a SmartScreen warning.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, 'claude/**']
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: '22'
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    # Opt in per commit: a full installer build on three runners is far too
+    # slow to run on every push, and a skipped job costs nothing.
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[test-build]')
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macOS (universal)
+            os: macos-latest
+            args: --mac dmg --universal
+            artifact: macos
+          - name: Windows
+            os: windows-latest
+            args: --win nsis --x64
+            artifact: windows
+          - name: Linux
+            os: ubuntu-latest
+            args: --linux AppImage deb rpm --x64
+            artifact: linux
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build installers
+        shell: bash
+        env:
+          # No signing certificate is used for a test build, and no macOS
+          # notification action buttons will appear as a result.
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+          BLINKBLINK_SIGNED: '0'
+        run: |
+          set -euo pipefail
+          npm run build
+          npx electron-builder ${{ matrix.args }} --publish never
+
+      - name: Report what was built
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo "### ${{ matrix.name }}"
+            echo
+            echo '| File | Size |'
+            echo '| --- | --- |'
+            find release -maxdepth 1 -type f \
+              \( -name '*.dmg' -o -name '*.exe' -o -name '*.AppImage' -o -name '*.deb' -o -name '*.rpm' \) \
+              -exec sh -c 'printf "| %s | %s |\n" "$(basename "$1")" "$(du -h "$1" | cut -f1)"' _ {} \;
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: blinkblink-${{ matrix.artifact }}-${{ github.sha }}
+          path: |
+            release/*.dmg
+            release/*.exe
+            release/*.AppImage
+            release/*.deb
+            release/*.rpm
+          if-no-files-found: error
+          retention-days: 14
