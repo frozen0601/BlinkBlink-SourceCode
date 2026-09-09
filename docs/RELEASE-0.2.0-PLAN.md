@@ -21,11 +21,9 @@ Delete this file once 0.2.0 is out.
       x64 and arm64 Electron binaries and merged them into
       `BlinkBlink-<version>-universal.dmg`. This config had never been run
       before; it is no longer taken on trust.
-- [ ] **Marketing site pull request** — written and verified, but the push is
-      blocked: the Claude GitHub App's installation on the `BlinkBlinkApp`
-      organisation is read-only. Apply the patch from a clone on your own
-      machine. See [`marketing-site-followup.md`](marketing-site-followup.md).
-      Not release-blocking — see step 1.
+- [x] **Marketing site change merged** — the Claude GitHub App was granted
+      access to the `BlinkBlinkApp` organisation, so it went in directly rather
+      than as a patch. Note it is merged but **not deployed** — see step 6.
 - [ ] **Review a test build**, then cut the release.
 
 ## What only you can do
@@ -98,16 +96,17 @@ by hand as before.
 
 ## Then, in order
 
-### 1. Merge the marketing site PR
+### 1. Marketing site — done, and deliberately not deployed yet
 
-The site reads the newest published release live, so it should understand the
-new release shape before one exists. It fixes the Linux download options, a bug
-where a prerelease could be shown as the current version, and the `xattr -c`
+Merged to `main` on the site repository: the Linux download options, a bug where
+a prerelease could be shown as the current version, and the `xattr -c`
 instruction.
 
-Not release-blocking on its own: 0.2.0 ships a single universal DMG, so nobody
-can be handed a build for the wrong processor even with the old page. Worth
-landing first anyway.
+Nothing here is release-blocking. 0.2.0 ships a single universal DMG, so nobody
+can be handed a build for the wrong processor even from the page as currently
+served — which is still the March 2025 build, because merging is not deploying
+on that repository. Step 6 covers the deploy, and it belongs after the release
+rather than before it.
 
 ### 2. Merge the app PR into `main` — done
 
@@ -170,10 +169,23 @@ option on the site; `electron-updater` needs it.
 
 ### 6. Afterwards
 
-- Download from the site on your Mac. It is reading the real release now.
+- Download from the site on your Mac. It is reading the real release now — the
+  version banner updates from the GitHub API without any deploy.
 - From an installed 0.1.2, use **Check for updates** and confirm it offers
   0.2.0 and downloads something that opens.
 - Check the Snap Store listing picked up the new revision.
+- **Deploy the site.** Now, not earlier. Its `gh-pages` branch still serves a
+  build from March 2025, so none of the download-page work is live yet:
+
+    ```bash
+    npm run deploy     # in the site clone; gh-pages -d dist
+    ```
+
+    It builds and publishes whatever is in your working tree, so check out the
+    branch you mean first. Deploying before the release would have pointed the
+    Linux button at an `.AppImage` that no published release carried yet.
+    `claude/download-platform-options` removes that trap along with the rest of
+    the redesign — worth merging first; see roadmap item 0.
 
 ---
 

@@ -16,7 +16,10 @@ Three repositories are involved:
 | `BlinkBlinkApp/BlinkBlinkApp.github.io` | Vue marketing site. Reads the newest non-draft release from the GitHub API at page load. |
 
 Because the site reads the releases repository live, publishing a release is
-what updates the download page. There is no site deploy step.
+what updates the version and the download links — no site deploy needed for
+that. Changes to the site's own code are different: GitHub Pages serves its
+`gh-pages` branch, which only moves when someone runs `npm run deploy` there.
+Merging to the site's `main` publishes nothing.
 
 ## Where things go
 

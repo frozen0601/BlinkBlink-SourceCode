@@ -5,19 +5,37 @@ value-for-effort, with an honest assessment of moving off Electron at the end.
 
 ## Near term
 
-### 0. Update the marketing site before the next release
+### 0. Marketing site — landed, but not yet deployed
 
-The download page picks assets with `assets.find(a => a.name.endsWith('.dmg'))`
-— first match wins, no architecture check — sends every Linux visitor to the
-Snap Store, can advertise a prerelease as the current version, and tells people
-to run `xattr -c`. See
-[`marketing-site-followup.md`](marketing-site-followup.md) for the patch — it
-lives in a separate repository, so it cannot be pushed from here.
+The download page used to pick assets with
+`assets.find(a => a.name.endsWith('.dmg'))` — first match wins, no architecture
+check — send every Linux visitor to the Snap Store, advertise a prerelease as
+the current version, and tell people to run `xattr -c`. All four are fixed and
+merged to `main` on the site repository.
 
-The `find` call is not immediately dangerous, because 0.2.0 ships a single
+The `find` call was never immediately dangerous, because 0.2.0 ships a single
 universal DMG precisely so that no client, old or new, can pick the wrong one.
-It becomes dangerous again the day macOS goes back to per-architecture builds,
-which is why the patch fixes it now.
+It would become dangerous again the day macOS goes back to per-architecture
+builds, which is why it was fixed ahead of that.
+
+Two things are still open.
+
+**The site has not been deployed since March 2025.** Its `gh-pages` branch —
+what GitHub Pages actually serves — still holds a build from before any of this.
+Release _data_ does update on its own, because the page reads the GitHub API at
+load; the page's own _code_ does not, and reaches visitors only through
+`npm run deploy` in that repository. Deploy **after** 0.2.0 is published, not
+before: the merged change points the Linux button at the `.AppImage`, and no
+published release carries one until 0.2.0 does.
+
+**A follow-up redesign is open and unmerged** on
+`claude/download-platform-options`. It gives all three platforms the same
+"Other options" disclosure instead of the row of small links the first pass left
+under the buttons, builds the options from the assets a release actually
+carries, and labels the macOS builds "Apple Silicon" and "Intel chip" rather
+than `arm64` and `x64`. It also makes the Linux button fall back to the Snap
+Store when a release has no `.AppImage`, so the ordering constraint above stops
+mattering. Worth merging before the deploy.
 
 ### 1. Make the macOS install less frightening — without paying Apple
 
