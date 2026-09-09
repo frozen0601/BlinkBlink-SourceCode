@@ -2,8 +2,24 @@
 
 Four changes are due in
 [`BlinkBlinkApp/BlinkBlinkApp.github.io`](https://github.com/BlinkBlinkApp/BlinkBlinkApp.github.io).
-It is a separate repository under a different owner, so it cannot be edited
-from a session rooted in this one — start a session there instead.
+
+**These are already implemented and verified** in
+[`marketing-site-download-fix.patch`](marketing-site-download-fix.patch)
+alongside this file. Apply it from a clone of the site:
+
+```bash
+git am /path/to/marketing-site-download-fix.patch
+```
+
+It passes `npm run type-check` and `npm run build` there, and the built page was
+rendered in both locales to confirm no raw i18n keys and the new rows in place.
+(`npm run lint` crashes on that repo before and after the change — an eslint
+9.15 / typescript-eslint version mismatch, left alone deliberately.)
+
+The rest of this file explains _why_ each change is needed, and stands as the
+brief if you would rather redo it than apply the patch. The site is a separate
+repository under a different owner, which is why the patch exists at all: this
+repository's sessions cannot get a push credential for it.
 
 The site is bilingual: **every new string needs an entry in both
 `src/i18n/locales/en.json` and `src/i18n/locales/zh.json`** (Traditional
