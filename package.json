@@ -26,7 +26,7 @@
   "build": {
     "appId": "blinkblink",
     "productName": "BlinkBlink",
-    "copyright": "Copyright © 2024-2026 Wei-Cheng Huang",
+    "copyright": "Copyright \u00a9 2024-2026 Wei-Cheng Huang",
     "asar": true,
     "files": [
       "dist/**/*",
@@ -70,13 +70,12 @@
       "artifactName": "${productName}-${version}-${arch}.${ext}"
     },
     "nsis": {
-      "oneClick": false,
+      "oneClick": true,
       "perMachine": false,
-      "allowToChangeInstallationDirectory": true,
-      "deleteAppDataOnUninstall": false,
-      "createDesktopShortcut": false,
+      "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "BlinkBlink"
+      "shortcutName": "BlinkBlink",
+      "deleteAppDataOnUninstall": false
     },
     "mac": {
       "target": [
