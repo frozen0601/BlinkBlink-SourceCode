@@ -17,23 +17,85 @@ lives in a separate repository, so it cannot be fixed from here.
 Until it is done, either publish one architecture per platform or point the
 buttons at the Releases page.
 
-### 1. macOS code signing — highest user-visible payoff
+### 1. Make the macOS install less frightening — without paying Apple
 
-Everything else about the release pipeline is automated now; this is the one
-remaining manual papercut, and it is a payment problem rather than an
-engineering one. $99/year for the Apple Developer Program buys:
+The project earns nothing and has ~167 daily users, so $99/year for the Apple
+Developer Program is not a sensible cost right now. There is no free substitute
+— notarisation, the Mac App Store and Squirrel.Mac auto-update all require the
+paid programme, and ad-hoc `codesign -s -` does not satisfy Gatekeeper for a
+downloaded app. So the goal is to make the unsigned path as painless as it can
+be, and let signing wait until it pays for itself.
 
-- No more `xattr -c /Applications/BlinkBlink.app` on the download page. That
-  instruction almost certainly costs installs — it asks a stranger to paste a
-  Terminal command to disarm a security warning.
-- Notification action buttons on macOS. The app currently detects that it is
-  unsigned and defaults to its own reminder toast, which is arguably nicer
-  anyway, but the system-notification option stays second class without it.
-- Squirrel.Mac auto-updates, replacing the "download the DMG and drag it
-  yourself" flow in `updater.ts`.
+**a. Publish a Homebrew tap.** This is the biggest win available for free. A
+personal tap has none of the notability requirements of homebrew-cask proper,
+and gives Mac users a one-line install _and_ upgrade path that never meets a
+Gatekeeper dialog:
 
-The release workflow already reads `MAC_CSC_LINK` and friends. Add the secrets
-and it signs; nothing else needs to change.
+```bash
+brew tap blinkblinkapp/tap
+brew install --cask --no-quarantine blinkblink
+brew upgrade --cask blinkblink          # updates, free, no Squirrel needed
+```
+
+It needs one small repository, `BlinkBlinkApp/homebrew-tap`, containing a cask
+file with the version, the DMG URLs and their SHA-256 sums. The release
+workflow can regenerate and commit that file on every release, so it stays in
+step by itself. Worth doing before anything else on this list.
+
+**b. Use the targeted quarantine command.** The download page currently says:
+
+```bash
+xattr -c /Applications/BlinkBlink.app        # clears every extended attribute
+```
+
+`xattr -d com.apple.quarantine /Applications/BlinkBlink.app` removes only the
+quarantine flag, which is all that is in the way. Same number of steps, much
+narrower blast radius, and easier to justify to a cautious user.
+
+**c. Offer the Finder route as well as the Terminal one.** Many people will not
+paste a shell command from a website, and are right not to. Gatekeeper can also
+be cleared entirely through the UI — open the app, let it be refused, then
+approve it in System Settings under Privacy & Security. Apple has moved this
+around between releases, so the page should describe it in words with a
+screenshot rather than promising an exact menu path.
+
+**What signing would buy, when it becomes affordable:** no Gatekeeper step at
+all, notification action buttons on macOS (the app detects it is unsigned and
+defaults to its own toast instead — arguably nicer, but the system-notification
+option stays second class), and real auto-updates in place of "download the DMG
+and drag it yourself". The release workflow already reads `MAC_CSC_LINK` and
+friends, so the day the certificate exists, adding the secrets is the whole
+change.
+
+### 1b. If you want the project to fund itself
+
+Not a recommendation to monetise — just the honest arithmetic, since the
+signing question keeps running into it.
+
+$99/year is $8.25/month. At 167 daily users that is roughly one person in
+seventy giving $1/month, or one in three hundred giving $5. For a free utility,
+donation conversion is usually somewhere between 0.1% and 1%, so this is
+plausible but not a certainty, and one donation so far suggests the current
+funnel is the problem rather than the audience.
+
+Cheap things that plausibly change it, roughly in order of effort:
+
+- **Add GitHub Sponsors.** It takes no platform fee, and a `FUNDING.yml` puts a
+  Sponsor button on the repository. The current links (Buy Me a Coffee, Ko-fi,
+  PayPal) are buried in a tray submenu and in the About window, which almost
+  nobody opens.
+- **Ask once, at the right moment.** The natural point is a streak milestone —
+  someone who has just been told they have taken 50 breaks is the most likely
+  person to give. A single dismissible prompt, never repeated, would be more
+  effective than three permanent menu entries and less annoying than either.
+- **Fix discoverability before conversion.** 167 daily users is small for what
+  this is. The Snap Store listing, a Homebrew tap, an /r/macapps post and a
+  Product Hunt launch are all free, and doubling the user base doubles whatever
+  the conversion rate turns out to be.
+
+If none of that works, staying unsigned indefinitely is a perfectly reasonable
+outcome — plenty of good open-source Mac apps ship exactly this way, and a
+Homebrew tap makes it nearly invisible.
 
 ### 2. Localisation
 
@@ -59,15 +121,7 @@ The store keeps only current and best streaks. A rolling log of break outcomes
 percentage, and "you skip most breaks on Thursday afternoons". Keep it local;
 "Privacy First" is on the marketing site and should stay true.
 
-### 5. Idle detection
-
-`powerMonitor.getSystemIdleTime()` is available and unused. A break that fires
-while you are away from the desk is a break wasted — and worse, it starts the
-next 20 minutes from the wrong point. Suppressing a break after N minutes of
-input idleness, and restarting the work interval on return, is maybe 30 lines
-and noticeably improves the core feature.
-
-### 6. Reverse-DNS application ID
+### 5. Reverse-DNS application ID
 
 `build.appId` is `blinkblink`. Convention is `com.blinkblink.app`, and macOS in
 particular keys notification permissions and login items off the bundle ID.

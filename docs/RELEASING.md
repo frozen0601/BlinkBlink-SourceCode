@@ -78,16 +78,18 @@ logs a warning rather than failing.
 | `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, `APPLE_TEAM_ID` | Notarisation                       |
 
 Without these the macOS build is unsigned — exactly what ships today — and the
-workflow says so in its log. Two things stay broken while it is unsigned:
+workflow says so in its log. Two things stay limited while it is unsigned:
 
-- Users must run `xattr -c /Applications/BlinkBlink.app` after installing, as
-  the site already instructs.
+- Users have to get past Gatekeeper once, either through System Settings or
+  with `xattr -d com.apple.quarantine /Applications/BlinkBlink.app`.
 - macOS will not draw the **Skip this break** button on a system notification.
   The app knows this (`isCodeSigned()` is baked in at build time) and defaults
   to its own reminder toast, which has the button on every platform.
 
-Signing needs the $99/year Apple Developer Program. It is the single biggest
-remaining papercut for macOS users; everything else about the release flow
+Signing needs the $99/year Apple Developer Program, which is not worth it at
+this project's current scale. See [`ROADMAP.md`](ROADMAP.md) for the free ways
+to soften the install — a Homebrew tap in particular — and the arithmetic on
+when signing starts to pay for itself. Everything else in the release flow
 works without it.
 
 ## Building locally

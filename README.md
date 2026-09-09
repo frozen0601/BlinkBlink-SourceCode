@@ -31,11 +31,17 @@ Download from [the website](https://blinkblinkapp.github.io/#download), or strai
 | macOS    | `.dmg` (Intel and Apple Silicon)                          |
 | Linux    | `.AppImage`, `.deb`, `.rpm`, or `snap install blinkblink` |
 
-macOS builds are currently unsigned, so after dragging the app to Applications:
+macOS builds are unsigned (the Apple Developer Program costs $99/year, which
+this project does not yet earn), so macOS quarantines them. Either approve the
+app in **System Settings → Privacy & Security** after the first launch is
+refused, or clear the quarantine flag directly:
 
 ```bash
-xattr -c /Applications/BlinkBlink.app
+xattr -d com.apple.quarantine /Applications/BlinkBlink.app
 ```
+
+That removes only the quarantine attribute, rather than every extended
+attribute as the older `xattr -c` instruction did.
 
 ## 🛠️ Development
 
