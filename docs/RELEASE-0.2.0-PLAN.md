@@ -11,6 +11,16 @@ Delete this file once 0.2.0 is out.
 
 ---
 
+## Progress
+
+- [x] **App pull request merged into `main`** — done, as
+      [#1](https://github.com/frozen0601/BlinkBlink-SourceCode/pull/1).
+- [ ] **`RELEASES_TOKEN` secret** — below. The one thing nobody but you can do.
+- [ ] **Marketing site pull request** — the change is written and verified;
+      only the push is outstanding. See
+      [`marketing-site-followup.md`](marketing-site-followup.md).
+- [ ] **Review a test build**, then cut the release.
+
 ## What only you can do
 
 Two links, about two minutes. Everything else is automated.
@@ -29,6 +39,12 @@ the `repo` scope, which is what the release needs.
    simplest; 1 year means redoing this once a year.
 2. Scroll down, click **Generate token**.
 3. Copy the token. It is shown once.
+
+The scope has to be `repo` rather than something narrower because the release
+publishes to `BlinkBlink-Releases` — a _different_ repository from this one, so
+the built-in `GITHUB_TOKEN` cannot reach it — and the version-bump workflow
+pushes a tag back here. A push made with `GITHUB_TOKEN` deliberately does not
+trigger further workflows, so a tag pushed with it would never start a release.
 
 <details>
 <summary>If you would rather use a fine-grained token</summary>
@@ -78,19 +94,26 @@ by hand as before.
 ### 1. Merge the marketing site PR
 
 The site reads the newest published release live, so it should understand the
-new release shape before one exists. It also fixes the Linux download options,
-a bug where a prerelease could be shown as the current version, and the
-`xattr -c` instruction.
+new release shape before one exists. It fixes the Linux download options, a bug
+where a prerelease could be shown as the current version, and the `xattr -c`
+instruction.
 
-### 2. Merge the app PR into `main`
+Not release-blocking on its own: 0.2.0 ships a single universal DMG, so nobody
+can be handed a build for the wrong processor even with the old page. Worth
+landing first anyway.
+
+### 2. Merge the app PR into `main` — done
 
 Two things only work from the default branch: the **Run workflow** button for
-Test build, and the **Bump version and tag** workflow.
+Test build, and the **Bump version and tag** workflow. Both are available now.
 
 ### 3. Take a final test build and install it over your current app
 
 Actions → **Test build** → **Run workflow**. When it finishes, download the
 macOS artifact from the run summary.
+
+(`[test-build]` anywhere in a commit message on `main` or a `claude/**` branch
+starts the same build, which is how one gets run without the button.)
 
 Install it **over your existing 0.1.2**, not onto a clean machine — that is the
 path every real user takes, and the one that exercises the settings migration.
@@ -98,8 +121,18 @@ Then check:
 
 - Your settings and streaks survived. The store migrates on first launch; a
   lost streak would be a migration bug worth catching now.
-- A full cycle: reminder toast → break overlay → summary. The blur should look
-  right and the countdown bar should animate.
+- A full cycle: reminder → break overlay → summary. The blur should look right
+  and the progress bar along the bottom of the break screen should animate.
+- **The reminder now arrives as a system notification by default.** On an
+  unsigned build macOS will not draw its "Skip this break" button — that is
+  expected and documented. If no notification appears at all, check Focus / Do
+  Not Disturb and notification permission for BlinkBlink; suppression is
+  undetectable from inside the app, and Settings → Reminder style → _BlinkBlink
+  toast_ is the fallback.
+- Switch to the toast once to check its new **×** button: closing it should
+  hide the reminder without cancelling the break behind it.
+- The break screen should show only "Take A Break", the eyes, and Skip — no
+  subtitle, no counting seconds.
 - Leave the machine idle past five minutes and confirm the break waits for you
   rather than firing at an empty chair.
 - Settings opens and nothing is disabled that should not be.
