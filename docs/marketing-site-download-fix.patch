@@ -1,4 +1,4 @@
-From ebd56dcd9228f67682a51ff996c4950db04ea52e Mon Sep 17 00:00:00 2001
+From 91932fae3fa0d3e7c62fd4c3ae31eb4ae566befa Mon Sep 17 00:00:00 2001
 From: Claude <noreply@anthropic.com>
 Date: Wed, 9 Sep 2026 14:55:44 +0000
 Subject: [PATCH] Serve the right macOS build, and widen the Linux options
@@ -154,7 +154,7 @@ index d056ae2..3a3b256 100644
    setTimeout(() => {
      copied.value = false
 diff --git a/src/components/sections/Download.vue b/src/components/sections/Download.vue
-index 290d70e..37078a4 100644
+index 290d70e..7d603a9 100644
 --- a/src/components/sections/Download.vue
 +++ b/src/components/sections/Download.vue
 @@ -47,16 +47,37 @@
@@ -346,7 +346,7 @@ index 290d70e..37078a4 100644
 + * simply finding a file of the right type.
 + */
 +function pickAsset(assets: GitHubAsset[], extension: string, arch: Arch): GitHubAsset | undefined {
-+  const candidates = assets.filter((a) => a.name.toLowerCase().endsWith(extension))
++  const candidates = assets.filter((a) => a.name.toLowerCase().endsWith(extension.toLowerCase()))
 +  return (
 +    candidates.find((a) => new RegExp(`[-_.]${arch}\\b`, 'i').test(a.name)) ??
 +    // A release published before architectures appeared in the filenames.
