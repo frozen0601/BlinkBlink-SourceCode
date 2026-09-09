@@ -17,9 +17,33 @@ rendered in both locales to confirm no raw i18n keys and the new rows in place.
 9.15 / typescript-eslint version mismatch, left alone deliberately.)
 
 The rest of this file explains _why_ each change is needed, and stands as the
-brief if you would rather redo it than apply the patch. The site is a separate
-repository under a different owner, which is why the patch exists at all: this
-repository's sessions cannot get a push credential for it.
+brief if you would rather redo it than apply the patch.
+
+## Why this is a patch rather than a pull request
+
+The site is a separate repository under a different owner, and three attempts
+from Claude Code sessions all failed at the same place — the push, never the
+work. The third attempt produced the precise diagnosis:
+
+> push blocked by 403 (read-only installation)
+
+So it is not a token or an authorisation link. **The Claude GitHub App's
+installation on the `BlinkBlinkApp` organisation is read-only.** Reconnecting a
+personal GitHub authorisation does not change it, because the limit is on the
+app installation for that organisation rather than on the user.
+
+Two ways out, either of which lands the change:
+
+1. **Apply the patch from a clone on your own machine** and push it there. Your
+   own git credentials have nothing to do with the app installation, so this
+   route has no unknowns. Fastest, and the recommended one.
+2. **Grant the Claude GitHub App write access** (Contents and Pull requests) to
+   `BlinkBlinkApp/BlinkBlinkApp.github.io` in that organisation's GitHub
+   settings. Worth doing only if you want future sessions to work on the site
+   directly; it is not needed for this change.
+
+Everything up to the push is already verified, so route 1 is `git am` plus a
+push.
 
 The site is bilingual: **every new string needs an entry in both
 `src/i18n/locales/en.json` and `src/i18n/locales/zh.json`** (Traditional

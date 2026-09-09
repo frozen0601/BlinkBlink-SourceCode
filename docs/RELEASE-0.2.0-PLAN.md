@@ -13,12 +13,19 @@ Delete this file once 0.2.0 is out.
 
 ## Progress
 
-- [x] **App pull request merged into `main`** — done, as
-      [#1](https://github.com/frozen0601/BlinkBlink-SourceCode/pull/1).
-- [ ] **`RELEASES_TOKEN` secret** — below. The one thing nobody but you can do.
-- [ ] **Marketing site pull request** — the change is written and verified;
-      only the push is outstanding. See
-      [`marketing-site-followup.md`](marketing-site-followup.md).
+- [x] **App pull request merged into `main`** — [#1](https://github.com/frozen0601/BlinkBlink-SourceCode/pull/1),
+      plus [#6](https://github.com/frozen0601/BlinkBlink-SourceCode/pull/6) for a
+      lockfile that made every `npm ci` fail.
+- [x] **`RELEASES_TOKEN` secret** — set up.
+- [x] **The universal macOS build proven** — electron-builder pulled both the
+      x64 and arm64 Electron binaries and merged them into
+      `BlinkBlink-<version>-universal.dmg`. This config had never been run
+      before; it is no longer taken on trust.
+- [ ] **Marketing site pull request** — written and verified, but the push is
+      blocked: the Claude GitHub App's installation on the `BlinkBlinkApp`
+      organisation is read-only. Apply the patch from a clone on your own
+      machine. See [`marketing-site-followup.md`](marketing-site-followup.md).
+      Not release-blocking — see step 1.
 - [ ] **Review a test build**, then cut the release.
 
 ## What only you can do
