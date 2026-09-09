@@ -235,26 +235,6 @@ button,
     user-select: none;
 }
 
-/*
- * Viewport-relative type needs a floor and a ceiling: `0.8vw` was unreadable
- * on a 1366px laptop and oversized on an ultrawide.
- */
-.subtitle {
-    margin: 0;
-    font-size: clamp(14px, 1.4vw, 22px);
-    color: var(--text-secondary);
-}
-
-.countdown-label {
-    margin-top: var(--spacing-md);
-    font-size: clamp(28px, 5vw, 72px);
-    font-variant-numeric: tabular-nums;
-    font-weight: 300;
-    letter-spacing: -0.02em;
-    color: var(--text-secondary);
-    min-height: 1.2em;
-}
-
 #skip-button {
     position: absolute;
     bottom: 5vh;

@@ -103,15 +103,31 @@ Two platform notes worth keeping in mind when touching this:
 
 ## Reminders
 
+The default is the OS notification centre. It looks native, stacks and
+dismisses with everything else, and does not paint a window over what the user
+is doing — which for something firing every twenty minutes matters more than
+the feature list.
+
 macOS renders notification action buttons only for an app that is both code
 signed and declares `NSUserNotificationAlertStyle: alert`. BlinkBlink ships
-unsigned, so its "Skip this break" button could never appear there, and
-failures were silent.
+unsigned, so the "Skip this break" button is not drawn there. Confirmed on a
+real unsigned build: the notification itself is delivered normally, only the
+button is missing, and the settings window says so on macOS rather than leaving
+it to be found.
 
-The default is therefore BlinkBlink's own toast window, which behaves the same
-on all three platforms and can always offer its actions. `reminderStyle:
-'system'` opts into the OS notification centre, and falls back to the toast if
-the platform cannot deliver.
+`reminderStyle: 'in-app'` switches to BlinkBlink's own toast window, which
+behaves the same on all three platforms and always carries its actions. The
+system path also falls back to the toast when the platform reports it cannot
+deliver at all.
+
+The one failure neither path can detect is suppression — Focus, Do Not Disturb,
+or notification permission denied. The OS reports the notification as shown and
+draws nothing; the toast is the answer for anyone in that position.
+
+The toast dismisses with a button rather than a key. It is deliberately
+`focusable: false` so it cannot steal what is being typed, and a window that
+cannot take focus never receives key events, so an Escape handler there would
+never fire.
 
 ## Settings and storage
 

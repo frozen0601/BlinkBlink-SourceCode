@@ -18,7 +18,7 @@
     --button-bg: rgba(0, 0, 0, 0.06);
     --button-bg-hover: rgba(0, 0, 0, 0.11);
     --progress-track: rgba(0, 0, 0, 0.08);
-    --radius: 14px;
+    --radius: 16px;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -58,9 +58,10 @@ body {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    gap: 10px;
-    padding: 14px 16px 12px;
+    gap: 12px;
+    padding: 15px 16px 14px;
     position: relative;
+    overflow: hidden;
     background: var(--toast-bg);
     border: 1px solid var(--toast-border);
     border-radius: var(--radius);
@@ -83,10 +84,50 @@ body.leaving .toast {
     transform: translateY(-6px);
 }
 
+/*
+ * The dismiss affordance. It has to be a visible control: the toast window is
+ * `focusable: false` so it never receives key events, which rules out Escape.
+ * Kept quiet until pointed at, the way a notification's close button behaves.
+ */
+.toast-close {
+    position: absolute;
+    top: 7px;
+    right: 7px;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--text-secondary);
+    opacity: 0.55;
+    transition:
+        opacity 0.12s ease-out,
+        background 0.12s ease-out;
+}
+
+.toast-close svg {
+    width: 12px;
+    height: 12px;
+    stroke: currentColor;
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    fill: none;
+}
+
+.toast-close:hover {
+    opacity: 1;
+    background: var(--button-bg);
+}
+
 .toast-body {
     display: flex;
     align-items: center;
     gap: 12px;
+    /* Clear of the close button, so a long title never slides under it. */
+    padding-right: 18px;
 }
 
 .toast-icon {
@@ -134,6 +175,9 @@ body.leaving .toast {
     margin: 2px 0 0;
     font-size: 12px;
     color: var(--text-secondary);
+    /* The countdown rewrites this every 200ms; without fixed-width digits the
+       text visibly jitters as the seconds tick down. */
+    font-variant-numeric: tabular-nums;
 }
 
 .toast-actions {

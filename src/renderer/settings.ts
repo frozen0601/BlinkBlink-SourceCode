@@ -220,7 +220,7 @@ function collectSettings(): Partial<Settings> {
         enableAutoDismiss: input('enableAutoDismiss')?.checked ?? true,
         summaryDuration: numberValue('summaryDuration', 5) * 1000,
         enableBreakNotification: input('enableBreakNotification')?.checked ?? true,
-        reminderStyle: (select('reminderStyle')?.value as ReminderStyle) ?? 'in-app',
+        reminderStyle: (select('reminderStyle')?.value as ReminderStyle) ?? 'system',
         breakPreNotificationOffset: numberValue('breakPreNotificationOffset', 30) * 1000,
         skipBreakWhenIdle: input('skipBreakWhenIdle')?.checked ?? true,
         idleThreshold: numberValue('idleThreshold', 5) * 60 * 1000,

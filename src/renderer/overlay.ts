@@ -49,7 +49,6 @@ class OverlayUI {
     readonly #skipButton = document.getElementById('skip-button')
     readonly #dismissButton = document.getElementById('dismiss-button')
     readonly #warningText = document.getElementById('warning-text')
-    readonly #countdownLabel = document.getElementById('countdown-label')
 
     constructor() {
         this.#applyBackdrop()
@@ -91,8 +90,13 @@ class OverlayUI {
 
     #bindMainProcessEvents(): void {
         window.api.onShowView((view) => this.#setView(view === View.Summary ? View.Summary : View.Break))
+        // `countdown-update` is deliberately not subscribed to. The break used
+        // to show the remaining seconds as a large number, which reads as a
+        // stopwatch to watch rather than a cue to look away. The bar along the
+        // bottom edge carries the same information without asking for
+        // attention. The main process still runs the per-second interval; it is
+        // what ends the break.
         window.api.onStartCountdown((duration) => this.#startProgress(duration))
-        window.api.onCountdownUpdate((seconds) => this.#updateCountdown(seconds))
     }
 
     #setView(view: ViewName): void {
@@ -117,18 +121,6 @@ class OverlayUI {
         requestAnimationFrame(() => {
             if (this.#progressBar) this.#progressBar.style.transform = 'scaleX(1)'
         })
-    }
-
-    /**
-     * The countdown is display only.
-     *
-     * The main process owns the transition out of each view; a renderer that
-     * also acted on reaching zero produced two dismissals on a multi-monitor
-     * setup.
-     */
-    #updateCountdown(seconds: number): void {
-        if (!this.#countdownLabel) return
-        this.#countdownLabel.textContent = seconds > 0 ? String(seconds) : ''
     }
 
     async #handleSkipClick(): Promise<void> {

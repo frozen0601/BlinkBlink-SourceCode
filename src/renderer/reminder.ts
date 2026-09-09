@@ -18,6 +18,7 @@ const countdownEl = document.getElementById('countdown') as HTMLElement | null
 const progressEl = document.getElementById('progress') as HTMLElement | null
 const skipButton = document.getElementById('skip') as HTMLButtonElement | null
 const startNowButton = document.getElementById('start-now') as HTMLButtonElement | null
+const closeButton = document.getElementById('close') as HTMLButtonElement | null
 
 const shownAt = Date.now()
 const totalMs = Number.isFinite(breakAt) && breakAt > shownAt ? breakAt - shownAt : 0
@@ -54,8 +55,15 @@ function dismissWith(action: () => void): void {
 skipButton?.addEventListener('click', () => dismissWith(() => window.api.reminderSkip()))
 startNowButton?.addEventListener('click', () => dismissWith(() => window.api.reminderStartNow()))
 
-document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') dismissWith(() => window.api.reminderDismiss())
-})
+/*
+ * Dismissing has to be a button, not a key.
+ *
+ * The toast window is deliberately `focusable: false` so it cannot steal what
+ * the user is typing into, which also means it never receives key events — an
+ * Escape handler here would never fire. Closing the toast only hides the
+ * reminder; the break itself still arrives on time, which is what separates
+ * this from Skip.
+ */
+closeButton?.addEventListener('click', () => dismissWith(() => window.api.reminderDismiss()))
 
 requestAnimationFrame(() => document.body.classList.add('ready'))

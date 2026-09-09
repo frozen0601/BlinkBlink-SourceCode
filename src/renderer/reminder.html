@@ -11,6 +11,11 @@
     </head>
     <body>
         <div class="toast" id="toast">
+            <button type="button" id="close" class="toast-close" aria-label="Dismiss reminder">
+                <svg viewBox="0 0 12 12" aria-hidden="true" focusable="false">
+                    <path d="M3 3l6 6M9 3l-6 6" />
+                </svg>
+            </button>
             <div class="toast-body">
                 <div class="toast-icon" aria-hidden="true">
                     <span class="eye"></span>
@@ -22,7 +27,7 @@
             </div>
             <div class="toast-actions">
                 <button type="button" id="start-now" class="ghost">Start now</button>
-                <button type="button" id="skip">Skip</button>
+                <button type="button" id="skip">Skip this break</button>
             </div>
             <div class="toast-progress"><div class="toast-progress-fill" id="progress"></div></div>
         </div>

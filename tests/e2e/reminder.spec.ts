@@ -36,6 +36,40 @@ test('no reminder is shown when reminders are switched off', async () => {
     expect(launched.app.windows().filter((window) => window.url().includes('reminder.html'))).toHaveLength(0)
 })
 
+/**
+ * Dismissing has to be a visible control. The toast window is `focusable: false`
+ * so it never receives key events, which means the Escape handler this replaced
+ * could never have fired.
+ */
+test('the reminder can be dismissed with its close button', async () => {
+    // The break lands 60s in — `workDuration` is clamped to a one-minute floor,
+    // so it cannot be brought closer — and the default per-test budget is 60s.
+    test.setTimeout(120_000)
+
+    launched = await launchApp({
+        settings: {
+            // Reminder at ~5s, break at ~60s.
+            workDuration: 60_000,
+            breakPreNotificationOffset: 55_000,
+            enableBreakNotification: true,
+            reminderStyle: 'in-app',
+            // Nothing types under Xvfb, so the idle deferral would otherwise
+            // hold the break back and this would time out for the wrong reason.
+            skipBreakWhenIdle: false,
+        },
+    })
+
+    const toast = await waitForWindow(launched.app, 'reminder.html', 30_000)
+    await expect(toast.locator('#close')).toBeVisible()
+    await toast.locator('#close').click()
+
+    await expect.poll(() => toast.isClosed(), { timeout: 10_000 }).toBe(true)
+
+    // Dismissing hides the reminder; it must not cancel the break behind it.
+    const overlay = await waitForWindow(launched.app, 'overlay.html', 75_000)
+    await expect(overlay.locator('#break-view')).toBeVisible()
+})
+
 test('“Start now” on the reminder opens the break overlay', async () => {
     launched = await launchApp({
         settings: { workDuration: 60_000, breakPreNotificationOffset: 55_000, enableBreakNotification: true, reminderStyle: 'in-app' },

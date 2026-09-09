@@ -41,7 +41,12 @@ export const DEFAULT_SCHEDULE: WeeklySchedule = {
 
 export const DEFAULT_SETTINGS: Settings = {
     enableBreakNotification: true,
-    reminderStyle: 'in-app',
+    // The OS notification centre is the default: it looks native, it stacks and
+    // dismisses with everything else, and it does not paint a window over what
+    // the user is doing. The cost on an unsigned macOS build is the "Skip this
+    // break" button, which the OS will not draw — `in-app` is the setting for
+    // anyone who wants that button back.
+    reminderStyle: 'system',
     enableSoundNotification: true,
     notificationSound: 'system',
     breakPreNotificationOffset: 30 * SECOND,

@@ -1,17 +1,27 @@
 /**
  * The pre-break reminder.
  *
- * Why this is not simply an OS notification: macOS only renders notification
- * action buttons for an app that is both code signed *and* declares
- * `NSUserNotificationAlertStyle: alert`. BlinkBlink ships unsigned, so on macOS
- * the "Skip this break" button silently never appeared, and depending on the
- * user's Focus/Do-Not-Disturb settings the notification itself may be
- * suppressed too — leaving the feature looking broken with nothing in the logs.
+ * The default is the OS notification centre. It looks native, it stacks and
+ * dismisses with every other notification, and it does not paint a window over
+ * what the user is doing — for a reminder that fires every twenty minutes, that
+ * matters more than the feature list.
  *
- * So the default is BlinkBlink's own toast window, which behaves identically on
- * all three platforms and can always offer its actions. Users who prefer their
- * notification centre can switch `reminderStyle` to `system`, and if that path
- * fails at runtime it falls back to the toast rather than showing nothing.
+ * What it costs on macOS: notification action buttons are only rendered for an
+ * app that is both code signed *and* declares `NSUserNotificationAlertStyle:
+ * alert`. BlinkBlink ships unsigned, so `canShowNotificationActions()` is false
+ * there and the notification appears without its "Skip this break" button.
+ * Verified on a real unsigned build: the notification itself is delivered
+ * normally, only the button is missing. The settings window says so on macOS
+ * rather than leaving it to be discovered.
+ *
+ * The one failure this path cannot detect is suppression — Focus, Do Not
+ * Disturb, or notification permission denied for the app. The OS reports the
+ * notification as shown and draws nothing. Anyone who hits that, or who wants
+ * the Skip button, can set `reminderStyle` to `in-app` for BlinkBlink's own
+ * toast, which behaves identically on all three platforms and always carries
+ * its actions. `showSystemNotification` also returns false when the platform
+ * cannot deliver at all, so that case falls back to the toast automatically
+ * rather than showing nothing.
  */
 
 import { BrowserWindow, Notification, screen } from 'electron'
