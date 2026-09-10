@@ -43,26 +43,16 @@
                     </div>
                 </div>
 
-                <h2 class="section-title">While You're Away</h2>
                 <div class="setting-item" data-setting="skipBreakWhenIdle">
                     <div class="setting-item-text">
-                        <span class="setting-label">Hold breaks while away</span>
+                        <span class="setting-label">Skip breaks when you're away</span>
                         <span class="helper-text">
-                            Wait for you to come back instead of showing a break to an empty chair, then start a fresh work interval.
+                            Waits for you to come back and restarts the clock, so your next break isn't early. Turn this off if you often
+                            read or watch things without typing — BlinkBlink can only tell you're there from your keyboard and mouse.
                         </span>
                     </div>
                     <div class="setting-control">
                         <input type="checkbox" id="skipBreakWhenIdle" />
-                    </div>
-                </div>
-                <div class="setting-item" data-setting="idleThreshold">
-                    <div class="setting-item-text">
-                        <span class="setting-label">Count as away after</span>
-                        <span class="helper-text">How long without keyboard or mouse activity counts as being away (1-60 minutes).</span>
-                    </div>
-                    <div class="setting-control">
-                        <input type="number" id="idleThreshold" min="1" max="60" step="1" />
-                        <span class="input-unit">min</span>
                     </div>
                 </div>
 
@@ -182,8 +172,8 @@
                     <div class="setting-item-text">
                         <span class="setting-label">Anonymous usage data</span>
                         <span class="helper-text"
-                            >Sends one event when BlinkBlink starts: your platform, app version and settings. Never what you do during a
-                            break, and never anything that identifies you.</span
+                            >Shares your app version and operating system to help improve BlinkBlink. Nothing personal, and nothing that
+                            could identify you.</span
                         >
                     </div>
                     <div class="setting-control">

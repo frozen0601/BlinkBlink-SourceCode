@@ -11,6 +11,17 @@ import {
 } from '../src/core/settings'
 
 describe('normalizeSettings', () => {
+    it('keeps a stored value the incoming payload leaves out', () => {
+        // The settings window no longer has an idleThreshold control, so its
+        // save payload omits the key entirely. Normalising against the stored
+        // settings is what stops that from resetting a customised value.
+        const stored = { ...DEFAULT_SETTINGS, idleThreshold: 12 * 60_000 }
+        const payload: Record<string, unknown> = { ...DEFAULT_SETTINGS }
+        delete payload.idleThreshold
+
+        expect(normalizeSettings(payload, stored).idleThreshold).toBe(12 * 60_000)
+    })
+
     it('returns the defaults for junk input', () => {
         expect(normalizeSettings(null)).toEqual(DEFAULT_SETTINGS)
         expect(normalizeSettings('nope')).toEqual(DEFAULT_SETTINGS)
