@@ -1,6 +1,7 @@
 /** Entry point: process-level concerns only. Wiring lives in `appSetup`. */
 
 import { app } from 'electron'
+import { setupAnalytics } from './analytics'
 import { CLI_HELP, parseArgv } from './cli'
 import { registerIpcHandlers } from './ipcHandlers'
 import { setupApp, teardownApp } from './appSetup'
@@ -34,6 +35,13 @@ if (process.argv.includes('--help')) {
     })
 
     registerIpcHandlers()
+
+    // Before `whenReady`, and not in `setupApp` with everything else: the
+    // Aptabase SDK refuses to start once the app is ready, because it registers
+    // a privileged scheme that has to be declared beforehand. Called too late it
+    // disables itself with a warning, and `trackEvent` then queues events
+    // forever while still resolving as though it had sent them.
+    setupAnalytics()
 
     app.whenReady().then(
         () => {

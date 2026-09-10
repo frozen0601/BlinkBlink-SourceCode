@@ -72,11 +72,11 @@ export function reportAppStarted(settings: Settings, firstRun: boolean): void {
     void initialized
         .then((ok) => {
             if (!ok) return
-            return trackEvent(event.name, event.props).then(() => {
-                // Run the app from a terminal to confirm the pipe end to end;
-                // there is nothing else to look at until Aptabase aggregates.
-                console.info(`[analytics] sent ${event.name}`)
-            })
+            // Resolving proves nothing: with no app key the SDK queues the
+            // event and resolves anyway. A genuine failure shows up as an
+            // "Aptabase:" warning on stderr, so that is what to look for when
+            // running from a terminal — not this line.
+            return trackEvent(event.name, event.props).then(() => console.info(`[analytics] ${event.name} handed to the SDK`))
         })
         .catch((error) => console.error('[analytics] failed to send event:', error))
 }

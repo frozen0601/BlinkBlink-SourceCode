@@ -7,7 +7,7 @@ import { registerController } from './controller'
 import { isLinux, isMac, isWindows } from './platform'
 import { closeReminder, registerReminder } from './reminder'
 import { ensureUserId, getSettings, hasCompletedFirstRun } from './store'
-import { reportAppStarted, setupAnalytics } from './analytics'
+import { reportAppStarted } from './analytics'
 import { startTimer, startWorkTimer, stopTimer } from './timer'
 import { createTray, destroyTray, updateTooltip } from './tray'
 import { showTutorial } from './tutorial'
@@ -106,10 +106,8 @@ export function setupApp(): void {
     startAutoUpdateTimer()
     bindPowerEvents()
 
-    // After the tray and timer are up: a launch that dies before this point is
-    // not a launch worth counting, and telemetry should never delay the app
-    // becoming usable.
-    setupAnalytics()
+    // The SDK was started before `whenReady` in main.ts; this only sends. A
+    // launch that dies before this point is not a launch worth counting.
     reportAppStarted(settings, firstRun)
 
     if (firstRun) showTutorial()
