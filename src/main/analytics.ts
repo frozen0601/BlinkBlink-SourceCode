@@ -19,7 +19,14 @@ import { Settings } from '../core/types'
 
 const APP_KEY = process.env.APTABASE_API_KEY ?? ''
 
-let ready = false
+/**
+ * Resolves to whether the SDK came up, never rejects.
+ *
+ * `initialize` is async, so an event sent immediately after calling it races
+ * initialisation and is dropped. Holding the promise is what lets
+ * `reportAppStarted` wait for it without making app startup wait for either.
+ */
+let initialized: Promise<boolean> | null = null
 
 /**
  * Starts the SDK, if there is a key to start it with.
@@ -30,26 +37,29 @@ let ready = false
  * require a restart to take effect.
  */
 export function setupAnalytics(): void {
-    if (ready || !APP_KEY) return
+    if (initialized || !APP_KEY) return
 
-    try {
-        initialize(APP_KEY)
-        ready = true
-    } catch (error) {
-        // Telemetry must never be the reason the app fails to start.
-        console.error('[analytics] failed to initialise:', error)
-    }
+    initialized = initialize(APP_KEY).then(
+        () => true,
+        (error) => {
+            // Telemetry must never be the reason the app fails to start.
+            console.error('[analytics] failed to initialise:', error)
+            return false
+        }
+    )
 }
 
 /**
  * Sends the one event per launch described in `core/analytics`.
  *
- * Every failure here is swallowed deliberately. An analytics outage, a blocked
- * domain or a machine with no network are all normal states for a desktop app,
- * and none of them is worth surfacing to someone who just wants a break timer.
+ * Fire-and-forget by design, and every failure is swallowed deliberately: an
+ * analytics outage, a blocked domain or a machine with no network are all
+ * normal states for a desktop app, and none is worth surfacing to someone who
+ * just wants a break timer. Both SDK calls return promises, so the swallowing
+ * has to happen in `catch` handlers rather than a `try` block.
  */
 export function reportAppStarted(settings: Settings, firstRun: boolean): void {
-    if (!ready) return
+    if (!initialized) return
 
     const event = buildAppStartedEvent({
         settings,
@@ -59,9 +69,14 @@ export function reportAppStarted(settings: Settings, firstRun: boolean): void {
     })
     if (!event) return
 
-    try {
-        trackEvent(event.name, event.props)
-    } catch (error) {
-        console.error('[analytics] failed to send event:', error)
-    }
+    void initialized
+        .then((ok) => {
+            if (!ok) return
+            return trackEvent(event.name, event.props).then(() => {
+                // Run the app from a terminal to confirm the pipe end to end;
+                // there is nothing else to look at until Aptabase aggregates.
+                console.info(`[analytics] sent ${event.name}`)
+            })
+        })
+        .catch((error) => console.error('[analytics] failed to send event:', error))
 }
