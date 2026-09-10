@@ -28,6 +28,7 @@
     "productName": "BlinkBlink",
     "copyright": "Copyright © 2024-2026 Wei-Cheng Huang",
     "asar": true,
+    "electronLanguages": ["en-US"],
     "files": [
       "dist/**/*",
       "package.json",
