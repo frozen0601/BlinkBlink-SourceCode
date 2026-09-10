@@ -176,6 +176,16 @@ jobs:
           CSC_IDENTITY_AUTO_DISCOVERY: ${{ matrix.artifact == 'macos' && steps.signing.outputs.signed == '1' && 'true' || 'false' }}
         run: |
           set -euo pipefail
+
+          # An unset secret still arrives as a set-but-empty variable, and
+          # electron-builder reads an empty CSC_LINK as a certificate *path*:
+          # it resolves to the project directory and dies with
+          # "<project dir> not a file". Unsetting them is the only way to say
+          # "there is no certificate" on an unsigned build.
+          if [ "${BLINKBLINK_SIGNED}" != "1" ]; then
+            unset CSC_LINK CSC_KEY_PASSWORD APPLE_ID APPLE_APP_SPECIFIC_PASSWORD APPLE_TEAM_ID
+          fi
+
           npm run build
           npx electron-builder ${{ matrix.builder_args }} --publish always
 

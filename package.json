@@ -179,6 +179,9 @@
     "snap": {
       "grade": "stable",
       "confinement": "strict",
+      "publish": [
+        "github"
+      ],
       "plugs": [
         "default",
         "desktop",

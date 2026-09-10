@@ -74,6 +74,12 @@ Paste the output as the secret value. Without it the snap is still built and
 attached to the release, it just is not pushed to the store, and the workflow
 logs a warning rather than failing.
 
+That is only true because `build.snap.publish` is pinned to `github`. Left at
+its default, electron-builder publishes the snap to the store itself as part of
+the build, and with no credentials it fails the whole Linux job — which is
+exactly what happened on the first attempt at 0.2.0. The store push belongs to
+the `publish-snap` job, which checks for the secret first.
+
 ### macOS signing — optional
 
 | Secret                                                     | What it is                         |
