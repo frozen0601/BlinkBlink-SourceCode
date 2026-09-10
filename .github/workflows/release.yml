@@ -81,13 +81,18 @@ jobs:
           set -euo pipefail
           API="https://api.github.com/repos/${RELEASES_OWNER}/${RELEASES_REPO}"
 
-          status=$(curl -sS -o /tmp/existing.json -w '%{http_code}' \
+          # Listed rather than fetched by tag: GET /releases/tags/{tag} only
+          # ever returns *published* releases, and every release here is a
+          # draft until finalize undrafts it. Asking by tag would report "not
+          # found" for a draft that exists and create a second one beside it.
+          EXISTING=$(curl -sS \
             -H "Authorization: Bearer ${GH_TOKEN}" \
             -H "Accept: application/vnd.github+json" \
-            "${API}/releases/tags/${TAG}")
+            "${API}/releases?per_page=100" \
+            | jq -r --arg tag "$TAG" 'map(select(.tag_name == $tag)) | .[0].id // empty')
 
-          if [ "$status" = "200" ]; then
-            echo "Release ${TAG} already exists; build jobs will upload into it."
+          if [ -n "$EXISTING" ]; then
+            echo "Release ${TAG} already exists (id ${EXISTING}); build jobs will upload into it."
             exit 0
           fi
 
@@ -214,12 +219,15 @@ jobs:
           SNAP=$(ls release/*.snap | head -n1)
           API="https://api.github.com/repos/${RELEASES_OWNER}/${RELEASES_REPO}"
 
+          # Listed, not fetched by tag — the release is still a draft here, and
+          # GET /releases/tags/{tag} does not return drafts.
           RELEASE_ID=$(curl -sS \
             -H "Authorization: Bearer ${GH_TOKEN}" \
             -H "Accept: application/vnd.github+json" \
-            "${API}/releases/tags/${TAG}" | jq -r '.id')
+            "${API}/releases?per_page=100" \
+            | jq -r --arg tag "$TAG" 'map(select(.tag_name == $tag)) | .[0].id // empty')
 
-          if [ -z "$RELEASE_ID" ] || [ "$RELEASE_ID" = "null" ]; then
+          if [ -z "$RELEASE_ID" ]; then
             echo "::error::Could not find release ${TAG} to attach $(basename "$SNAP") to"
             exit 1
           fi
@@ -302,12 +310,17 @@ jobs:
           set -euo pipefail
           API="https://api.github.com/repos/${RELEASES_OWNER}/${RELEASES_REPO}"
 
+          # Listed, not fetched by tag. This is the undrafting step, so the
+          # release is by definition still a draft — and a draft is exactly
+          # what GET /releases/tags/{tag} refuses to return. Asking by tag here
+          # would have failed every release, whatever the builds did.
           RELEASE_ID=$(curl -sS \
             -H "Authorization: Bearer ${GH_TOKEN}" \
             -H "Accept: application/vnd.github+json" \
-            "${API}/releases/tags/${TAG}" | jq -r '.id')
+            "${API}/releases?per_page=100" \
+            | jq -r --arg tag "$TAG" 'map(select(.tag_name == $tag)) | .[0].id // empty')
 
-          if [ -z "$RELEASE_ID" ] || [ "$RELEASE_ID" = "null" ]; then
+          if [ -z "$RELEASE_ID" ]; then
             echo "::error::Could not find release ${TAG} in ${RELEASES_OWNER}/${RELEASES_REPO}"
             exit 1
           fi
