@@ -121,9 +121,13 @@ jobs:
             os: windows-latest
             builder_args: --win --x64
             artifact: windows
+          # The snap is deliberately absent here and built in its own step
+          # below: electron-builder always publishes a snap target to the Snap
+          # Store under --publish always, and with no credentials that failure
+          # takes the whole job down with it.
           - name: Linux (AppImage, deb, rpm, snap)
             os: ubuntu-latest
-            builder_args: --linux --x64
+            builder_args: --linux AppImage deb rpm --x64
             artifact: linux
     steps:
       - uses: actions/checkout@v7
@@ -188,6 +192,44 @@ jobs:
 
           npm run build
           npx electron-builder ${{ matrix.builder_args }} --publish always
+
+      # Separate from the step above because electron-builder gives a snap
+      # target no way out of a Snap Store push. `snap.publish` cannot express
+      # it: findSnapPublishConfig only ever returns a config whose provider is
+      # snapStore, and returning nothing falls back to snapStore regardless. So
+      # the snap is built with --publish never and attached to the release by
+      # hand, leaving the store push to the publish-snap job, which checks for
+      # credentials first. That is what makes those credentials optional.
+      - name: Build the snap and attach it to the release
+        if: matrix.artifact == 'linux'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+          APTABASE_API_KEY: ${{ secrets.APTABASE_API_KEY }}
+          TAG: ${{ needs.prepare.outputs.tag }}
+        run: |
+          set -euo pipefail
+          npx electron-builder --linux snap --x64 --publish never
+
+          SNAP=$(ls release/*.snap | head -n1)
+          API="https://api.github.com/repos/${RELEASES_OWNER}/${RELEASES_REPO}"
+
+          RELEASE_ID=$(curl -sS \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "${API}/releases/tags/${TAG}" | jq -r '.id')
+
+          if [ -z "$RELEASE_ID" ] || [ "$RELEASE_ID" = "null" ]; then
+            echo "::error::Could not find release ${TAG} to attach $(basename "$SNAP") to"
+            exit 1
+          fi
+
+          curl -sS --fail-with-body -X POST \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Content-Type: application/octet-stream" \
+            --data-binary @"${SNAP}" \
+            "https://uploads.github.com/repos/${RELEASES_OWNER}/${RELEASES_REPO}/releases/${RELEASE_ID}/assets?name=$(basename "${SNAP}")" \
+            | jq -r '"Attached " + .name'
 
       - name: Keep the installers for the summary and the snap upload
         uses: actions/upload-artifact@v7

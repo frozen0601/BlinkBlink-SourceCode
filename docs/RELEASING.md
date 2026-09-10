@@ -74,11 +74,16 @@ Paste the output as the secret value. Without it the snap is still built and
 attached to the release, it just is not pushed to the store, and the workflow
 logs a warning rather than failing.
 
-That is only true because `build.snap.publish` is pinned to `github`. Left at
-its default, electron-builder publishes the snap to the store itself as part of
-the build, and with no credentials it fails the whole Linux job — which is
-exactly what happened on the first attempt at 0.2.0. The store push belongs to
-the `publish-snap` job, which checks for the secret first.
+That is only true because the release workflow builds the snap in its own step,
+with `--publish never`, and attaches it to the release by hand.
+
+It has to. electron-builder gives a snap target no way out of a Snap Store push
+under `--publish always`: `findSnapPublishConfig` only ever returns a config
+whose provider is `snapStore`, and returning nothing falls back to `snapStore`
+anyway — so `build.snap.publish` cannot express "GitHub only". With no
+credentials that push exits 1 and fails the whole Linux job, which is what sank
+the first two attempts at 0.2.0. The store push belongs to the `publish-snap`
+job, which checks for the secret and skips without it.
 
 ### macOS signing — optional
 
