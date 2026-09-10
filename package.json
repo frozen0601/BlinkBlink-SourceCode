@@ -1,6 +1,6 @@
 {
   "name": "blinkblink",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "main": "dist/main.js",
   "scripts": {
     "start": "npm run build:dev && electron .",
