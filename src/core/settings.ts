@@ -62,6 +62,7 @@ export const DEFAULT_SETTINGS: Settings = {
     breakDuration: 20 * SECOND,
     overlayBackdrop: 'auto',
     language: 'en',
+    enableAnalytics: true,
 }
 
 export const DEFAULT_STATS: Stats = {
@@ -190,6 +191,10 @@ export function normalizeSettings(input: unknown, base: Settings = DEFAULT_SETTI
         breakDuration: toClampedNumber(raw.breakDuration, base.breakDuration, SETTINGS_LIMITS.breakDuration),
         overlayBackdrop: toEnum(raw.overlayBackdrop, BACKDROP_PREFERENCES, base.overlayBackdrop),
         language: typeof raw.language === 'string' && raw.language.length > 0 ? raw.language : base.language,
+        // A store written before 0.2.0 has no such key, so this reads as the
+        // default — which is on. That is the deliberate choice, not an
+        // oversight: analytics are opt-out, and the tutorial says so.
+        enableAnalytics: toBoolean(raw.enableAnalytics, base.enableAnalytics),
     }
 }
 

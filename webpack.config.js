@@ -72,6 +72,10 @@ const mainConfig = {
     plugins: [
         new webpack.DefinePlugin({
             'process.env.BLINKBLINK_SIGNED': JSON.stringify(isSignedBuild ? '1' : '0'),
+            // Not a secret — it ships inside every binary — but it still has to
+            // reach the build. Absent, the app sends no telemetry at all, which
+            // is what local builds and forks get.
+            'process.env.APTABASE_API_KEY': JSON.stringify(process.env.APTABASE_API_KEY ?? ''),
         }),
         new CopyPlugin({
             patterns: [

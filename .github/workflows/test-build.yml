@@ -64,6 +64,9 @@ jobs:
           # notification action buttons will appear as a result.
           CSC_IDENTITY_AUTO_DISCOVERY: false
           BLINKBLINK_SIGNED: '0'
+          # Real events, so a test build can be confirmed as arriving in the
+          # Aptabase dashboard before a release depends on it.
+          APTABASE_API_KEY: ${{ secrets.APTABASE_API_KEY }}
         run: |
           set -euo pipefail
           npm run build

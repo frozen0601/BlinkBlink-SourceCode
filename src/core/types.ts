@@ -59,6 +59,8 @@ export interface Settings {
     /** Overlay backdrop preference. `auto` picks the best mode for the platform. */
     overlayBackdrop: BackdropPreference
     language: string
+    /** Send the anonymous launch event. On by default; see `core/analytics.ts`. */
+    enableAnalytics: boolean
 }
 
 export interface TrayWindowPosition {

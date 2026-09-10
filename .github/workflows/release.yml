@@ -165,6 +165,9 @@ jobs:
           # Only macOS reads this: it decides whether the app may offer a
           # notification action button, which an unsigned bundle cannot show.
           BLINKBLINK_SIGNED: ${{ steps.signing.outputs.signed || '0' }}
+          # Compiled into the bundle by webpack. Absent, the build sends no
+          # telemetry — which is what a fork building this workflow gets.
+          APTABASE_API_KEY: ${{ secrets.APTABASE_API_KEY }}
           CSC_LINK: ${{ secrets.MAC_CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.MAC_CSC_KEY_PASSWORD }}
           APPLE_ID: ${{ secrets.APPLE_ID }}

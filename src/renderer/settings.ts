@@ -232,6 +232,9 @@ function collectSettings(): Partial<Settings> {
         autoUpdate: input('autoUpdate')?.checked ?? false,
         overlayBackdrop: (select('overlayBackdrop')?.value as BackdropPreference) ?? 'auto',
         language: select('languageSelect')?.value ?? 'en',
+        // Defaults to on, matching DEFAULT_SETTINGS: a missing checkbox must
+        // not read as an opt-out the user never made.
+        enableAnalytics: input('enableAnalytics')?.checked ?? true,
     }
 }
 
@@ -322,6 +325,7 @@ async function initialise(): Promise<void> {
     setChecked('autoUpdate', settings.autoUpdate)
     setChecked('enableSoundNotification', settings.enableSoundNotification)
     setChecked('skipBreakWhenIdle', settings.skipBreakWhenIdle)
+    setChecked('enableAnalytics', settings.enableAnalytics)
 
     setValue('summaryDuration', String(settings.summaryDuration / 1000))
     setValue('breakPreNotificationOffset', String(settings.breakPreNotificationOffset / 1000))
