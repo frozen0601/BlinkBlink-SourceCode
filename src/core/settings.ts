@@ -26,7 +26,6 @@ export const SETTINGS_LIMITS = {
     breakDuration: { min: 5 * SECOND, max: 15 * MINUTE },
     summaryDuration: { min: 1 * SECOND, max: 60 * SECOND },
     breakPreNotificationOffset: { min: 5 * SECOND, max: 10 * MINUTE },
-    idleThreshold: { min: 1 * MINUTE, max: 60 * MINUTE },
 } as const
 
 export const DEFAULT_SCHEDULE: WeeklySchedule = {
@@ -50,8 +49,6 @@ export const DEFAULT_SETTINGS: Settings = {
     enableSoundNotification: true,
     notificationSound: 'system',
     breakPreNotificationOffset: 30 * SECOND,
-    skipBreakWhenIdle: true,
-    idleThreshold: 5 * MINUTE,
     enableAutoDismiss: true,
     summaryDuration: 5 * SECOND,
     scheduleEnabled: false,
@@ -179,8 +176,6 @@ export function normalizeSettings(input: unknown, base: Settings = DEFAULT_SETTI
         enableSoundNotification: toBoolean(raw.enableSoundNotification, base.enableSoundNotification),
         notificationSound: normalizeSoundName(raw.notificationSound, base.notificationSound),
         breakPreNotificationOffset,
-        skipBreakWhenIdle: toBoolean(raw.skipBreakWhenIdle, base.skipBreakWhenIdle),
-        idleThreshold: toClampedNumber(raw.idleThreshold, base.idleThreshold, SETTINGS_LIMITS.idleThreshold),
         enableAutoDismiss: toBoolean(raw.enableAutoDismiss, base.enableAutoDismiss),
         summaryDuration: toClampedNumber(raw.summaryDuration, base.summaryDuration, SETTINGS_LIMITS.summaryDuration),
         scheduleEnabled: toBoolean(raw.scheduleEnabled, base.scheduleEnabled),

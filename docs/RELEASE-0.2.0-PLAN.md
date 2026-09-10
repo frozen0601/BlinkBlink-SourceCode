@@ -139,8 +139,6 @@ Then check:
   hide the reminder without cancelling the break behind it.
 - The break screen should show only "Take A Break", the eyes, and Skip — no
   subtitle, no counting seconds.
-- Leave the machine idle past five minutes and confirm the break waits for you
-  rather than firing at an empty chair.
 - Settings opens and nothing is disabled that should not be.
 
 ### 4. Cut the release

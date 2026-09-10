@@ -53,9 +53,6 @@ test('the reminder can be dismissed with its close button', async () => {
             breakPreNotificationOffset: 55_000,
             enableBreakNotification: true,
             reminderStyle: 'in-app',
-            // Nothing types under Xvfb, so the idle deferral would otherwise
-            // hold the break back and this would time out for the wrong reason.
-            skipBreakWhenIdle: false,
         },
     })
 

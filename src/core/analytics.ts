@@ -77,7 +77,6 @@ export function buildAppStartedEvent(input: AppStartedInput): AnalyticsEvent | n
             start_on_boot: settings.startOnBoot ? 1 : 0,
             auto_update: settings.autoUpdate ? 1 : 0,
             schedule_enabled: settings.scheduleEnabled ? 1 : 0,
-            skip_when_idle: settings.skipBreakWhenIdle ? 1 : 0,
             break_notification: settings.enableBreakNotification ? 1 : 0,
             sound_notification: settings.enableSoundNotification ? 1 : 0,
             auto_dismiss: settings.enableAutoDismiss ? 1 : 0,

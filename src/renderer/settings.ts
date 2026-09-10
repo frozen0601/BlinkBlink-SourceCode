@@ -222,10 +222,6 @@ function collectSettings(): Partial<Settings> {
         enableBreakNotification: input('enableBreakNotification')?.checked ?? true,
         reminderStyle: (select('reminderStyle')?.value as ReminderStyle) ?? 'system',
         breakPreNotificationOffset: numberValue('breakPreNotificationOffset', 30) * 1000,
-        // idleThreshold is deliberately absent: it has no control any more, and
-        // `updateSettings` normalises against the stored settings, so leaving it
-        // out preserves whatever is on disk rather than resetting it.
-        skipBreakWhenIdle: input('skipBreakWhenIdle')?.checked ?? true,
         enableSoundNotification: input('enableSoundNotification')?.checked ?? true,
         notificationSound: select('notificationSound')?.value ?? 'system',
         scheduleEnabled: input('scheduleEnabled')?.checked ?? false,
@@ -324,7 +320,6 @@ async function initialise(): Promise<void> {
     setChecked('scheduleEnabled', settings.scheduleEnabled)
     setChecked('autoUpdate', settings.autoUpdate)
     setChecked('enableSoundNotification', settings.enableSoundNotification)
-    setChecked('skipBreakWhenIdle', settings.skipBreakWhenIdle)
     setChecked('enableAnalytics', settings.enableAnalytics)
 
     setValue('summaryDuration', String(settings.summaryDuration / 1000))

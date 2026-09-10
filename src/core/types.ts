@@ -44,10 +44,6 @@ export interface Settings {
     enableSoundNotification: boolean
     notificationSound: string
     breakPreNotificationOffset: number
-    /** Hold a break back while the user is away from the machine. */
-    skipBreakWhenIdle: boolean
-    /** Idle time at which the user counts as away, in milliseconds. */
-    idleThreshold: number
     enableAutoDismiss: boolean
     summaryDuration: number
     scheduleEnabled: boolean

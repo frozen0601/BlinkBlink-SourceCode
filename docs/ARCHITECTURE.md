@@ -60,22 +60,6 @@ A watchdog re-plans when the wall clock moves without matching time having
 passed — a suspended laptop, a resumed VM, a manual clock change.
 `powerMonitor` covers the common cases but does not fire everywhere.
 
-## Being away from the machine
-
-When a break comes due the timer checks `powerMonitor.getSystemIdleTime()`
-against the threshold in `core/idle.ts`. Past it, the break is held rather than
-shown, and the timer polls until input resumes and then plans a fresh work
-interval — a break shown to an empty chair is missed, and it would also anchor
-the next interval to the wrong moment, so the one after it arrives too early.
-
-Two deliberate choices:
-
-- Time away is **not** credited to the break streak. That counter means "breaks
-  taken with the app"; awarding one for walking away would make it meaningless.
-- An idle time that cannot be read counts as **present**, not away. Failing that
-  way costs an unnecessary break; failing the other way silently stops breaks
-  altogether, which is the whole feature.
-
 ## Window backdrops
 
 Electron documents that CSS `backdrop-filter` applies only to a window's own web
