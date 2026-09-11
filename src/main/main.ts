@@ -5,7 +5,6 @@ import { setupAnalytics } from './analytics'
 import { CLI_HELP, parseArgv } from './cli'
 import { registerIpcHandlers } from './ipcHandlers'
 import { setupApp, teardownApp } from './appSetup'
-import { relaunchOntoX11IfNeeded } from './platform'
 import { createSettingsWindow, createStatsWindow } from './tray'
 import { showBreakView } from './windows'
 
@@ -41,10 +40,7 @@ function rehearseInstall(dmgPath: string): void {
 
 const tryInstall = parseArgv(process.argv).tryInstall
 
-if (relaunchOntoX11IfNeeded()) {
-    // Nothing else may run: this process exists only to be replaced by one
-    // whose command line names the backend.
-} else if (process.argv.includes('--help')) {
+if (process.argv.includes('--help')) {
     process.stdout.write(CLI_HELP)
     app.quit()
 } else if (tryInstall) {

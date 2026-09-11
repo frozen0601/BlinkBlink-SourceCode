@@ -125,42 +125,53 @@ key events. The break screen does not mind — it is meant to be hard to get out
 of, and Skip is a button. There is deliberately no Escape handler.
 
 **This is an X11 mechanism, and Electron does not default to X11.** That
-assumption was wrong and cost a round of "still able to alt-tab": Electron 38
-selects its Wayland backend on its own the moment `WAYLAND_DISPLAY` is set, with
-no flag and no hint. Measured against a headless Weston — the app loaded
-`ozone/platform/wayland` and created no X11 window at all. Wayland has no
-override-redirect and no protocol for staying out of a switcher, so there the
-overlay is listed whatever it asks for, and a Wayland client cannot raise itself
-back afterwards either.
+assumption was wrong twice over, and it is the reason two rounds of "fixed"
+changed nothing on Fedora. Electron 38 selects its Wayland backend the moment
+`WAYLAND_DISPLAY` is set, with no flag and no hint. Measured against a headless
+Weston: with no switches the app loads `ozone/platform/wayland` and creates no
+X11 window at all.
 
-So on a Wayland session the app restarts itself onto XWayland
-(`relaunchOntoX11IfNeeded`). The backend is read before the main script runs, so
-it can only be set on the process command line:
+Wayland has no override-redirect and no protocol for staying out of a switcher,
+and a Wayland client cannot raise itself back afterwards either. **So on a
+Wayland session the break screen is in alt-tab and nothing in `windows.ts` or
+`core/platform.ts` affects that.** The override-redirect path above applies to
+X11 sessions and to XWayland; it is real, it is just not where most Plasma users
+are.
 
-| How                                           | Result                     |
-| --------------------------------------------- | -------------------------- |
-| nothing (a Wayland session)                   | Wayland backend            |
-| `app.commandLine.appendSwitch` from `main.ts` | Wayland backend — too late |
-| `ELECTRON_OZONE_PLATFORM_HINT=x11`            | Wayland backend — ignored  |
-| `--ozone-platform=x11` on the command line    | X11, override-redirect     |
+The backend can only be chosen on the process command line:
 
-Re-executing is the only lever left. It happens before the single-instance lock
-and before anything is created, so the discarded process never draws a tray icon
-or a window — from outside it is a slower start, not a restart. It cannot loop:
-the replacement carries `--ozone-platform=x11`, which reads as a deliberate
-choice, so the check is false the second time.
+| How                                           | Result                 |
+| --------------------------------------------- | ---------------------- |
+| nothing, on a Wayland session                 | Wayland                |
+| `app.commandLine.appendSwitch` from `main.ts` | Wayland — too late     |
+| `ELECTRON_OZONE_PLATFORM_HINT=x11`            | Wayland — ignored      |
+| `--ozone-platform=x11` on the command line    | X11, override-redirect |
 
-The cost is XWayland's: on a fractional display scale it renders at an integer
-scale and the compositor resizes, which is softer than native output. An overlay
-that can be tabbed away from does not do its job at all, so it loses. Passing
-`--ozone-platform=wayland` explicitly is the way back.
+#### Do not re-exec the app to get there
 
-Verified end to end against a headless Weston with `DISPLAY` also set, launched
-with no flags: the relaunch fires once, the live command line carries the
-switch, and the overlay window reports `Override Redirect State: yes`.
+That last row was briefly implemented as a self-relaunch at startup, and it
+crashed every AppImage user with `SIGBUS`:
 
-Linux only. macOS and Windows do not put the overlay in a switcher, and both
-would lose focus behaviour that works today.
+```
+#12 dlopen@GLIBC_2.2.5 (libc.so.6)
+#13 notify (BlinkBlink-x86_64.AppImage + 0x4951)
+#14 main (BlinkBlink-x86_64.AppImage + 0x5d55)
+```
+
+Those low offsets are the AppImage type-2 runtime, not Electron. An AppImage
+mounts its squashfs over FUSE and points `LD_LIBRARY_PATH` and `PATH` into
+`/tmp/.mount_*`. `app.relaunch` hands the child that environment, the parent
+then exits and its mount disappears, and the child's loader takes `SIGBUS`
+mapping a library out of a filesystem that is no longer there — inside the
+runtime's own `dlopen`, before any of this app's code runs.
+
+Nothing here can test that: the sandbox has no FUSE, so an AppImage cannot run
+in CI at all. A mechanism that cannot be exercised against the packaging format
+it breaks does not belong in the app. If the flag is wanted, it belongs in the
+launcher at build time — `appImage.executableArgs` (which **replaces** the
+default `--no-sandbox`, so pass both) and `linux.executableArgs` for the deb and
+rpm desktop entries — where no child process is spawned and there is no
+environment to inherit.
 
 ## Reminders
 
