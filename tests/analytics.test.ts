@@ -8,6 +8,7 @@ const settings = (overrides: Partial<Settings> = {}): Settings => ({ ...DEFAULT_
 const input = (overrides: Partial<Settings> = {}) => ({
     settings: settings(overrides),
     platform: 'darwin',
+    arch: 'arm64',
     version: '0.2.0',
     firstRun: false,
 })
@@ -33,6 +34,13 @@ describe('buildAppStartedEvent', () => {
         expect(event?.props.platform).toBe('darwin')
         expect(event?.props.version).toBe('0.2.0')
         expect(event?.props.first_run).toBe(1)
+    })
+
+    it('reports the architecture, which is what counts Intel Macs', () => {
+        // A universal build reports the slice it is running as, so an Intel Mac
+        // running the universal DMG sends x64 rather than "universal".
+        expect(buildAppStartedEvent({ ...input(), arch: 'x64' })?.props.arch).toBe('x64')
+        expect(buildAppStartedEvent(input())?.props.arch).toBe('arm64')
     })
 
     it('distinguishes a returning launch from a first run', () => {

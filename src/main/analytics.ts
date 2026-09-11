@@ -64,6 +64,7 @@ export function reportAppStarted(settings: Settings, firstRun: boolean): void {
     const event = buildAppStartedEvent({
         settings,
         platform: process.platform,
+        arch: process.arch,
         version: app.getVersion(),
         firstRun,
     })

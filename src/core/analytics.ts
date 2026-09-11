@@ -35,6 +35,14 @@ export interface AppStartedInput {
     settings: Settings
     /** `process.platform`. */
     platform: string
+    /**
+     * `process.arch`.
+     *
+     * On a universal macOS build this reports the slice actually running, so it
+     * counts Intel Macs directly — which is the number that decides whether
+     * per-architecture DMGs are safe to ship.
+     */
+    arch: string
     /** `app.getVersion()`. */
     version: string
     /** True when this launch is the first the store has seen. */
@@ -59,13 +67,14 @@ export function isAnalyticsEnabled(settings: Settings): boolean {
  * "what share of launches had this on".
  */
 export function buildAppStartedEvent(input: AppStartedInput): AnalyticsEvent | null {
-    const { settings, platform, version, firstRun } = input
+    const { settings, platform, arch, version, firstRun } = input
     if (!isAnalyticsEnabled(settings)) return null
 
     return {
         name: 'app_started',
         props: {
             platform,
+            arch,
             version,
             first_run: firstRun ? 1 : 0,
             // Settings distribution, folded in rather than sent as its own
