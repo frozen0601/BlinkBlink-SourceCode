@@ -49,8 +49,9 @@ export default tseslint.config(
         },
     },
     {
-        // CommonJS build scripts, which webpack loads directly.
-        files: ['*.mjs', '*.js', 'webpack.config.js'],
+        // Build config and the one-off scripts under tools/, which run in Node
+        // rather than in Electron.
+        files: ['*.mjs', '*.js', 'webpack.config.js', 'tools/**/*.mjs'],
         languageOptions: {
             globals: {
                 __dirname: 'readonly',

@@ -3,3 +3,7 @@ release
 node_modules
 package-lock.json
 coverage
+
+# Vendored verbatim from anthropics/claude-code; formatting it would diverge
+# from upstream and make future syncs a diff of whitespace.
+.claude/skills

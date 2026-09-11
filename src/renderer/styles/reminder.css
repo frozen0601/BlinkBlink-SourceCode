@@ -136,28 +136,19 @@ body.leaving .toast {
     height: 34px;
     border-radius: 50%;
     background: color-mix(in srgb, var(--accent) 18%, transparent);
+    color: var(--accent);
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
-.eye {
-    width: 16px;
-    height: 10px;
-    border-radius: 50%;
-    border: 2px solid var(--accent);
-    position: relative;
-}
-
-.eye::after {
-    content: '';
-    position: absolute;
-    inset: 50% auto auto 50%;
-    width: 4px;
-    height: 4px;
-    border-radius: 50%;
-    background: var(--accent);
-    transform: translate(-50%, -50%);
+/* 22px is where the mascot's eye and mouth still read; below that it turns
+   into a blob. The glyph is one colour, so it follows --accent into dark mode
+   instead of needing a second asset. */
+.mascot {
+    width: 22px;
+    height: 22px;
+    fill: currentColor;
 }
 
 .toast-text {
