@@ -40,12 +40,13 @@ xattr -c /Applications/BlinkBlink.app        # clears every extended attribute
 quarantine flag, which is all that is in the way. Same number of steps, much
 narrower blast radius, and easier to justify to a cautious user.
 
-**c. Offer the Finder route as well as the Terminal one.** Many people will not
-paste a shell command from a website, and are right not to. Gatekeeper can also
-be cleared entirely through the UI — open the app, let it be refused, then
-approve it in System Settings under Privacy & Security. Apple has moved this
-around between releases, so the page should describe it in words with a
-screenshot rather than promising an exact menu path.
+**c. There is no Finder route. Tried, reverted.** The site briefly told people
+to open the app, let it be refused, then approve it in System Settings under
+Privacy & Security. On a current macOS the refusal dialog for this app offers
+only "Move to Trash" — no "Open Anyway" appears, because the bundle is not
+merely unnotarised, it is unsigned. The page is back to `xattr -c`, which is
+one command and actually works. Anything that replaces it has to be checked on
+a real Mac first, not inferred from Apple's documentation.
 
 **What signing would buy, when it becomes affordable:** no Gatekeeper step at
 all, notification action buttons on macOS (the app detects it is unsigned and

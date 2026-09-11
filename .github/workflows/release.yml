@@ -112,12 +112,17 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # One universal DMG rather than one per architecture: users on 0.1.2
-          # run an updater that picks the first asset ending in .dmg with no
-          # architecture check, so two DMGs would be a coin flip for them.
-          - name: macOS (universal)
+          # One DMG per architecture. 0.2.0 shipped a single universal build
+          # because clients on 0.1.2 take the first asset ending in .dmg with no
+          # architecture check — but every 0.1.2 build is arm64-only (checked:
+          # its disk image contains fifteen arm64 Mach-O headers and no x86_64),
+          # so those clients are all on Apple Silicon and the arm64 DMG, which
+          # sorts and uploads first, is the right answer for them. Anything that
+          # still lands on the x64 build is carried back on its next update:
+          # `updateArch` overrides process.arch when Rosetta is translating.
+          - name: macOS (arm64, x64)
             os: macos-latest
-            builder_args: --mac --universal
+            builder_args: --mac
             artifact: macos
           # x64 only: electron-updater reads one arch-agnostic latest.yml and
           # picks by extension, so an ARM64 installer would be offered to x64
@@ -245,7 +250,6 @@ jobs:
           name: installers-${{ matrix.artifact }}
           path: |
             release/*.dmg
-            release/*.zip
             release/*.exe
             release/*.AppImage
             release/*.deb

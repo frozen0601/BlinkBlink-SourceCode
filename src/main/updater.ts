@@ -21,7 +21,7 @@ import { download } from 'electron-dl'
 import * as path from 'path'
 import { getSettings } from './store'
 import { getUpdateDelivery, isMac, isSnap } from './platform'
-import { isNewerVersion, pickAssetForArch, ReleaseAsset, pickLatestRelease, ReleaseSummary } from '../core/update'
+import { isNewerVersion, pickAssetForArch, ReleaseAsset, pickLatestRelease, ReleaseSummary, updateArch } from '../core/update'
 
 const RELEASES_API = 'https://api.github.com/repos/frozen0601/BlinkBlink-Releases/releases'
 const INSTALL_GUIDE_URL = 'https://2ly.link/216pI'
@@ -183,7 +183,7 @@ export async function checkForUpdates(silent = false): Promise<{ updateAvailable
             if (response === 0) {
                 // An arm64 build will not launch at all on an Intel Mac, so the
                 // architecture has to match rather than "whatever came first".
-                const asset = pickAssetForArch(latest.assets, '.dmg', process.arch)
+                const asset = pickAssetForArch(latest.assets, '.dmg', updateArch(process.arch, app.runningUnderARM64Translation))
 
                 if (!asset) {
                     await showDialog({ type: 'error', title: 'Update Unavailable', message: 'This release has no macOS download.' })

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isNewerVersion, parseVersion, pickAssetForArch, pickLatestRelease, ReleaseSummary } from '../src/core/update'
+import { isNewerVersion, parseVersion, pickAssetForArch, pickLatestRelease, ReleaseSummary, updateArch } from '../src/core/update'
 
 const asset = (name: string) => ({ name, browser_download_url: `https://example.test/${name}` })
 
@@ -98,5 +98,25 @@ describe('pickAssetForArch', () => {
     it('is not confused by a version number containing the arch string', () => {
         const tricky = [asset('BlinkBlink-1.64.0-arm64.dmg'), asset('BlinkBlink-1.64.0-x64.dmg')]
         expect(pickAssetForArch(tricky, '.dmg', 'x64')?.name).toBe('BlinkBlink-1.64.0-x64.dmg')
+    })
+})
+
+describe('updateArch', () => {
+    it('takes process.arch at face value on a machine running its own build', () => {
+        expect(updateArch('arm64', false)).toBe('arm64')
+        expect(updateArch('x64', false)).toBe('x64')
+    })
+
+    it('gets an Apple Silicon Mac out of Rosetta rather than leaving it there', () => {
+        // An x64 build translated on Apple Silicon reports x64, so trusting it
+        // would offer an x64 update, and the same again next time: one wrong
+        // download and the machine never sees a native build again.
+        expect(updateArch('x64', true)).toBe('arm64')
+    })
+
+    it('still picks the two apart when the release carries both', () => {
+        const dmgs = [asset('BlinkBlink-0.2.4-arm64.dmg'), asset('BlinkBlink-0.2.4-x64.dmg')]
+        expect(pickAssetForArch(dmgs, '.dmg', updateArch('x64', true))?.name).toBe('BlinkBlink-0.2.4-arm64.dmg')
+        expect(pickAssetForArch(dmgs, '.dmg', updateArch('x64', false))?.name).toBe('BlinkBlink-0.2.4-x64.dmg')
     })
 })

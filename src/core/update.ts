@@ -54,6 +54,19 @@ export function pickLatestRelease(releases: ReleaseSummary[]): ReleaseSummary | 
 }
 
 /**
+ * The architecture an update should be chosen for.
+ *
+ * `process.arch` reports the build that is running, not the machine. An x64
+ * build on an Apple Silicon Mac runs under Rosetta and says `x64`, so taking it
+ * at face value would hand that machine an x64 update, and the next one, for
+ * ever — a permanent Rosetta trap entered by one wrong download. Electron's
+ * `runningUnderARM64Translation` is the flag that gets someone back out.
+ */
+export function updateArch(processArch: string, underArm64Translation: boolean): string {
+    return underArm64Translation ? 'arm64' : processArch
+}
+
+/**
  * The asset matching this machine's architecture.
  *
  * macOS releases carry both an Intel and an Apple Silicon build, and handing

@@ -171,6 +171,26 @@ installs still get renamed once, on their first update, which is why
 `syncAutostart` rewrites the autostart entry when its `Exec` line no longer
 matches the running executable.
 
+### The macOS artifacts
+
+Two DMGs, arm64 and x64, replacing the single universal build 0.2.0 shipped.
+Universal doubles every download for a machine that can only run half of it,
+and the reason for it has been checked and does not hold: clients on 0.1.2 pick
+the first asset ending in `.dmg` with no architecture check, but every build up
+to 0.1.2 was arm64-only — the release's own disk image carries fifteen arm64
+Mach-O headers and no x86_64 one. Those users are all on Apple Silicon, and the
+arm64 DMG is the one they get, first by name and first by upload.
+
+`updateArch` is the safety net. `process.arch` reports the build, not the
+machine, so an x64 build on an Apple Silicon Mac says `x64` and would be handed
+an x64 update for ever afterwards. Electron's `runningUnderARM64Translation`
+overrides it, so a machine that ends up on the wrong build is carried back on
+its next update rather than stuck in Rosetta.
+
+No macOS `.zip`. Only Squirrel.Mac reads it, and Squirrel.Mac cannot update an
+unsigned app, so it was 205 MB of every release that nobody downloaded. Signing
+would bring it back.
+
 ## Security posture
 
 Every window runs with `contextIsolation: true`, `sandbox: true`, no node
