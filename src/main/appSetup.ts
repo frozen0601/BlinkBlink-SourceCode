@@ -28,7 +28,13 @@ import { closeAllWindows } from './windows'
  * orphan the NSIS uninstall entry and break in-place upgrades for existing
  * installs. See docs/ROADMAP.md.)
  */
-const APP_USER_MODEL_ID = 'blinkblink'
+/**
+ * Must match `build.appId` in package.json. Windows drops toasts when they
+ * disagree, and the macOS in-place installer refuses a bundle whose
+ * CFBundleIdentifier is not this.
+ */
+export const APP_ID = 'blinkblink'
+const APP_USER_MODEL_ID = APP_ID
 
 function applyPlatformIdentity(): void {
     if (isWindows) {

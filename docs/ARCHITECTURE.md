@@ -213,6 +213,34 @@ installs still get renamed once, on their first update, which is why
 `syncAutostart` rewrites the autostart entry when its `Exec` line no longer
 matches the running executable.
 
+### Installing a macOS update
+
+Squirrel.Mac will not update an unsigned app, so BlinkBlink fetched the DMG and
+asked the user to drag it over the running one. It now does that drag itself:
+`main/macInstall.ts` mounts the image, checks the bundle inside it, copies it
+next to the installed one and swaps the two, then restarts.
+
+The order is what makes it safe. The copy lands in `BlinkBlink.app.new-<pid>`,
+so nothing installed is touched until it is complete; the installed bundle is
+then renamed to `.old-<pid>`, and only the rename that follows is irreversible.
+If that one fails, the `.old` is renamed back and the working app is where it
+was. Anything earlier failing leaves a stray directory that is cleaned up on the
+way out.
+
+It refuses rather than improvises: a development build, an app not running from
+a `.app`, one running from the mounted image itself, a folder it cannot write
+to, a bundle whose identifier is not ours, or a version that is not newer. Every
+refusal falls back to the old behaviour — open the disk image, point at the
+install guide — with the reason shown.
+
+`ditto` does the copy, not `cp`: it keeps the bundle's symlinks and extended
+attributes, which a plain copy flattens. `xattr -cr` on the copy is what stops
+the quarantine flag the download picked up putting the new app back behind
+Gatekeeper.
+
+**This has not been run on a real Mac.** There is no macOS runner here, so the
+checks and the fallbacks are written to be the part that holds.
+
 ### The macOS artifacts
 
 Two DMGs, arm64 and x64, replacing the single universal build 0.2.0 shipped.

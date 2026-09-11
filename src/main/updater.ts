@@ -21,6 +21,7 @@ import { download } from 'electron-dl'
 import * as path from 'path'
 import { getLastAnnouncedVersion, getSettings, setLastAnnouncedVersion } from './store'
 import { getUpdateDelivery, isMac, isSnap } from './platform'
+import { installFromDmg, restartIntoNewVersion } from './macInstall'
 import {
     isNewerVersion,
     pickAssetForArch,
@@ -119,18 +120,8 @@ async function downloadMacOSUpdate(asset: ReleaseAsset): Promise<void> {
         progressWindow.close()
         progressWindow = null
 
-        await shell.openPath(path.join(app.getPath('downloads'), asset.name))
-        const { response } = await showDialog({
-            type: 'info',
-            buttons: ['View Installation Guide', 'Later'],
-            defaultId: 0,
-            cancelId: 1,
-            title: 'Update Downloaded',
-            message: 'The update has been downloaded to your Downloads folder.',
-            detail: 'Open the disk image and drag BlinkBlink to Applications. You can finish whenever you are ready to restart the app.',
-        })
-
-        if (response === 0) await shell.openExternal(INSTALL_GUIDE_URL)
+        const dmgPath = path.join(app.getPath('downloads'), asset.name)
+        await finishMacOSUpdate(dmgPath)
     } catch (error) {
         console.error('[updater] macOS download failed:', error)
         await showDialog({
@@ -143,6 +134,53 @@ async function downloadMacOSUpdate(asset: ReleaseAsset): Promise<void> {
         if (progressWindow && !progressWindow.isDestroyed()) progressWindow.close()
         if (temporaryHost && !temporaryHost.isDestroyed()) temporaryHost.destroy()
     }
+}
+
+/**
+ * Installs the downloaded update, or explains how to finish it by hand.
+ *
+ * The app can do the drag itself — see `main/macInstall.ts` — which turns the
+ * macOS update from "mount this, drag that, quit, reopen" into one button. The
+ * manual path is kept for every case where it cannot: an app running from
+ * somewhere unwritable, a disk image that will not mount, a bundle that is not
+ * the one we expected.
+ */
+async function finishMacOSUpdate(dmgPath: string): Promise<void> {
+    const { response } = await showDialog({
+        type: 'info',
+        buttons: ['Install and restart', 'Later'],
+        defaultId: 0,
+        cancelId: 1,
+        title: 'Update Ready',
+        message: 'BlinkBlink can install the update now.',
+        detail: 'It will replace itself and restart. Your settings and statistics are kept.',
+    })
+
+    if (response !== 0) {
+        await shell.showItemInFolder(dmgPath)
+        return
+    }
+
+    const outcome = await installFromDmg(dmgPath)
+    if (outcome.installed) {
+        restartIntoNewVersion()
+        return
+    }
+
+    console.warn('[updater] falling back to the manual install:', outcome.reason)
+    await shell.openPath(dmgPath)
+
+    const { response: guide } = await showDialog({
+        type: 'info',
+        buttons: ['View Installation Guide', 'Later'],
+        defaultId: 0,
+        cancelId: 1,
+        title: 'Finish the Update',
+        message: 'The update could not install itself, so it needs a hand.',
+        detail: `Drag BlinkBlink from the disk image to Applications, then reopen it.\n\n(${outcome.reason})`,
+    })
+
+    if (guide === 0) await shell.openExternal(INSTALL_GUIDE_URL)
 }
 
 /**
