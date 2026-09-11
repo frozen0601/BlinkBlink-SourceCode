@@ -151,7 +151,9 @@ class WindowManager {
             movable: false,
             minimizable: false,
             maximizable: false,
-            fullscreenable: false,
+            // Linux asks for real full screen after showing (see below); macOS
+            // must not, because its full screen means a new Space.
+            fullscreenable: isLinux,
             skipTaskbar: true,
             hasShadow: false,
             // macOS refuses to size a window past the screen without this.
@@ -186,6 +188,17 @@ class WindowManager {
             // Re-assert after showing: some window managers drop the hint when
             // the window is first mapped.
             window.setAlwaysOnTop(true, 'screen-saver')
+
+            if (isLinux) {
+                // Screen-sized and always-on-top is not the same thing as full
+                // screen to a Linux window manager: a panel set to stay visible
+                // sits in its own layer and keeps a strip of the desktop, which
+                // is what left the Plasma taskbar showing over the break.
+                // _NET_WM_STATE_FULLSCREEN is the request every desktop
+                // understands, and the bounds above remain the fallback if the
+                // compositor refuses it.
+                window.setFullScreen(true)
+            }
 
             // A countdown that started while this window was still loading
             // never reached it — `webContents.send` to an unloaded renderer is

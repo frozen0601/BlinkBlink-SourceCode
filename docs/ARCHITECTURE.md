@@ -84,6 +84,21 @@ Two platform notes worth keeping in mind when touching this:
 - Linux does **not** use `type: 'notification'`. That window type is meant for
   transient toasts and several window managers place it oddly or treat it as
   non-interactive, which is what made the Linux overlay unusable.
+- Linux asks for real full screen once the window is shown. Sizing a window to
+  the screen and marking it always-on-top is not the same request: a Plasma
+  panel set to stay visible lives in its own layer and keeps its strip of the
+  desktop. `_NET_WM_STATE_FULLSCREEN` is the one every desktop understands, and
+  the screen-sized bounds stay underneath it as the fallback. macOS is excluded
+  deliberately — its full screen means a new Space, with an animation and a
+  window that no longer floats over other apps.
+
+The overlay still appears in the Linux task switcher, and that is not fixable
+from inside the app. `skipTaskbar` is unsupported on Linux (and inert on
+Wayland), KWin's alt-tab ignores it on X11 as well, and the one lever that does
+work — `focusable: false` — takes the window out of window management along with
+its keyboard events, which would cost the overlay its Escape-to-skip. Users who
+want it gone can add a KWin rule: **System Settings → Window Management → Window
+Rules**, match `blinkblink`, set _Skip switcher_ to Force / Yes.
 
 ## Reminders
 
