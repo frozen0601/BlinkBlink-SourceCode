@@ -5,7 +5,7 @@ import * as fs from 'fs'
 import * as path from 'path'
 import { normalizeSoundName } from '../core/settings'
 
-const DEFAULT_SOUND = 'bling.wav'
+const DEFAULT_SOUND = 'bling.opus'
 
 export function getSoundsPath(): string {
     // Packaged builds copy `assets/` into the app's resources directory.
@@ -41,12 +41,12 @@ export function getAvailableSounds(): AvailableSound[] {
     try {
         return fs
             .readdirSync(getSoundsPath())
-            .filter((file) => file.endsWith('.wav'))
+            .filter((file) => file.endsWith('.opus'))
             .sort((a, b) => a.localeCompare(b))
             .map((file) => ({
                 filename: file,
                 name: file
-                    .replace(/\.wav$/, '')
+                    .replace(/\.opus$/, '')
                     .replace(/[-_]/g, ' ')
                     .replace(/\b\w/g, (character) => character.toUpperCase()),
             }))

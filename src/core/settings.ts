@@ -98,13 +98,19 @@ function toEnum<T extends string>(value: unknown, allowed: readonly T[], fallbac
  *
  * The value is joined onto the bundled sounds directory, so a stray `../` here
  * would turn a preference into a path traversal.
+ *
+ * Sounds shipped as `.wav` up to 0.2.3 and as `.opus` after it, under the same
+ * basenames. Rewriting the extension here carries an existing preference over
+ * instead of resetting it to the default — and it happens on read, so it
+ * reaches stores that already claim the current schema version.
  */
 export function normalizeSoundName(value: unknown, fallback: string): string {
     if (typeof value !== 'string') return fallback
     if (value === 'system') return value
-    if (!/^[A-Za-z0-9._-]+\.wav$/.test(value)) return fallback
-    if (value.startsWith('.')) return fallback
-    return value
+    const name = value.replace(/\.wav$/, '.opus')
+    if (!/^[A-Za-z0-9._-]+\.opus$/.test(name)) return fallback
+    if (name.startsWith('.')) return fallback
+    return name
 }
 
 function normalizeTimeRange(value: unknown): TimeRange | null {

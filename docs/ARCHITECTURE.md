@@ -123,6 +123,25 @@ by an older version cannot put the timer into a state it does not understand.
 
 `store.ts` carries a `schemaVersion` and migrates forward on startup.
 
+## Bundled sounds
+
+`assets/sounds` ships Ogg Opus, copied into the package as `extraResources` and
+played by the renderer from a `file://` URL. They were uncompressed WAV until
+0.2.3 and accounted for 7.8 MB of every installer; the same 23 sounds are 540 KB
+as Opus. To add one, convert it the same way:
+
+```bash
+ffmpeg -i new-sound.wav -vn -c:a libopus -b:a 96k -vbr on -application audio assets/sounds/new-sound.opus
+```
+
+`-vn` matters: some of these files arrived with cover art attached, which ffmpeg
+will otherwise dutifully carry over.
+
+The chosen sound is stored as a filename, so upgrading finds `.wav` names for
+files that no longer exist. `normalizeSoundName` rewrites the extension on read
+— the basenames did not change — which keeps the user's choice instead of
+silently resetting it.
+
 ## Security posture
 
 Every window runs with `contextIsolation: true`, `sandbox: true`, no node

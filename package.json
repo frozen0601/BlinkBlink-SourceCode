@@ -44,7 +44,7 @@
         "from": "assets/sounds",
         "to": "assets/sounds",
         "filter": [
-          "**/*.wav"
+          "**/*.opus"
         ]
       }
     ],

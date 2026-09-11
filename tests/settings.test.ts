@@ -66,21 +66,30 @@ describe('normalizeSettings', () => {
 })
 
 describe('normalizeSoundName', () => {
-    it('accepts bundled wav filenames and the system default', () => {
-        expect(normalizeSoundName('bling.wav', 'system')).toBe('bling.wav')
+    it('accepts bundled filenames and the system default', () => {
+        expect(normalizeSoundName('bling.opus', 'system')).toBe('bling.opus')
         expect(normalizeSoundName('system', 'system')).toBe('system')
-        expect(normalizeSoundName('kiss-1.wav', 'system')).toBe('kiss-1.wav')
+        expect(normalizeSoundName('kiss-1.opus', 'system')).toBe('kiss-1.opus')
+    })
+
+    it('carries a pre-0.2.4 wav preference over to the same sound', () => {
+        // The basenames did not change when the sounds were compressed, so
+        // someone who picked "Neigh" keeps it rather than being reset to bling.
+        expect(normalizeSoundName('neigh.wav', 'system')).toBe('neigh.opus')
+        expect(normalizeSoundName('kiss-1.wav', 'system')).toBe('kiss-1.opus')
     })
 
     it('refuses path traversal and absolute paths', () => {
         expect(normalizeSoundName('../../etc/passwd', 'system')).toBe('system')
         expect(normalizeSoundName('/etc/shadow.wav', 'system')).toBe('system')
+        expect(normalizeSoundName('/etc/shadow.opus', 'system')).toBe('system')
         expect(normalizeSoundName('..%2F..%2Fx.wav', 'system')).toBe('system')
-        expect(normalizeSoundName('sub/dir/sound.wav', 'system')).toBe('system')
+        expect(normalizeSoundName('sub/dir/sound.opus', 'system')).toBe('system')
     })
 
-    it('refuses non-wav files', () => {
+    it('refuses anything that is not a bundled sound', () => {
         expect(normalizeSoundName('payload.sh', 'system')).toBe('system')
+        expect(normalizeSoundName('payload.opus.sh', 'system')).toBe('system')
     })
 })
 
