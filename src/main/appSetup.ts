@@ -8,6 +8,7 @@ import { isLinux, isMac, isWindows } from './platform'
 import { closeReminder, registerReminder } from './reminder'
 import { ensureUserId, getSettings, hasCompletedFirstRun } from './store'
 import { reportAppStarted } from './analytics'
+import { showWhatsNewIfNeeded } from './whatsNew'
 import { startTimer, startWorkTimer, stopTimer } from './timer'
 import { createTray, destroyTray, updateTooltip } from './tray'
 import { showTutorial } from './tutorial'
@@ -111,6 +112,7 @@ export function setupApp(): void {
     reportAppStarted(settings, firstRun)
 
     if (firstRun) showTutorial()
+    else showWhatsNewIfNeeded(firstRun)
 }
 
 export function teardownApp(): void {

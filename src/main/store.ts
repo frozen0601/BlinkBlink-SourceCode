@@ -22,6 +22,7 @@ const STORE_DEFAULTS: StoreSchema = {
     settings: DEFAULT_SETTINGS,
     stats: DEFAULT_STATS,
     hasCompletedFirstRun: false,
+    lastSeenVersion: '',
     lastBreakEndTime: 0,
     currentWorkStreakStartTime: 0,
     trayWindowPositions: {},
@@ -159,6 +160,16 @@ export function hasCompletedFirstRun(): boolean {
 
 export function setFirstRunCompleted(): void {
     store.set('hasCompletedFirstRun', true)
+}
+
+// Release notes ---------------------------------------------------------
+
+export function getLastSeenVersion(): string {
+    return store.get('lastSeenVersion', '')
+}
+
+export function setLastSeenVersion(version: string): void {
+    store.set('lastSeenVersion', version)
 }
 
 // Install identity ------------------------------------------------------

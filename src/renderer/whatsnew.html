@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta
+            http-equiv="Content-Security-Policy"
+            content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: file:"
+        />
+        <title>What's New</title>
+        <link rel="stylesheet" href="whatsnew.css" />
+    </head>
+    <body>
+        <div class="note">
+            <img src="icon.png" alt="" class="mascot" />
+            <h1>BlinkBlink <span id="version"></span></h1>
+            <ul id="lines"></ul>
+            <button type="button" id="dismiss">Got it</button>
+        </div>
+        <script src="whatsnew.js"></script>
+    </body>
+</html>

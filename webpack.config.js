@@ -52,6 +52,7 @@ const rendererAssets = [
     { from: 'src/renderer/progress.html', to: 'progress.html' },
     { from: 'src/renderer/tutorial.html', to: 'tutorial.html' },
     { from: 'src/renderer/reminder.html', to: 'reminder.html' },
+    { from: 'src/renderer/whatsnew.html', to: 'whatsnew.html' },
     { from: 'src/renderer/tutorial.js', to: 'tutorial.js' },
     { from: 'src/renderer/styles', to: '.' },
     { from: 'assets/icon.png', to: 'icon.png' },
@@ -105,6 +106,7 @@ const rendererConfig = {
         about: './src/renderer/about.ts',
         progress: './src/renderer/progress.ts',
         reminder: './src/renderer/reminder.ts',
+        whatsnew: './src/renderer/whatsnew.ts',
     },
     // Renderers run sandboxed with context isolation, so they get no Node
     // globals; building for the web target keeps webpack from emitting any.

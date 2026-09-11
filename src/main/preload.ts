@@ -32,6 +32,7 @@ const api = {
     getAvailableSounds: () => ipcRenderer.invoke('get-available-sounds'),
     getSoundPath: (filename: string): Promise<string | null> => ipcRenderer.invoke('get-sound-path', filename),
     getCapabilities: () => ipcRenderer.invoke('get-capabilities'),
+    getWhatsNew: (): Promise<{ version: string; lines: string[] }> => ipcRenderer.invoke('get-whats-new'),
 
     // Writes
     saveSettings: (settings: Partial<Settings>): Promise<Settings> => ipcRenderer.invoke('save-settings', settings),
@@ -40,6 +41,7 @@ const api = {
 
     // Overlay actions
     dismissSummary: () => ipcRenderer.send('summary-dismissed'),
+    dismissWhatsNew: () => ipcRenderer.send('whats-new-dismissed'),
     skipBreak: () => ipcRenderer.send('break-skip'),
 
     // Reminder toast actions

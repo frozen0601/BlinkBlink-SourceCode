@@ -15,6 +15,7 @@ import { checkForUpdates, startAutoUpdateTimer, stopAutoUpdateTimer } from './up
 import { getAvailableSounds, getSoundPath } from './sound'
 import { handleBreakComplete, handleBreakSkip, handleScheduleUpdated, handleSummaryDismissed } from './controller'
 import { closeReminder } from './reminder'
+import { closeWhatsNew, getWhatsNew } from './whatsNew'
 import { canShowNotificationActions, getBackdropMode, getUpdateDelivery, isLinux, isMac, isWindows } from './platform'
 import { SETTINGS_LIMITS } from '../core/settings'
 
@@ -56,6 +57,11 @@ export function registerIpcHandlers(): void {
     // Tutorial ----------------------------------------------------------
 
     ipcMain.on('tutorial-finished', () => setFirstRunCompleted())
+
+    // Release note ------------------------------------------------------
+
+    ipcMain.handle('get-whats-new', () => getWhatsNew())
+    ipcMain.on('whats-new-dismissed', () => closeWhatsNew())
 
     // Reads -------------------------------------------------------------
 

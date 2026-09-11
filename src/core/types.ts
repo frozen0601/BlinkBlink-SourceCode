@@ -92,6 +92,8 @@ export interface StoreSchema {
     settings: Settings
     stats: Stats
     hasCompletedFirstRun: boolean
+    /** The version whose release note has been shown. Empty until one is. */
+    lastSeenVersion: string
     lastBreakEndTime: number
     currentWorkStreakStartTime: number
     trayWindowPositions: Record<string, TrayWindowPosition>
