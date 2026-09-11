@@ -111,15 +111,29 @@ So the overlay is created `focusable: false` on Linux
 with override-redirect: the window manager never manages it, which means always
 on top, on every workspace, and — the point — absent from the switcher entirely.
 
-The cost is keyboard input. An unmanaged window never takes focus, so the
-renderer's own Escape handler cannot fire. `main/windows.ts` registers Escape as
-a `globalShortcut` for exactly as long as the overlay is up and releases it on
-close, calling the same skip/dismiss paths the renderer would. If another
-application already holds Escape, registration fails, and the code warns and
-carries on — the on-screen button is the fallback.
+Verified rather than assumed: running the packaged app under Xvfb and reading
+the overlay window with `xwininfo` reports `Override Redirect State: yes`, and
+it still does after the `setFullScreen(true)` call, so the two Linux fixes do
+not undo each other.
 
-This is Linux only. macOS and Windows do not put the overlay in a switcher, and
-both would lose focus behaviour that works today.
+```bash
+xwininfo -id "$(xwininfo -root -children | grep -i blinkblink | head -1 | awk '{print $1}')"
+```
+
+The cost is keyboard input: an unmanaged window never takes focus, so it gets no
+key events. The break screen does not mind — it is meant to be hard to get out
+of, and Skip is a button. There is deliberately no Escape handler.
+
+**This is an X11 mechanism.** Override-redirect is an X11 concept, and Wayland
+has no equivalent and no protocol for staying out of a switcher. Electron uses
+XWayland by default even in a Wayland session, which is why this works there;
+an Electron built or launched onto the native Wayland backend
+(`--ozone-platform=wayland`, or `ELECTRON_OZONE_PLATFORM_HINT=auto` in the
+environment) will be listed in the switcher and nothing in the app can prevent
+it.
+
+Linux only. macOS and Windows do not put the overlay in a switcher, and both
+would lose focus behaviour that works today.
 
 ## Reminders
 

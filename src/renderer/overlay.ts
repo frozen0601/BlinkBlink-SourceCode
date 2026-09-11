@@ -53,7 +53,6 @@ class OverlayUI {
     constructor() {
         this.#applyBackdrop()
         this.#bindButtons()
-        this.#bindKeyboard()
         this.#bindMainProcessEvents()
 
         const initialView = new URLSearchParams(window.location.search).get('view')
@@ -72,20 +71,6 @@ class OverlayUI {
     #bindButtons(): void {
         this.#skipButton?.addEventListener('click', () => void this.#handleSkipClick())
         this.#dismissButton?.addEventListener('click', () => this.#dismiss())
-    }
-
-    /**
-     * Keyboard access to both actions.
-     *
-     * The overlay covers the whole screen; requiring a mouse to get out of it
-     * is a poor deal for anyone who does not use one.
-     */
-    #bindKeyboard(): void {
-        document.addEventListener('keydown', (event) => {
-            if (event.key !== 'Escape') return
-            if (this.#currentView === View.Summary) this.#dismiss()
-            else void this.#handleSkipClick()
-        })
     }
 
     #bindMainProcessEvents(): void {

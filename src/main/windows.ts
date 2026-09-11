@@ -11,10 +11,10 @@
  * parameter so the correct styling is in place on the very first paint.
  */
 
-import { BrowserWindow, globalShortcut, screen } from 'electron'
+import { BrowserWindow, screen } from 'electron'
 import * as path from 'path'
 import { getBreakDuration, getSettings } from './store'
-import { handleBreakComplete, handleBreakSkip, handleSummaryDismissed } from './controller'
+import { handleBreakComplete, handleSummaryDismissed } from './controller'
 import { getBackdropMode, isLinux, isMac, isWindows, overlayShouldBypassWm } from './platform'
 import { BackdropMode } from '../core/types'
 
@@ -72,7 +72,6 @@ function backdropWindowOptions(mode: BackdropMode): Electron.BrowserWindowConstr
 
 class WindowManager {
     #windowsByDisplay = new Map<number, OverlayWindow>()
-    #escapeBound = false
     #countdownInterval?: NodeJS.Timeout
     /** When the running countdown ends, or null when none is running. */
     #countdownEndsAt: number | null = null
@@ -102,7 +101,6 @@ class WindowManager {
 
     closeAllWindows(): void {
         this.#stopCountdown()
-        this.#releaseEscape()
         this.#activeConfig = null
 
         for (const entry of this.#windowsByDisplay.values()) {
@@ -128,8 +126,6 @@ class WindowManager {
         for (const display of screen.getAllDisplays()) {
             this.#ensureWindow(display, backdrop, config.type)
         }
-
-        this.#bindEscape()
 
         if (config.autoDismiss && Number.isFinite(config.durationMs) && config.durationMs > 0) {
             this.#startCountdown(config)
@@ -215,39 +211,6 @@ class WindowManager {
         })
     }
 
-    /**
-     * Escape, for a window that cannot receive key events.
-     *
-     * A window outside window management never takes focus, so the overlay's own
-     * keydown handler never fires on Linux. A global shortcut does the same job
-     * for exactly as long as the overlay is up: registered when it opens,
-     * released when it closes, so nothing else on the system loses Escape.
-     *
-     * Registration can fail if another application already holds the key. The
-     * on-screen Skip button is the fallback, which is why this warns rather than
-     * refusing to show the break.
-     */
-    #bindEscape(): void {
-        if (!overlayShouldBypassWm() || this.#escapeBound) return
-
-        this.#escapeBound = globalShortcut.register('Escape', () => this.#handleEscape())
-        if (!this.#escapeBound) {
-            console.warn('[overlay] could not register Escape; the break can still be dismissed with the button')
-        }
-    }
-
-    #releaseEscape(): void {
-        if (!this.#escapeBound) return
-        globalShortcut.unregister('Escape')
-        this.#escapeBound = false
-    }
-
-    /** Mirrors what the renderer does with Escape on the platforms that get it. */
-    #handleEscape(): void {
-        if (this.#activeConfig?.type === 'summary') handleSummaryDismissed()
-        else if (this.#activeConfig?.type === 'break') handleBreakSkip()
-    }
-
     /** Brings one window up to date with the countdown already in progress. */
     #sendCountdownState(window: BrowserWindow): void {
         if (this.#countdownEndsAt === null || window.isDestroyed()) return
@@ -298,13 +261,7 @@ class WindowManager {
 
         window.on('closed', () => {
             this.#windowsByDisplay.delete(displayId)
-            if (this.#windowsByDisplay.size !== 0) return
-
-            this.#stopCountdown()
-            // Not only reached through closeAllWindows: a renderer that dies
-            // takes its window with it, and the grab below would otherwise
-            // outlive the overlay and swallow Escape for the whole desktop.
-            this.#releaseEscape()
+            if (this.#windowsByDisplay.size === 0) this.#stopCountdown()
         })
 
         window.webContents.on('render-process-gone', (_event, details) => {

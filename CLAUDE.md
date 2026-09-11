@@ -68,11 +68,14 @@ app without a tray to click.
   documented as unsupported on Linux, does nothing at all on Wayland, and KWin's
   switcher ignores it on X11 too — that reads
   `_KDE_NET_WM_STATE_SKIP_SWITCHER`, which Electron cannot set. The overlay is
-  created `focusable: false` on Linux instead, which takes it out of window
-  management altogether; the price is that it never receives key events, so
-  `windows.ts` registers Escape as a global shortcut while the overlay is up.
-  Remove one and the other becomes a bug. Full screen is a separate fix, for
-  covering the panel. All confirmed on Fedora with Plasma.
+  created `focusable: false` on Linux instead, which maps it override-redirect
+  and out of window management altogether (verified with `xwininfo`). That is an
+  **X11** mechanism — on the native Wayland backend nothing in the app can keep
+  a window out of the switcher. Full screen is a separate fix, for covering the
+  panel.
+- **The break screen has no Escape handler, on purpose.** A break you leave with
+  one keystroke is not a break. Skip is a button, and an unmanaged window
+  receives no key events anyway. Do not add one back.
 - **macOS notification action buttons need a signed app** _and_
   `NSUserNotificationAlertStyle: alert`. Unsigned builds silently omit the
   button. This is why the in-app toast is the default.

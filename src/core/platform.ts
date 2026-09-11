@@ -120,10 +120,15 @@ export function supportsNotificationActions(facts: PlatformFacts, isSigned: bool
  * and `skipTaskbar` writes only SKIP_TASKBAR and SKIP_PAGER, which the switcher
  * ignores. Bypassing the window manager is the one lever that works.
  *
- * The cost is keyboard input: an unmanaged window never takes focus, so the
- * overlay's own Escape handler never fires. The main process registers Escape
- * as a global shortcut for as long as the overlay is up, which is what keeps
- * the break dismissable without a mouse.
+ * The cost is keyboard input: an unmanaged window never takes focus, so it
+ * receives no key events at all. That is a cost the break screen does not mind
+ * paying — it is meant to be hard to dismiss, and Skip is a button.
+ *
+ * Known limit: this is an X11 mechanism. Under a native Wayland session there
+ * is no override-redirect and no protocol for staying out of a switcher, so an
+ * Electron window running on the Wayland backend is listed whatever it asks
+ * for. XWayland — which is where Electron puts itself by default — behaves like
+ * X11 and is covered.
  *
  * macOS and Windows keep a managed window: neither shows the overlay in a
  * switcher in the first place, and both would lose more than they gain.
