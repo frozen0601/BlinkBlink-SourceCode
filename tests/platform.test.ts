@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
     backdropNeedsTransparentWindow,
     resolveAutostartMechanism,
+    overlayBypassesWindowManager,
     resolveBackdropMode,
     resolveUpdateDelivery,
     supportsNotificationActions,
@@ -98,6 +99,18 @@ describe('supportsNotificationActions', () => {
     it('does not on Windows or Linux', () => {
         expect(supportsNotificationActions(facts('win32'), false)).toBe(true)
         expect(supportsNotificationActions(facts('linux'), false)).toBe(true)
+    })
+})
+
+describe('overlayBypassesWindowManager', () => {
+    it('is Linux only', () => {
+        // The overlay is in the KDE task switcher otherwise, and Electron has no
+        // way to set the atom KWin reads. Bypassing window management is the
+        // only lever; macOS and Windows do not need it and would lose focus
+        // behaviour they rely on.
+        expect(overlayBypassesWindowManager(facts('linux'))).toBe(true)
+        expect(overlayBypassesWindowManager(facts('darwin'))).toBe(false)
+        expect(overlayBypassesWindowManager(facts('win32'))).toBe(false)
     })
 })
 

@@ -110,6 +110,28 @@ export function supportsNotificationActions(facts: PlatformFacts, isSigned: bool
     return facts.platform === 'win32' || facts.platform === 'linux'
 }
 
+/**
+ * Whether the break overlay should be taken out of window management.
+ *
+ * On Linux `focusable: false` makes Electron create the window without handing
+ * it to the window manager: it is always on top, on every workspace, and — the
+ * reason it is worth doing — absent from the task switcher. KWin decides that
+ * from `_KDE_NET_WM_STATE_SKIP_SWITCHER`, an atom Electron gives no way to set,
+ * and `skipTaskbar` writes only SKIP_TASKBAR and SKIP_PAGER, which the switcher
+ * ignores. Bypassing the window manager is the one lever that works.
+ *
+ * The cost is keyboard input: an unmanaged window never takes focus, so the
+ * overlay's own Escape handler never fires. The main process registers Escape
+ * as a global shortcut for as long as the overlay is up, which is what keeps
+ * the break dismissable without a mouse.
+ *
+ * macOS and Windows keep a managed window: neither shows the overlay in a
+ * switcher in the first place, and both would lose more than they gain.
+ */
+export function overlayBypassesWindowManager(facts: PlatformFacts): boolean {
+    return facts.platform === 'linux'
+}
+
 export type UpdateDelivery =
     /** The app downloads and installs the update itself. */
     | 'in-app'

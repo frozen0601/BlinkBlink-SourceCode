@@ -92,27 +92,34 @@ Two platform notes worth keeping in mind when touching this:
   deliberately — its full screen means a new Space, with an animation and a
   window that no longer floats over other apps.
 
-The overlay still appears in the Linux task switcher — confirmed on Fedora with
-Plasma, where the full-screen change does cover the panel but alt-tab still
-lists the break screen.
+### Staying out of the Linux task switcher
 
-That part is not reachable from Electron. KWin decides it from
-`_KDE_NET_WM_STATE_SKIP_SWITCHER`, an atom it reads inside the window's
-`_NET_WM_STATE`; `NET::SkipSwitcher` in KWindowSystem is the same thing. Electron
-exposes no way to put an arbitrary atom there — `skipTaskbar` sets only
-`_NET_WM_STATE_SKIP_TASKBAR` and `_NET_WM_STATE_SKIP_PAGER`, and KWin's alt-tab
-ignores both. Setting it from the app would mean a native module (or an `xprop`
-call timed between window creation and mapping, which depends on a binary that
-may not be installed and on Electron's mapping order).
+Full screen alone left the overlay listed in alt-tab — confirmed on Fedora with
+Plasma, where the panel was covered but the break screen could still be tabbed
+away from. A break the user can tab out of is not a break.
 
-The lever Electron does offer, `focusable: false`, takes the window out of
-window management entirely and its keyboard events with it — and Escape-to-skip
-is there for people who do not use a mouse.
+`skipTaskbar` does not fix it. KWin's switcher reads
+`_KDE_NET_WM_STATE_SKIP_SWITCHER` from the window's `_NET_WM_STATE`
+(`NET::SkipSwitcher` in KWindowSystem); `skipTaskbar` writes only
+`_NET_WM_STATE_SKIP_TASKBAR` and `_NET_WM_STATE_SKIP_PAGER`, which the switcher
+ignores — and on Wayland `skipTaskbar` is documented as doing nothing at all.
+Electron exposes no way to set an arbitrary atom, so that route needs a native
+module or an `xprop` call timed between window creation and mapping.
 
-The answer for now is a KWin rule, which is two clicks and permanent:
-**System Settings → Window Management → Window Rules → Add New**, match the
-window class `blinkblink`, add the property _Skip switcher_, set it to
-**Force / Yes**.
+So the overlay is created `focusable: false` on Linux
+(`overlayBypassesWindowManager` in `core/platform.ts`). Electron then maps it
+with override-redirect: the window manager never manages it, which means always
+on top, on every workspace, and — the point — absent from the switcher entirely.
+
+The cost is keyboard input. An unmanaged window never takes focus, so the
+renderer's own Escape handler cannot fire. `main/windows.ts` registers Escape as
+a `globalShortcut` for exactly as long as the overlay is up and releases it on
+close, calling the same skip/dismiss paths the renderer would. If another
+application already holds Escape, registration fails, and the code warns and
+carries on — the on-screen button is the fallback.
+
+This is Linux only. macOS and Windows do not put the overlay in a switcher, and
+both would lose focus behaviour that works today.
 
 ## Reminders
 

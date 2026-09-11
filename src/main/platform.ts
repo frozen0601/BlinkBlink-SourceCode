@@ -8,6 +8,7 @@ import {
     UpdateDelivery,
     resolveAutostartMechanism,
     resolveBackdropMode,
+    overlayBypassesWindowManager,
     resolveUpdateDelivery,
     supportsNotificationActions,
 } from '../core/platform'
@@ -68,6 +69,10 @@ export function getAutostartMechanism(): AutostartMechanism {
 
 export function canShowNotificationActions(): boolean {
     return supportsNotificationActions(platformFacts(), isCodeSigned())
+}
+
+export function overlayShouldBypassWm(): boolean {
+    return overlayBypassesWindowManager(platformFacts())
 }
 
 export function getUpdateDelivery(): UpdateDelivery {
