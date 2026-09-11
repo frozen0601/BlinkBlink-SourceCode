@@ -152,6 +152,9 @@
         }
       }
     },
+    "appImage": {
+      "artifactName": "${productName}-${arch}.${ext}"
+    },
     "deb": {
       "depends": [
         "libgtk-3-0",

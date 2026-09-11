@@ -5,9 +5,10 @@ import * as os from 'os'
 import {
     AutostartMechanism,
     PlatformFacts,
+    UpdateDelivery,
     resolveAutostartMechanism,
     resolveBackdropMode,
-    supportsInAppUpdateInstall,
+    resolveUpdateDelivery,
     supportsNotificationActions,
 } from '../core/platform'
 import { BackdropMode, BackdropPreference } from '../core/types'
@@ -38,6 +39,7 @@ export function platformFacts(): PlatformFacts {
         sessionType: process.env.XDG_SESSION_TYPE,
         desktop: process.env.XDG_CURRENT_DESKTOP,
         isSnap: isSnap(),
+        isAppImage: isAppImage(),
     }
 }
 
@@ -68,6 +70,6 @@ export function canShowNotificationActions(): boolean {
     return supportsNotificationActions(platformFacts(), isCodeSigned())
 }
 
-export function canInstallUpdatesInApp(): boolean {
-    return supportsInAppUpdateInstall(platformFacts())
+export function getUpdateDelivery(): UpdateDelivery {
+    return resolveUpdateDelivery(platformFacts())
 }

@@ -5,38 +5,6 @@ value-for-effort, with an honest assessment of moving off Electron at the end.
 
 ## Near term
 
-### 0. Marketing site — landed, but not yet deployed
-
-The download page used to pick assets with
-`assets.find(a => a.name.endsWith('.dmg'))` — first match wins, no architecture
-check — send every Linux visitor to the Snap Store, advertise a prerelease as
-the current version, and tell people to run `xattr -c`. All four are fixed and
-merged to `main` on the site repository.
-
-The `find` call was never immediately dangerous, because 0.2.0 ships a single
-universal DMG precisely so that no client, old or new, can pick the wrong one.
-It would become dangerous again the day macOS goes back to per-architecture
-builds, which is why it was fixed ahead of that.
-
-Two things are still open.
-
-**The site has not been deployed since March 2025.** Its `gh-pages` branch —
-what GitHub Pages actually serves — still holds a build from before any of this.
-Release _data_ does update on its own, because the page reads the GitHub API at
-load; the page's own _code_ does not, and reaches visitors only through
-`npm run deploy` in that repository. Deploy **after** 0.2.0 is published, not
-before: the merged change points the Linux button at the `.AppImage`, and no
-published release carries one until 0.2.0 does.
-
-**A follow-up redesign is open and unmerged** on
-`claude/download-platform-options`. It gives all three platforms the same
-"Other options" disclosure instead of the row of small links the first pass left
-under the buttons, builds the options from the assets a release actually
-carries, and labels the macOS builds "Apple Silicon" and "Intel chip" rather
-than `arm64` and `x64`. It also makes the Linux button fall back to the Snap
-Store when a release has no `.AppImage`, so the ordering constraint above stops
-mattering. Worth merging before the deploy.
-
 ### 1. Make the macOS install less frightening — without paying Apple
 
 The project earns nothing and has ~167 daily users, so $99/year for the Apple
@@ -167,10 +135,14 @@ tray with no windows open):
 
 |                        |                                   |
 | ---------------------- | --------------------------------- |
-| Disk, unpacked         | 298 MB                            |
-| Installer, `.deb`      | 89 MB                             |
-| Installer, `.AppImage` | 126 MB                            |
+| Disk, unpacked         | 248 MB                            |
+| Installer, `.deb`      | 73 MB                             |
+| Installer, `.AppImage` | 104 MB                            |
 | Memory, idle           | **249 MB PSS across 5 processes** |
+
+The disk figures are down about 17% from the first measurement, after dropping
+the unused Electron locales and compressing the notification sounds. Neither
+touched memory, which is where the real cost is.
 
 The memory number is the one that should sting. PSS already accounts for shared
 pages, so it is not an artefact of counting Chromium five times. A quarter of a

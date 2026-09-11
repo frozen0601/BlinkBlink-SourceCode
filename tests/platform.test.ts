@@ -3,7 +3,7 @@ import {
     backdropNeedsTransparentWindow,
     resolveAutostartMechanism,
     resolveBackdropMode,
-    supportsInAppUpdateInstall,
+    resolveUpdateDelivery,
     supportsNotificationActions,
     supportsWindowsAcrylic,
     windowsBuildNumber,
@@ -101,10 +101,22 @@ describe('supportsNotificationActions', () => {
     })
 })
 
-describe('supportsInAppUpdateInstall', () => {
-    it('is Windows only', () => {
-        expect(supportsInAppUpdateInstall(facts('win32'))).toBe(true)
-        expect(supportsInAppUpdateInstall(facts('darwin'))).toBe(false)
-        expect(supportsInAppUpdateInstall(facts('linux'))).toBe(false)
+describe('resolveUpdateDelivery', () => {
+    it('installs in place on Windows and on an AppImage', () => {
+        expect(resolveUpdateDelivery(facts('win32'))).toBe('in-app')
+        expect(resolveUpdateDelivery(facts('linux', '0.0.0', { isAppImage: true }))).toBe('in-app')
+    })
+
+    it('gets as far as the DMG on macOS', () => {
+        expect(resolveUpdateDelivery(facts('darwin'))).toBe('assisted')
+    })
+
+    it('leaves snap, deb and rpm to whatever installed them', () => {
+        expect(resolveUpdateDelivery(facts('linux'))).toBe('external')
+        expect(resolveUpdateDelivery(facts('linux', '0.0.0', { isSnap: true }))).toBe('external')
+    })
+
+    it('never assumes an unknown platform can update itself', () => {
+        expect(resolveUpdateDelivery(facts('freebsd'))).toBe('external')
     })
 })

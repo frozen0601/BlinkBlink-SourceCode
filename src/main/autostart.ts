@@ -10,6 +10,7 @@ import { app } from 'electron'
 import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
+import { autostartEntryIsStale } from '../core/autostart'
 import { getAutostartMechanism, isAppImage } from './platform'
 
 const DESKTOP_ENTRY_NAME = 'blinkblink.desktop'
@@ -118,10 +119,27 @@ export function isAutostartSupported(): boolean {
  * Re-applies the stored preference at startup.
  *
  * The entry can drift out of sync — the app was moved, reinstalled from a
- * different package, or the desktop file was removed by a cleanup tool.
+ * different package, or the desktop file was removed by a cleanup tool. It also
+ * drifts on its own after an AppImage update, which replaces the running file
+ * with one named for the new version; the entry is then pointing at a path that
+ * no longer exists, and nothing would notice until the next login.
  */
 export function syncAutostart(desired: boolean): void {
     if (!isAutostartSupported()) return
-    if (isAutostartEnabled() === desired) return
-    setAutostart(desired)
+
+    if (isAutostartEnabled() !== desired) {
+        setAutostart(desired)
+        return
+    }
+
+    if (!desired || getAutostartMechanism() !== 'xdg-autostart') return
+
+    try {
+        if (autostartEntryIsStale(fs.readFileSync(autostartFile(), 'utf-8'), launchCommand())) {
+            fs.writeFileSync(autostartFile(), desktopEntry(), 'utf-8')
+            console.info('[autostart] rewrote the desktop entry: it pointed at a different executable')
+        }
+    } catch (error) {
+        console.error('[autostart] could not check the existing desktop entry:', error)
+    }
 }

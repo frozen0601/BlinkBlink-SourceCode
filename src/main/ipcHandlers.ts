@@ -15,7 +15,7 @@ import { checkForUpdates, startAutoUpdateTimer, stopAutoUpdateTimer } from './up
 import { getAvailableSounds, getSoundPath } from './sound'
 import { handleBreakComplete, handleBreakSkip, handleScheduleUpdated, handleSummaryDismissed } from './controller'
 import { closeReminder } from './reminder'
-import { canShowNotificationActions, getBackdropMode, isLinux, isMac, isWindows } from './platform'
+import { canShowNotificationActions, getBackdropMode, getUpdateDelivery, isLinux, isMac, isWindows } from './platform'
 import { SETTINGS_LIMITS } from '../core/settings'
 
 const SUPPORT_EMAIL = 'theblinkblinkapp@gmail.com'
@@ -89,8 +89,9 @@ export function registerIpcHandlers(): void {
         backdropMode: getBackdropMode(getSettings().overlayBackdrop),
         autostartSupported: isAutostartSupported(),
         notificationActionsSupported: canShowNotificationActions(),
-        // Linux packages are refreshed by snap/apt/dnf, not by the app.
-        autoUpdateManagedExternally: isLinux,
+        // snap, deb and rpm are refreshed by snap/apt/dnf, not by the app. An
+        // AppImage is not, so the toggle is live there.
+        autoUpdateManagedExternally: getUpdateDelivery() === 'external',
         limits: SETTINGS_LIMITS,
     }))
 

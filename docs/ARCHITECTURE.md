@@ -142,6 +142,35 @@ files that no longer exist. `normalizeSoundName` rewrites the extension on read
 — the basenames did not change — which keeps the user's choice instead of
 silently resetting it.
 
+## Updates
+
+`resolveUpdateDelivery` in `core/platform.ts` decides who installs an update,
+from the packaging format rather than the platform:
+
+| Build                | Delivery   | What happens                                        |
+| -------------------- | ---------- | --------------------------------------------------- |
+| Windows NSIS         | `in-app`   | electron-updater downloads and installs it.         |
+| Linux AppImage       | `in-app`   | Same, replacing the AppImage file.                  |
+| macOS                | `assisted` | The DMG lands in Downloads; the user drags it over. |
+| Linux snap, deb, rpm | `external` | snap/apt/dnf own it. The app only says so.          |
+
+macOS is `assisted` because Squirrel.Mac refuses to update an unsigned app.
+deb and rpm are `external` by choice, not by limitation: electron-updater can
+install both, but only by shelling out to `dpkg`/`rpm` behind `pkexec`, over
+files the distribution's package manager considers its own.
+
+On Linux, electron-updater's default is the AppImage updater — it only picks
+deb or rpm when electron-builder's `package-type` file says so. So the AppImage
+check is what keeps a `pkexec` prompt away from someone who installed the deb.
+
+The AppImage artifact deliberately has **no version in its filename**. The
+updater replaces the running file, and when the name carries a version it
+writes the new one beside the old and deletes the old — moving the app, and
+breaking any launcher pointing at it. A stable name updates in place. Existing
+installs still get renamed once, on their first update, which is why
+`syncAutostart` rewrites the autostart entry when its `Exec` line no longer
+matches the running executable.
+
 ## Security posture
 
 Every window runs with `contextIsolation: true`, `sandbox: true`, no node

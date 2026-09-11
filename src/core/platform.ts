@@ -22,6 +22,8 @@ export interface PlatformFacts {
     desktop?: string
     /** True when running from inside a snap confinement. */
     isSnap?: boolean
+    /** True when running from an AppImage bundle. */
+    isAppImage?: boolean
 }
 
 /** Parses the build number out of an `os.release()` string like "10.0.22631". */
@@ -108,13 +110,38 @@ export function supportsNotificationActions(facts: PlatformFacts, isSigned: bool
     return facts.platform === 'win32' || facts.platform === 'linux'
 }
 
+export type UpdateDelivery =
+    /** The app downloads and installs the update itself. */
+    | 'in-app'
+    /** The app fetches the installer; the user finishes the install. */
+    | 'assisted'
+    /** Something else owns the install: snap, apt, dnf. */
+    | 'external'
+
 /**
- * Whether in-app updates can install themselves.
+ * Who installs an update on this build.
  *
- * Linux builds are updated by the package manager or the snap store, and
- * unsigned macOS builds cannot use Squirrel.Mac, so only Windows gets the
- * fully automatic path.
+ * Windows NSIS builds carry a signature chain electron-updater can verify, and
+ * an AppImage is a single file the app is allowed to replace — both install
+ * themselves. Squirrel.Mac refuses to update an unsigned app, so macOS gets as
+ * far as the DMG and hands over.
+ *
+ * deb, rpm and snap are deliberately external. electron-updater can drive all
+ * three, but the deb and rpm paths shell out to a privileged installer behind
+ * `pkexec` and would be writing over files that dnf and apt consider theirs,
+ * and snap refreshes itself. The distinction is the packaging format rather
+ * than the platform, which is why this takes the facts rather than asking
+ * `process.platform`.
  */
-export function supportsInAppUpdateInstall(facts: PlatformFacts): boolean {
-    return facts.platform === 'win32'
+export function resolveUpdateDelivery(facts: PlatformFacts): UpdateDelivery {
+    switch (facts.platform) {
+        case 'win32':
+            return 'in-app'
+        case 'darwin':
+            return 'assisted'
+        case 'linux':
+            return facts.isAppImage ? 'in-app' : 'external'
+        default:
+            return 'external'
+    }
 }

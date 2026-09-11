@@ -5,17 +5,22 @@
  *
  * - Windows: NSIS builds carry a signature chain electron-updater can verify,
  *   so updates download and install themselves.
+ * - Linux AppImage: one file, owned by the user, which electron-updater can
+ *   replace the same way.
  * - macOS: Squirrel.Mac refuses to apply an update to an unsigned app, so the
  *   app fetches the DMG, drops it in Downloads and points at the install steps.
- * - Linux: snap, deb, rpm and AppImage are all owned by something else. The app
- *   says where updates come from rather than pretending to manage them.
+ * - Linux snap, deb and rpm: owned by something else. The app says where
+ *   updates come from rather than pretending to manage them.
+ *
+ * `resolveUpdateDelivery` in `core/platform` makes that choice; nothing here
+ * branches on the platform directly.
  */
 
 import { app, BrowserWindow, dialog, shell } from 'electron'
 import { download } from 'electron-dl'
 import * as path from 'path'
 import { getSettings } from './store'
-import { isAppImage, isLinux, isMac, isSnap } from './platform'
+import { getUpdateDelivery, isMac, isSnap } from './platform'
 import { isNewerVersion, pickAssetForArch, ReleaseAsset, pickLatestRelease, ReleaseSummary } from '../core/update'
 
 const RELEASES_API = 'https://api.github.com/repos/frozen0601/BlinkBlink-Releases/releases'
@@ -132,15 +137,9 @@ async function downloadMacOSUpdate(asset: ReleaseAsset): Promise<void> {
     }
 }
 
-function linuxUpdateMessage(): { message: string; detail: string } {
+function externalUpdateMessage(): { message: string; detail: string } {
     if (isSnap()) {
         return { message: 'Updates are handled automatically by Snap.', detail: 'Run `snap refresh blinkblink` to check immediately.' }
-    }
-    if (isAppImage()) {
-        return {
-            message: 'This is an AppImage build.',
-            detail: 'Download the latest AppImage from the BlinkBlink releases page and replace this file.',
-        }
     }
     return {
         message: 'Updates are handled by your package manager.',
@@ -156,8 +155,8 @@ function linuxUpdateMessage(): { message: string; detail: string } {
  */
 export async function checkForUpdates(silent = false): Promise<{ updateAvailable: boolean; version?: string }> {
     try {
-        if (isLinux) {
-            if (!silent) await showDialog({ type: 'info', title: 'Updates', ...linuxUpdateMessage() })
+        if (getUpdateDelivery() === 'external') {
+            if (!silent) await showDialog({ type: 'info', title: 'Updates', ...externalUpdateMessage() })
             return { updateAvailable: false }
         }
 
@@ -197,7 +196,13 @@ export async function checkForUpdates(silent = false): Promise<{ updateAvailable
             return { updateAvailable: true, version: latestVersion }
         }
 
-        // Windows: electron-updater downloads and installs.
+        // Windows NSIS and Linux AppImage: electron-updater downloads and
+        // installs. It picks the right installer itself, from the platform and
+        // the `package-type` file electron-builder leaves in the resources
+        // directory — which is also why the AppImage check above matters: on
+        // Linux its default is the AppImage updater, and letting a deb or rpm
+        // build reach here would put `pkexec dpkg -i` in front of someone who
+        // asked for a break reminder.
         const { autoUpdater } = await import('electron-updater')
         await autoUpdater.checkForUpdatesAndNotify()
         return { updateAvailable: true, version: latestVersion }
@@ -218,7 +223,7 @@ export async function checkForUpdates(silent = false): Promise<{ updateAvailable
 export function startAutoUpdateTimer(): void {
     stopAutoUpdateTimer()
 
-    if (isLinux) return
+    if (getUpdateDelivery() === 'external') return
     if (!getSettings().autoUpdate) return
 
     void checkForUpdates(true)
