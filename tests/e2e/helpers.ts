@@ -11,6 +11,11 @@ export interface LaunchOptions {
     /** Settings to seed into a fresh store before the app starts. */
     settings?: Partial<Settings>
     /**
+     * Anything else to seed into the store — the break history, the streak
+     * counters, the version marker. Merged over the defaults written below.
+     */
+    store?: Record<string, unknown>
+    /**
      * A built executable to run instead of the source tree.
      *
      * Set by the packaged smoke test: only a real package exercises the asar
@@ -43,10 +48,11 @@ export async function launchApp(options: LaunchOptions = {}): Promise<LaunchedAp
     fs.writeFileSync(
         path.join(userData, 'config.json'),
         JSON.stringify({
-            schemaVersion: 2,
+            schemaVersion: 3,
             settings: { ...DEFAULT_SETTINGS, ...options.settings },
             // Skip the first-run walkthrough; it is exercised separately.
             hasCompletedFirstRun: true,
+            ...options.store,
         }),
         'utf-8'
     )

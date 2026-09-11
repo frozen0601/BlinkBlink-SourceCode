@@ -1,3 +1,5 @@
+import type { BreakHistory } from './breakHistory'
+
 /**
  * Shared data types.
  *
@@ -92,6 +94,8 @@ export interface StoreSchema {
     settings: Settings
     stats: Stats
     hasCompletedFirstRun: boolean
+    /** Day-by-day break record; see `core/breakHistory.ts`. */
+    history: BreakHistory
     /** The version whose release note has been shown. Empty until one is. */
     lastSeenVersion: string
     lastBreakEndTime: number

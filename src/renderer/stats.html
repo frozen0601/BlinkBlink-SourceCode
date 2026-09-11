@@ -1,4 +1,3 @@
-<!-- stats.html -->
 <!doctype html>
 <html lang="en">
     <head>
@@ -11,26 +10,55 @@
         <link rel="stylesheet" href="stats.css" />
     </head>
     <body>
-        <div class="stats-container">
-            <div class="stat-group">
-                <h2>Current Consecutive Streak</h2>
-                <div class="stat-item">
-                    <p data-label="Count"><span id="break-streak-count"></span></p>
-                    <p data-label="Duration"><span id="break-streak-duration"></span></p>
-                    <p data-label="Started at"><span id="current-work-streak-start-time"></span></p>
-                </div>
-            </div>
+        <main class="stats">
+            <!--
+              The week, as the mascot's own eye: the lid closes by the share of
+              breaks that went by. The count beside it carries the meaning; the
+              eye is what makes the window recognisably this app's.
+            -->
+            <section class="hero">
+                <svg class="eye" viewBox="0 0 200 200" role="img" aria-labelledby="eye-label">
+                    <title id="eye-label">Breaks taken this week</title>
+                    <defs>
+                        <clipPath id="socket"><circle cx="100" cy="100" r="88" /></clipPath>
+                    </defs>
+                    <circle cx="100" cy="100" r="88" class="sclera" />
+                    <g clip-path="url(#socket)">
+                        <circle cx="100" cy="100" r="62" class="iris" />
+                        <circle cx="100" cy="100" r="24" class="pupil" />
+                        <circle cx="88" cy="86" r="8" class="glint" />
+                        <rect id="lid" x="0" y="0" width="200" height="0" class="lid" />
+                        <rect id="lash" x="0" y="0" width="200" height="5" class="lash" />
+                    </g>
+                    <circle cx="100" cy="100" r="88" class="rim" />
+                </svg>
 
-            <div class="stat-group">
-                <h2>Longest Consecutive Streak</h2>
-                <div class="stat-item">
-                    <p data-label="Count"><span id="highest-streak-count"></span></p>
-                    <p data-label="Duration"><span id="highest-streak-duration"></span></p>
-                    <p data-label="Started at"><span id="highest-streak-start-time"></span></p>
-                    <p data-label="Ended at"><span id="highest-streak-end-time"></span></p>
+                <div class="hero-text">
+                    <p class="count">
+                        <span id="taken">0</span> <span class="of">of <span id="offered">0</span></span>
+                    </p>
+                    <p class="summary" id="summary"></p>
                 </div>
-            </div>
-        </div>
+            </section>
+
+            <section class="block">
+                <h2>Weekly trend <span class="aside">share of breaks taken, against 100%</span></h2>
+                <svg class="trend" id="trend" viewBox="0 0 560 88" preserveAspectRatio="none" role="img" aria-labelledby="trend-label">
+                    <title id="trend-label">Share of breaks taken over the last eight weeks</title>
+                </svg>
+                <p class="axis"><span>8 weeks ago</span><span class="now">this week</span></p>
+            </section>
+
+            <section class="block">
+                <h2>By hour <span class="aside">last 30 days</span></h2>
+                <div class="hours" id="hours"></div>
+            </section>
+
+            <section class="streak">
+                <p><strong id="streak-count">0 days</strong> without skipping <span class="best" id="streak-best"></span></p>
+                <p class="since" id="since"></p>
+            </section>
+        </main>
         <script src="stats.js"></script>
     </body>
 </html>

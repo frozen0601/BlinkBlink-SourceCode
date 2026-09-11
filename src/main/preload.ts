@@ -33,6 +33,7 @@ const api = {
     getSoundPath: (filename: string): Promise<string | null> => ipcRenderer.invoke('get-sound-path', filename),
     getCapabilities: () => ipcRenderer.invoke('get-capabilities'),
     getWhatsNew: (): Promise<{ version: string; lines: string[] }> => ipcRenderer.invoke('get-whats-new'),
+    getBreakHistory: () => ipcRenderer.invoke('get-break-history'),
 
     // Writes
     saveSettings: (settings: Partial<Settings>): Promise<Settings> => ipcRenderer.invoke('save-settings', settings),

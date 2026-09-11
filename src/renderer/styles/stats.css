@@ -1,135 +1,277 @@
-@import 'shared.css';
+/*
+ * The statistics window.
+ *
+ * One question, answered at the top — did I take this week's breaks — and then
+ * the two views that say something a person can act on: whether it is getting
+ * better or worse, and which hour the breaks go by. The streak counters, which
+ * used to be the whole window, are a line at the bottom: they are a reward
+ * rather than a report.
+ */
 
-* {
-    box-sizing: border-box;
+:root {
+    color-scheme: light dark;
+
+    --paper: #fbfbfc;
+    --ink: #14161a;
+    --ink-2: rgba(20, 22, 26, 0.58);
+    --ink-3: rgba(20, 22, 26, 0.38);
+    --rule: rgba(20, 22, 26, 0.1);
+    --taken: #2e9e5b;
+    --missed: rgba(20, 22, 26, 0.15);
+    --record: #b57608;
+    /*
+     * The eye keeps the mascot's own colours in both themes — dark rim, white
+     * sclera, dark pupil. Inverting it for dark mode made it stop looking like
+     * the mascot's eye, which is the only reason it is here.
+     */
+    --sclera: #ffffff;
+    --eye-ink: #14161a;
+    /* The mascot's own skin, so a closing eye reads as a lid rather than as a
+       bar drawn over one. Painting it in the window background instead made it
+       invisible in light mode, where the sclera is also near-white. */
+    --lid: #c09aa8;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --paper: #1b1d21;
+        --ink: #f3f4f6;
+        --ink-2: rgba(243, 244, 246, 0.6);
+        --ink-3: rgba(243, 244, 246, 0.36);
+        --rule: rgba(255, 255, 255, 0.1);
+        --taken: #4ade80;
+        --missed: rgba(255, 255, 255, 0.14);
+        --record: #f0b429;
+        --sclera: #ffffff;
+        --eye-ink: #14161a;
+        --lid: #c09aa8;
+    }
 }
 
 html,
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-    padding: 10px;
-    background: var(--background-color);
-    color: var(--text-color);
     margin: 0;
+    height: 100%;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Ubuntu, Cantarell, system-ui, sans-serif;
+    font-variant-numeric: tabular-nums;
+    user-select: none;
+    -webkit-user-select: none;
 }
 
-h1 {
-    margin-top: 0;
-    margin-bottom: 24px;
-    font-size: 24px;
-    font-weight: 500;
-    color: var(--heading-color);
-    text-align: center;
-}
-
-p {
-    font-size: 1.2em;
-    margin: 0;
-}
-
-.stats-container {
-    padding: 15px;
-    width: 100%;
-    border-radius: var(--border-radius);
-    max-width: 800px;
-    margin: 0 auto;
+.stats {
+    box-sizing: border-box;
+    min-height: 100%;
+    padding: 24px 28px 20px;
     display: flex;
     flex-direction: column;
-    gap: 20px;
-    animation: fadeIn 1s ease-in-out;
+    gap: 22px;
+}
+
+/* The eye ------------------------------------------------------------- */
+
+.hero {
+    display: flex;
     align-items: center;
+    gap: 24px;
 }
 
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-    }
-    to {
-        opacity: 1;
-    }
+.eye {
+    flex: 0 0 auto;
+    width: 96px;
+    height: 96px;
 }
 
-.stat-group {
-    background: var(--surface-color);
-    padding: 15px;
-    border-radius: var(--border-radius);
-    box-shadow: var(--shallow-shadow);
-    transition: background-color var(--transition-speed);
-    width: 100%;
-    max-width: 600px;
-    margin-bottom: var(--spacing-unit);
+.sclera {
+    fill: var(--sclera);
 }
 
-.stat-group:hover {
-    background: color-mix(in srgb, var(--surface-color) 95%, var(--primary-color) 5%);
+.iris {
+    fill: var(--taken);
 }
 
-.stat-group h2 {
-    text-align: center;
+.pupil {
+    fill: var(--eye-ink);
 }
 
-.stat-item {
-    padding: 15px;
-    width: 100%;
-    border-radius: calc(var(--border-radius) * 0.75);
-    display: table;
-    margin-top: calc(var(--spacing-unit) * 0.5);
+.glint {
+    fill: var(--sclera);
+    opacity: 0.92;
 }
 
-.stat-item p {
-    display: table-row;
+.lid {
+    fill: var(--lid);
+}
+
+.lash {
+    fill: var(--eye-ink);
+}
+
+.rim {
+    fill: none;
+    stroke: var(--eye-ink);
+    stroke-width: 9;
+}
+
+.hero-text {
+    min-width: 0;
+}
+
+.count {
     margin: 0;
-    font-size: 1em;
+    font-size: 40px;
+    font-weight: 600;
+    letter-spacing: -1.2px;
+    line-height: 1;
 }
 
-.stat-item p::before {
-    content: attr(data-label);
-    display: table-cell;
-    width: 150px;
-    padding-right: 10px;
+.count .of {
+    color: var(--ink-3);
+    font-weight: 500;
+}
+
+.summary {
+    margin: 9px 0 0;
+    font-size: 13.5px;
+    line-height: 1.45;
+    color: var(--ink-2);
+    max-width: 38ch;
+}
+
+/* Sections ------------------------------------------------------------ */
+
+.block h2 {
+    font-size: 12.5px;
+    font-weight: 620;
+    margin: 0 0 10px;
+}
+
+.block h2 .aside {
+    font-weight: 450;
+    color: var(--ink-3);
+    margin-left: 8px;
+}
+
+.trend {
+    display: block;
+    width: 100%;
+    height: 92px;
+}
+
+.trend .guide {
+    stroke: var(--ink);
+    stroke-width: 1;
+    stroke-dasharray: 3 4;
+    opacity: 0.18;
+}
+
+.trend .area {
+    fill: var(--taken);
+    opacity: 0.13;
+}
+
+.trend .line {
+    fill: none;
+    stroke: var(--taken);
+    stroke-width: 2.5;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+    vector-effect: non-scaling-stroke;
+}
+
+.trend .head {
+    fill: var(--taken);
+}
+
+.axis {
+    display: flex;
+    justify-content: space-between;
+    margin: 4px 0 0;
+    font-size: 10.5px;
+    color: var(--ink-3);
+}
+
+.axis .now {
+    color: var(--ink-2);
+    font-weight: 600;
+}
+
+/* Hour rows ----------------------------------------------------------- */
+
+.hours {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.hour {
+    display: grid;
+    grid-template-columns: 44px 1fr 72px;
+    align-items: center;
+    gap: 10px;
+    font-size: 11.5px;
+    color: var(--ink-2);
+}
+
+.hour .track {
+    height: 9px;
+    border-radius: 5px;
+    background: var(--missed);
+    overflow: hidden;
+}
+
+.hour .took {
+    height: 100%;
+    border-radius: 5px;
+    background: var(--taken);
+}
+
+.hour .figure {
     text-align: right;
-    vertical-align: top;
-    padding-top: 5px;
-    padding-bottom: 5px;
-    color: var(--text-secondary);
+    white-space: nowrap;
+    color: var(--ink-3);
 }
 
-.stat-item span {
-    display: table-cell;
-    text-align: left;
-    vertical-align: top;
-    font-weight: bold;
-    color: var(--accent-color);
-    padding-top: 5px;
-    padding-bottom: 5px;
+.hour.worst .figure {
+    color: var(--ink);
+    font-weight: 600;
 }
 
-@media (min-width: 768px) {
-    body {
-        padding: 40px;
-    }
-    .stats-container {
-        max-width: 700px;
-    }
+/* Streak -------------------------------------------------------------- */
+
+.streak {
+    margin-top: auto;
+    border-top: 1px solid var(--rule);
+    padding-top: 14px;
+    font-size: 13px;
+    color: var(--ink-2);
 }
 
-@media (min-width: 1024px) {
-    .stats-container {
-        max-width: 800px;
-    }
+.streak p {
+    margin: 0;
 }
 
-/* Custom scrollbar styles */
-::-webkit-scrollbar {
-    width: 12px;
+.streak strong {
+    color: var(--ink);
+    font-size: 15px;
+    font-weight: 620;
 }
 
-::-webkit-scrollbar-track {
-    background: var(--scrollbar-bg);
+.streak .best {
+    color: var(--record);
+    font-weight: 600;
 }
 
-::-webkit-scrollbar-thumb {
-    background-color: var(--scrollbar-thumb);
-    border-radius: 10px;
-    border: 3px solid var(--scrollbar-bg);
+.streak .since {
+    margin-top: 4px;
+    font-size: 11.5px;
+    color: var(--ink-3);
+}
+
+/* Empty state --------------------------------------------------------- */
+
+.empty .block,
+.empty .axis {
+    display: none;
 }

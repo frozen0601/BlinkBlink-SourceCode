@@ -60,11 +60,3 @@ test('the schedule editor writes overnight ranges through unchanged', async () =
         .poll(async () => (await settings.evaluate(() => window.api.getSettings())).schedule.monday.timeRanges, { timeout: 10_000 })
         .toEqual([{ start: '22:00', end: '02:00' }])
 })
-
-test('the stats window reads real values from the store', async () => {
-    launched = await launchApp({ args: ['--stats'] })
-    const stats = await waitForWindow(launched.app, 'stats.html')
-    await expect(stats.locator('#break-streak-count')).toHaveText('0')
-    await expect(stats.locator('#break-streak-duration')).toHaveText('0 seconds')
-    await expect(stats.locator('#current-work-streak-start-time')).toHaveText('Not started')
-})

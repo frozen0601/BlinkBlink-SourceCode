@@ -138,6 +138,33 @@ by an older version cannot put the timer into a state it does not understand.
 
 `store.ts` carries a `schemaVersion` and migrates forward on startup.
 
+## Statistics
+
+`core/breakHistory.ts` keeps one row per day — breaks taken, breaks skipped,
+and both again per hour of the day — and derives every view the statistics
+window draws. It is local; nothing here is sent anywhere.
+
+Size was the deciding constraint, because electron-store rewrites the whole
+JSON file on every break. A working day is about 145 bytes, so roughly 37 KB a
+year; `RETAIN_DAYS` (400) of daily rows are kept and anything older is folded
+into one row per month, which stops the file growing at around 50 KB however
+long the app is installed.
+
+Two decisions worth keeping:
+
+- **"Offered", not "scheduled".** The week reads "39 of 44", where 44 is every
+  break the app actually put in front of someone. Working out what a schedule
+  _would_ have produced means guessing at hours the machine was asleep, and a
+  denominator nobody can check is worse than a smaller true one.
+- **Only hours that saw a break appear.** That is what makes the hour view
+  correct for someone on a schedule: the app never offered a break at 3am, so
+  3am is never shown as a perfect hour.
+
+The sentence under the count is assembled from the numbers, not written: each
+clause has a threshold — three skips before the afternoon is blamed, a clear
+lead over second place before an hour is named — so it can only say something
+the rows support.
+
 ## Bundled sounds
 
 `assets/sounds` ships Ogg Opus, copied into the package as `extraResources` and

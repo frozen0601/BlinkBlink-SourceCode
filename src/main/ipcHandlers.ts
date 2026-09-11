@@ -8,7 +8,7 @@
 
 import { app, ipcMain, shell } from 'electron'
 import { isAutostartSupported, setAutostart } from './autostart'
-import { getSettings, getStats, getWorkDuration, setFirstRunCompleted, updateSettings } from './store'
+import { getHistory, getSettings, getStats, getWorkDuration, setFirstRunCompleted, updateSettings } from './store'
 import { getRemainingTimeInMinutes, getTimerStatus, skipBreaksFor, startWorkTimer } from './timer'
 import { showBreakView } from './windows'
 import { checkForUpdates, startAutoUpdateTimer, stopAutoUpdateTimer } from './updater'
@@ -66,6 +66,7 @@ export function registerIpcHandlers(): void {
     // Reads -------------------------------------------------------------
 
     ipcMain.handle('get-stats', () => getStats())
+    ipcMain.handle('get-break-history', () => getHistory())
     ipcMain.handle('get-settings', () => getSettings())
     ipcMain.handle('get-available-sounds', () => getAvailableSounds())
     ipcMain.handle('get-sound-path', (_event, filename: unknown) => getSoundPath(filename))

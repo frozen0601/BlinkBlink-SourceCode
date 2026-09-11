@@ -12,9 +12,10 @@ import { randomUUID } from 'crypto'
 import { BrowserWindow, screen } from 'electron'
 import { DaySchedule, DayKey, Settings, Stats, StoreSchema, TrayWindowPosition, WeeklySchedule } from '../core/types'
 import { DEFAULT_SETTINGS, DEFAULT_STATS, normalizeSettings, normalizeStats } from '../core/settings'
+import { BreakHistory, BreakOutcome, EMPTY_HISTORY, normalizeHistory, recordBreak } from '../core/breakHistory'
 
 /** Bumped whenever the on-disk shape changes in a way that needs migrating. */
-export const CURRENT_SCHEMA_VERSION = 2
+export const CURRENT_SCHEMA_VERSION = 3
 
 const STORE_DEFAULTS: StoreSchema = {
     schemaVersion: CURRENT_SCHEMA_VERSION,
@@ -22,6 +23,7 @@ const STORE_DEFAULTS: StoreSchema = {
     settings: DEFAULT_SETTINGS,
     stats: DEFAULT_STATS,
     hasCompletedFirstRun: false,
+    history: EMPTY_HISTORY,
     lastSeenVersion: '',
     lastBreakEndTime: 0,
     currentWorkStreakStartTime: 0,
@@ -42,6 +44,10 @@ const WINDOW_DEFAULTS: Record<string, { width: number; height: number }> = {
  * Version 1 (implicit, pre-migration) stored settings without `reminderStyle`
  * or `overlayBackdrop` and could hold out-of-range durations written before the
  * values were validated. Normalising is enough to move it to version 2.
+ *
+ * Version 3 adds the day-by-day break history. There is nothing to convert —
+ * the record starts from the day someone updates — so normalising covers this
+ * one too, and an empty history is a correct history.
  */
 function migrate(): void {
     const version = store.get('schemaVersion', 0)
@@ -50,12 +56,14 @@ function migrate(): void {
     try {
         store.set('settings', normalizeSettings(store.get('settings'), DEFAULT_SETTINGS))
         store.set('stats', normalizeStats(store.get('stats')))
+        store.set('history', normalizeHistory(store.get('history')))
         store.set('schemaVersion', CURRENT_SCHEMA_VERSION)
         console.info(`[store] migrated from schema version ${version} to ${CURRENT_SCHEMA_VERSION}`)
     } catch (error) {
         console.error('[store] migration failed, falling back to defaults:', error)
         store.set('settings', DEFAULT_SETTINGS)
         store.set('stats', DEFAULT_STATS)
+        store.set('history', EMPTY_HISTORY)
         store.set('schemaVersion', CURRENT_SCHEMA_VERSION)
     }
 }
@@ -70,6 +78,17 @@ export function getStats(): Stats {
 
 export function setStats(stats: Stats): void {
     store.set('stats', normalizeStats(stats))
+}
+
+// Break history ---------------------------------------------------------
+
+export function getHistory(): BreakHistory {
+    return normalizeHistory(store.get('history'))
+}
+
+/** Adds one break to the day-by-day record. */
+export function addBreakToHistory(outcome: BreakOutcome, at: Date): void {
+    store.set('history', recordBreak(getHistory(), outcome, at))
 }
 
 // Settings --------------------------------------------------------------
