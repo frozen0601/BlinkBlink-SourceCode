@@ -124,13 +124,40 @@ The cost is keyboard input: an unmanaged window never takes focus, so it gets no
 key events. The break screen does not mind — it is meant to be hard to get out
 of, and Skip is a button. There is deliberately no Escape handler.
 
-**This is an X11 mechanism.** Override-redirect is an X11 concept, and Wayland
-has no equivalent and no protocol for staying out of a switcher. Electron uses
-XWayland by default even in a Wayland session, which is why this works there;
-an Electron built or launched onto the native Wayland backend
-(`--ozone-platform=wayland`, or `ELECTRON_OZONE_PLATFORM_HINT=auto` in the
-environment) will be listed in the switcher and nothing in the app can prevent
-it.
+**This is an X11 mechanism, and Electron does not default to X11.** That
+assumption was wrong and cost a round of "still able to alt-tab": Electron 38
+selects its Wayland backend on its own the moment `WAYLAND_DISPLAY` is set, with
+no flag and no hint. Measured against a headless Weston — the app loaded
+`ozone/platform/wayland` and created no X11 window at all. Wayland has no
+override-redirect and no protocol for staying out of a switcher, so there the
+overlay is listed whatever it asks for, and a Wayland client cannot raise itself
+back afterwards either.
+
+So on a Wayland session the app restarts itself onto XWayland
+(`relaunchOntoX11IfNeeded`). The backend is read before the main script runs, so
+it can only be set on the process command line:
+
+| How                                           | Result                     |
+| --------------------------------------------- | -------------------------- |
+| nothing (a Wayland session)                   | Wayland backend            |
+| `app.commandLine.appendSwitch` from `main.ts` | Wayland backend — too late |
+| `ELECTRON_OZONE_PLATFORM_HINT=x11`            | Wayland backend — ignored  |
+| `--ozone-platform=x11` on the command line    | X11, override-redirect     |
+
+Re-executing is the only lever left. It happens before the single-instance lock
+and before anything is created, so the discarded process never draws a tray icon
+or a window — from outside it is a slower start, not a restart. It cannot loop:
+the replacement carries `--ozone-platform=x11`, which reads as a deliberate
+choice, so the check is false the second time.
+
+The cost is XWayland's: on a fractional display scale it renders at an integer
+scale and the compositor resizes, which is softer than native output. An overlay
+that can be tabbed away from does not do its job at all, so it loses. Passing
+`--ozone-platform=wayland` explicitly is the way back.
+
+Verified end to end against a headless Weston with `DISPLAY` also set, launched
+with no flags: the relaunch fires once, the live command line carries the
+switch, and the overlay window reports `Override Redirect State: yes`.
 
 Linux only. macOS and Windows do not put the overlay in a switcher, and both
 would lose focus behaviour that works today.

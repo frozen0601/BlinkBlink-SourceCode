@@ -69,10 +69,14 @@ app without a tray to click.
   switcher ignores it on X11 too — that reads
   `_KDE_NET_WM_STATE_SKIP_SWITCHER`, which Electron cannot set. The overlay is
   created `focusable: false` on Linux instead, which maps it override-redirect
-  and out of window management altogether (verified with `xwininfo`). That is an
-  **X11** mechanism — on the native Wayland backend nothing in the app can keep
-  a window out of the switcher. Full screen is a separate fix, for covering the
-  panel.
+  and out of window management altogether (verified with `xwininfo`). Full
+  screen is a separate fix, for covering the panel.
+- **Electron picks Wayland on its own when `WAYLAND_DISPLAY` is set.** No flag,
+  no `ELECTRON_OZONE_PLATFORM_HINT` — and the hint variable is ignored. There is
+  no override-redirect on Wayland and no protocol for leaving a switcher, so the
+  app re-execs itself with `--ozone-platform=x11` at startup
+  (`relaunchOntoX11IfNeeded`). `app.commandLine.appendSwitch` from `main.ts` is
+  too late; the backend is read before the main script runs.
 - **The break screen has no Escape handler, on purpose.** A break you leave with
   one keystroke is not a break. Skip is a button, and an unmanaged window
   receives no key events anyway. Do not add one back.

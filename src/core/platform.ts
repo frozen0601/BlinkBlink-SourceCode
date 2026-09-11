@@ -24,6 +24,44 @@ export interface PlatformFacts {
     isSnap?: boolean
     /** True when running from an AppImage bundle. */
     isAppImage?: boolean
+    /** `DISPLAY` — an X server, or XWayland, is reachable when this is set. */
+    display?: string
+    /** `WAYLAND_DISPLAY` — Electron picks its Wayland backend when this is set. */
+    waylandDisplay?: string
+    /** An explicit backend choice: `ELECTRON_OZONE_PLATFORM_HINT`, or `--ozone-platform`. */
+    ozoneChoice?: string
+}
+
+/**
+ * Whether to pin the app to X11 on a Wayland session.
+ *
+ * Electron 38 selects its Wayland backend on its own as soon as `WAYLAND_DISPLAY`
+ * is set — no flag, no `ELECTRON_OZONE_PLATFORM_HINT` needed. Verified by running
+ * the packaged app against a headless Weston with no switches: it loaded
+ * `ozone/platform/wayland` and created no X11 window at all.
+ *
+ * That costs the break screen its one defence. Wayland has no override-redirect
+ * and no protocol for staying out of a task switcher, so on the Wayland backend
+ * the overlay is in alt-tab whatever it asks for, and a Wayland client cannot
+ * raise itself back afterwards either. On XWayland, `focusable: false` maps the
+ * window override-redirect and KWin does not manage or list it.
+ *
+ * The trade is XWayland's, and it is real: on a fractional display scale
+ * XWayland renders at an integer scale and the compositor resizes, which is
+ * softer than native output. An overlay that can be tabbed away from does not
+ * do its job at all, so it loses.
+ *
+ * Deliberately narrow. It does nothing on an X11 session, where the backend is
+ * already X11; nothing when there is no `DISPLAY` to fall back to, rather than
+ * pinning the app to a backend that is not there; and nothing when a backend was
+ * asked for explicitly, so `ELECTRON_OZONE_PLATFORM_HINT=auto` remains the way
+ * back to native Wayland.
+ */
+export function shouldForceX11(facts: PlatformFacts): boolean {
+    if (facts.platform !== 'linux') return false
+    if (facts.ozoneChoice) return false
+    if (!facts.waylandDisplay) return false
+    return Boolean(facts.display)
 }
 
 /** Parses the build number out of an `os.release()` string like "10.0.22631". */

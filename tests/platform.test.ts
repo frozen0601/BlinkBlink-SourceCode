@@ -5,6 +5,7 @@ import {
     overlayBypassesWindowManager,
     resolveBackdropMode,
     resolveUpdateDelivery,
+    shouldForceX11,
     supportsNotificationActions,
     supportsWindowsAcrylic,
     windowsBuildNumber,
@@ -111,6 +112,38 @@ describe('overlayBypassesWindowManager', () => {
         expect(overlayBypassesWindowManager(facts('linux'))).toBe(true)
         expect(overlayBypassesWindowManager(facts('darwin'))).toBe(false)
         expect(overlayBypassesWindowManager(facts('win32'))).toBe(false)
+    })
+})
+
+describe('shouldForceX11', () => {
+    const wayland = (extra: Record<string, unknown> = {}) =>
+        facts('linux', '6.8.0', { waylandDisplay: 'wayland-0', display: ':0', ...extra })
+
+    it('pins a Wayland session to XWayland', () => {
+        // Electron 38 picks its Wayland backend on its own as soon as
+        // WAYLAND_DISPLAY is set, and there the overlay is in alt-tab whatever
+        // it asks for.
+        expect(shouldForceX11(wayland())).toBe(true)
+    })
+
+    it('leaves an X11 session alone', () => {
+        expect(shouldForceX11(facts('linux', '6.8.0', { display: ':0' }))).toBe(false)
+    })
+
+    it('does not pin to a backend that is not there', () => {
+        // No DISPLAY means no XWayland to fall back to; forcing x11 would stop
+        // the app starting at all.
+        expect(shouldForceX11(facts('linux', '6.8.0', { waylandDisplay: 'wayland-0' }))).toBe(false)
+    })
+
+    it('yields to an explicit choice, which is the way back to native Wayland', () => {
+        expect(shouldForceX11(wayland({ ozoneChoice: 'auto' }))).toBe(false)
+        expect(shouldForceX11(wayland({ ozoneChoice: '--ozone-platform=wayland' }))).toBe(false)
+    })
+
+    it('is Linux only', () => {
+        expect(shouldForceX11(facts('darwin', '23.0.0', { waylandDisplay: 'wayland-0', display: ':0' }))).toBe(false)
+        expect(shouldForceX11(facts('win32', '10.0.22631', { waylandDisplay: 'wayland-0', display: ':0' }))).toBe(false)
     })
 })
 

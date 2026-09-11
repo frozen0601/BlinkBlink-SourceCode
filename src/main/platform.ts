@@ -10,6 +10,7 @@ import {
     resolveBackdropMode,
     overlayBypassesWindowManager,
     resolveUpdateDelivery,
+    shouldForceX11,
     supportsNotificationActions,
 } from '../core/platform'
 import { BackdropMode, BackdropPreference } from '../core/types'
@@ -33,6 +34,15 @@ export function isAppImage(): boolean {
     return isLinux && typeof process.env.APPIMAGE === 'string'
 }
 
+/** An explicit backend choice, from the environment or the command line. */
+function ozoneChoice(): string | undefined {
+    const fromEnvironment = process.env.ELECTRON_OZONE_PLATFORM_HINT
+    if (fromEnvironment) return fromEnvironment
+
+    const fromArgv = process.argv.find((argument) => argument.startsWith('--ozone-platform'))
+    return fromArgv || undefined
+}
+
 export function platformFacts(): PlatformFacts {
     return {
         platform: process.platform,
@@ -41,7 +51,42 @@ export function platformFacts(): PlatformFacts {
         desktop: process.env.XDG_CURRENT_DESKTOP,
         isSnap: isSnap(),
         isAppImage: isAppImage(),
+        display: process.env.DISPLAY,
+        waylandDisplay: process.env.WAYLAND_DISPLAY,
+        ozoneChoice: ozoneChoice(),
     }
+}
+
+/**
+ * Restarts onto X11 when Electron has picked the Wayland backend.
+ *
+ * The backend is chosen before the main script runs, so it can only be set on
+ * the process command line. Measured, not assumed: with `WAYLAND_DISPLAY` set,
+ * `--ozone-platform=x11` on the command line produces an override-redirect X11
+ * window, while `app.commandLine.appendSwitch` from here and
+ * `ELECTRON_OZONE_PLATFORM_HINT=x11` in the environment both leave the app on
+ * Wayland. Re-executing is the only lever the app has.
+ *
+ * Called before the single-instance lock and before anything is created, so the
+ * discarded process never draws a tray icon or a window — from outside it is a
+ * slower start, not a restart. It can only happen once: the relaunched process
+ * carries `--ozone-platform=x11`, which `ozoneChoice` reads as a deliberate
+ * choice, so `shouldForceX11` is false the second time round.
+ *
+ * Returns true when the caller should stop and let the replacement take over.
+ */
+export function relaunchOntoX11IfNeeded(): boolean {
+    if (!shouldForceX11(platformFacts())) return false
+
+    // Inside an AppImage `process.execPath` is a path in a mount that vanishes
+    // with this process; APPIMAGE is the file that can actually be re-run.
+    const execPath = process.env.APPIMAGE || undefined
+    const args = [...process.argv.slice(1), '--ozone-platform=x11']
+
+    console.info('[app] restarting on XWayland: a Wayland window cannot stay out of the task switcher')
+    app.relaunch({ execPath, args })
+    app.exit(0)
+    return true
 }
 
 /**
