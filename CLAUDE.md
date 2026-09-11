@@ -66,12 +66,14 @@ app without a tray to click.
   managers treat that type as non-interactive.
 - **A Linux window cannot take itself out of the task switcher.** `skipTaskbar`
   is documented as unsupported on Linux and does nothing at all on Wayland, and
-  KWin's alt-tab ignores it on X11 too. The only app-side lever is
-  `focusable: false`, which drops the window out of window management entirely
-  and takes its keyboard events with it — the overlay's Escape-to-skip is there
-  for people who do not use a mouse, so that trade is not available. The
-  overlay asks for real full screen instead, which is what makes it cover a
-  Plasma panel; being alt-tab-able is a KWin window rule the user can add.
+  KWin's alt-tab ignores it on X11 too — it reads
+  `_KDE_NET_WM_STATE_SKIP_SWITCHER` from `_NET_WM_STATE`, and Electron cannot
+  put an arbitrary atom there. The only app-side lever is `focusable: false`,
+  which drops the window out of window management entirely and takes its
+  keyboard events with it — the overlay's Escape-to-skip is there for people who
+  do not use a mouse, so that trade is not available. The overlay asks for real
+  full screen instead, which is what makes it cover a Plasma panel (confirmed on
+  Fedora); staying out of alt-tab is a KWin window rule the user adds.
 - **macOS notification action buttons need a signed app** _and_
   `NSUserNotificationAlertStyle: alert`. Unsigned builds silently omit the
   button. This is why the in-app toast is the default.

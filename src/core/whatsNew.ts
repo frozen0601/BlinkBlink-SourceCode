@@ -10,9 +10,9 @@
 /** Lines to show for a version. Keep to three, and write them for a user. */
 export const RELEASE_NOTES: Record<string, string[]> = {
     '0.2.4': [
-        'Intel Macs have a build of their own again.',
-        'AppImage installs update themselves now, the way the Windows build does.',
-        'A lighter download: the app is about a fifth smaller.',
+        'New statistics: your week at a glance, and the hour you skip most.',
+        'Updates install themselves on macOS and on Linux AppImages.',
+        'Intel Macs have a native build again, and every download is a fifth smaller.',
     ],
 }
 

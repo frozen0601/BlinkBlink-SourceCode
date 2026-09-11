@@ -92,13 +92,27 @@ Two platform notes worth keeping in mind when touching this:
   deliberately — its full screen means a new Space, with an animation and a
   window that no longer floats over other apps.
 
-The overlay still appears in the Linux task switcher, and that is not fixable
-from inside the app. `skipTaskbar` is unsupported on Linux (and inert on
-Wayland), KWin's alt-tab ignores it on X11 as well, and the one lever that does
-work — `focusable: false` — takes the window out of window management along with
-its keyboard events, which would cost the overlay its Escape-to-skip. Users who
-want it gone can add a KWin rule: **System Settings → Window Management → Window
-Rules**, match `blinkblink`, set _Skip switcher_ to Force / Yes.
+The overlay still appears in the Linux task switcher — confirmed on Fedora with
+Plasma, where the full-screen change does cover the panel but alt-tab still
+lists the break screen.
+
+That part is not reachable from Electron. KWin decides it from
+`_KDE_NET_WM_STATE_SKIP_SWITCHER`, an atom it reads inside the window's
+`_NET_WM_STATE`; `NET::SkipSwitcher` in KWindowSystem is the same thing. Electron
+exposes no way to put an arbitrary atom there — `skipTaskbar` sets only
+`_NET_WM_STATE_SKIP_TASKBAR` and `_NET_WM_STATE_SKIP_PAGER`, and KWin's alt-tab
+ignores both. Setting it from the app would mean a native module (or an `xprop`
+call timed between window creation and mapping, which depends on a binary that
+may not be installed and on Electron's mapping order).
+
+The lever Electron does offer, `focusable: false`, takes the window out of
+window management entirely and its keyboard events with it — and Escape-to-skip
+is there for people who do not use a mouse.
+
+The answer for now is a KWin rule, which is two clicks and permanent:
+**System Settings → Window Management → Window Rules → Add New**, match the
+window class `blinkblink`, add the property _Skip switcher_, set it to
+**Force / Yes**.
 
 ## Reminders
 
