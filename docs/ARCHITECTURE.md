@@ -273,8 +273,26 @@ attributes, which a plain copy flattens. `xattr -cr` on the copy is what stops
 the quarantine flag the download picked up putting the new app back behind
 Gatekeeper.
 
-**This has not been run on a real Mac.** There is no macOS runner here, so the
-checks and the fallbacks are written to be the part that holds.
+No administrator password is involved. `/Applications` is group-writable by
+`admin`, which the person who installed the app almost always is, and the swap
+is two renames inside a directory they already own. A standard user, or an app
+installed somewhere read-only, fails the `W_OK` check and gets the manual path.
+
+The open question is **App Management**, the TCC protection macOS 13 added over
+modifying app bundles. Apple's carve-out is for an app updating itself, matched
+by code signature — and BlinkBlink is unsigned, which is the case the rule does
+not describe. Either macOS treats an unsigned bundle as unprotected and the
+rename simply works, or it refuses with `EPERM` and the app falls back to the
+drag. Both are handled; which one happens is not knowable from here.
+
+It cannot be settled by a script either, because TCC judges the process doing
+the asking: `tools/try-mac-inplace-install.sh` run from a terminal tests the
+terminal's permission. `--try-install <dmg>` exists for this — it runs the real
+`installFromDmg` from the installed binary against its own bundle, which is the
+case macOS is actually deciding on.
+
+**Nothing on this path has been run on a real Mac.** There is no macOS runner
+here, so the checks and the fallbacks are written to be the part that holds.
 
 ### The macOS artifacts
 
@@ -338,3 +356,8 @@ blinkblink --settings      open settings
 blinkblink --stats         open statistics
 blinkblink --hidden        start in the background (used by the autostart entry)
 ```
+
+`--try-install <dmg>` is not one of these. It is handled before the
+single-instance lock precisely so it is _not_ handed to the running instance:
+see "Installing a macOS update" for why the identity of the calling process is
+the whole point.
