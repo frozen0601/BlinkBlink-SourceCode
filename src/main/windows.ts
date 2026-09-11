@@ -298,7 +298,13 @@ class WindowManager {
 
         window.on('closed', () => {
             this.#windowsByDisplay.delete(displayId)
-            if (this.#windowsByDisplay.size === 0) this.#stopCountdown()
+            if (this.#windowsByDisplay.size !== 0) return
+
+            this.#stopCountdown()
+            // Not only reached through closeAllWindows: a renderer that dies
+            // takes its window with it, and the grab below would otherwise
+            // outlive the overlay and swallow Escape for the whole desktop.
+            this.#releaseEscape()
         })
 
         window.webContents.on('render-process-gone', (_event, details) => {
