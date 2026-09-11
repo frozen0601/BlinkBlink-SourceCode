@@ -25,6 +25,7 @@ const STORE_DEFAULTS: StoreSchema = {
     hasCompletedFirstRun: false,
     history: EMPTY_HISTORY,
     lastSeenVersion: '',
+    lastAnnouncedVersion: '',
     lastBreakEndTime: 0,
     currentWorkStreakStartTime: 0,
     trayWindowPositions: {},
@@ -189,6 +190,14 @@ export function getLastSeenVersion(): string {
 
 export function setLastSeenVersion(version: string): void {
     store.set('lastSeenVersion', version)
+}
+
+export function getLastAnnouncedVersion(): string {
+    return store.get('lastAnnouncedVersion', '')
+}
+
+export function setLastAnnouncedVersion(version: string): void {
+    store.set('lastAnnouncedVersion', version)
 }
 
 // Install identity ------------------------------------------------------

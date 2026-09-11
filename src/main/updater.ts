@@ -16,12 +16,20 @@
  * branches on the platform directly.
  */
 
-import { app, BrowserWindow, dialog, shell } from 'electron'
+import { app, BrowserWindow, dialog, Notification, shell } from 'electron'
 import { download } from 'electron-dl'
 import * as path from 'path'
-import { getSettings } from './store'
+import { getLastAnnouncedVersion, getSettings, setLastAnnouncedVersion } from './store'
 import { getUpdateDelivery, isMac, isSnap } from './platform'
-import { isNewerVersion, pickAssetForArch, ReleaseAsset, pickLatestRelease, ReleaseSummary, updateArch } from '../core/update'
+import {
+    isNewerVersion,
+    pickAssetForArch,
+    ReleaseAsset,
+    pickLatestRelease,
+    ReleaseSummary,
+    shouldAnnounceUpdate,
+    updateArch,
+} from '../core/update'
 
 const RELEASES_API = 'https://api.github.com/repos/frozen0601/BlinkBlink-Releases/releases'
 const INSTALL_GUIDE_URL = 'https://2ly.link/216pI'
@@ -137,6 +145,35 @@ async function downloadMacOSUpdate(asset: ReleaseAsset): Promise<void> {
     }
 }
 
+/**
+ * Tells a macOS user about an update without interrupting them.
+ *
+ * The periodic check runs every four hours, and it used to open a modal dialog
+ * on top of whatever was on screen — the same dialog, about the same version,
+ * six times a day. A notification says the same thing, waits to be clicked, and
+ * is only raised once per version.
+ */
+function announceMacUpdate(version: string, asset: ReleaseAsset | null): void {
+    if (!asset) return
+    if (!shouldAnnounceUpdate(version, getLastAnnouncedVersion())) return
+    setLastAnnouncedVersion(version)
+
+    if (!Notification.isSupported()) {
+        console.info(`[updater] ${version} is available; system notifications are unavailable, so nothing was shown`)
+        return
+    }
+
+    const notification = new Notification({
+        title: `BlinkBlink ${version} is available`,
+        body: 'Click to download it. You are running ' + app.getVersion() + '.',
+        silent: true,
+    })
+
+    notification.on('click', () => void downloadMacOSUpdate(asset))
+    notification.on('failed', (_event, error) => console.error('[updater] update notification failed:', error))
+    notification.show()
+}
+
 function externalUpdateMessage(): { message: string; detail: string } {
     if (isSnap()) {
         return { message: 'Updates are handled automatically by Snap.', detail: 'Run `snap refresh blinkblink` to check immediately.' }
@@ -170,6 +207,15 @@ export async function checkForUpdates(silent = false): Promise<{ updateAvailable
         }
 
         if (isMac) {
+            // An arm64 build will not launch at all on an Intel Mac, so the
+            // architecture has to match rather than "whatever came first".
+            const asset = pickAssetForArch(latest.assets, '.dmg', updateArch(process.arch, app.runningUnderARM64Translation))
+
+            if (silent) {
+                announceMacUpdate(latestVersion, asset)
+                return { updateAvailable: true, version: latestVersion }
+            }
+
             const { response } = await showDialog({
                 type: 'info',
                 buttons: ['Download', 'Later'],
@@ -181,10 +227,6 @@ export async function checkForUpdates(silent = false): Promise<{ updateAvailable
             })
 
             if (response === 0) {
-                // An arm64 build will not launch at all on an Intel Mac, so the
-                // architecture has to match rather than "whatever came first".
-                const asset = pickAssetForArch(latest.assets, '.dmg', updateArch(process.arch, app.runningUnderARM64Translation))
-
                 if (!asset) {
                     await showDialog({ type: 'error', title: 'Update Unavailable', message: 'This release has no macOS download.' })
                     return { updateAvailable: true, version: latestVersion }

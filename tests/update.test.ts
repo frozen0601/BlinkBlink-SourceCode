@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { isNewerVersion, parseVersion, pickAssetForArch, pickLatestRelease, ReleaseSummary, updateArch } from '../src/core/update'
+import {
+    isNewerVersion,
+    parseVersion,
+    pickAssetForArch,
+    pickLatestRelease,
+    ReleaseSummary,
+    shouldAnnounceUpdate,
+    updateArch,
+} from '../src/core/update'
 
 const asset = (name: string) => ({ name, browser_download_url: `https://example.test/${name}` })
 
@@ -98,6 +106,23 @@ describe('pickAssetForArch', () => {
     it('is not confused by a version number containing the arch string', () => {
         const tricky = [asset('BlinkBlink-1.64.0-arm64.dmg'), asset('BlinkBlink-1.64.0-x64.dmg')]
         expect(pickAssetForArch(tricky, '.dmg', 'x64')?.name).toBe('BlinkBlink-1.64.0-x64.dmg')
+    })
+})
+
+describe('shouldAnnounceUpdate', () => {
+    it('announces a version the user has not been told about', () => {
+        expect(shouldAnnounceUpdate('0.2.4', '')).toBe(true)
+        expect(shouldAnnounceUpdate('0.2.4', '0.2.3')).toBe(true)
+    })
+
+    it('does not announce the same version again four hours later', () => {
+        // The background check runs every four hours for as long as the app is
+        // open, and the answer does not change between runs.
+        expect(shouldAnnounceUpdate('0.2.4', '0.2.4')).toBe(false)
+    })
+
+    it('says nothing about a version it could not read', () => {
+        expect(shouldAnnounceUpdate('', '')).toBe(false)
     })
 })
 

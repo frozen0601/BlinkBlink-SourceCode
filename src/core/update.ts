@@ -54,6 +54,18 @@ export function pickLatestRelease(releases: ReleaseSummary[]): ReleaseSummary | 
 }
 
 /**
+ * Whether a background check should say anything about this version.
+ *
+ * The periodic check runs every four hours for as long as the app is open, and
+ * the answer does not change between runs. Announcing once per version is the
+ * difference between being told and being nagged; the same version announced
+ * six times a day is how someone ends up switching updates off.
+ */
+export function shouldAnnounceUpdate(version: string, lastAnnounced: string): boolean {
+    return version !== '' && version !== lastAnnounced
+}
+
+/**
  * The architecture an update should be chosen for.
  *
  * `process.arch` reports the build that is running, not the machine. An x64

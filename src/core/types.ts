@@ -98,6 +98,8 @@ export interface StoreSchema {
     history: BreakHistory
     /** The version whose release note has been shown. Empty until one is. */
     lastSeenVersion: string
+    /** The version a background update check has already announced. */
+    lastAnnouncedVersion: string
     lastBreakEndTime: number
     currentWorkStreakStartTime: number
     trayWindowPositions: Record<string, TrayWindowPosition>
