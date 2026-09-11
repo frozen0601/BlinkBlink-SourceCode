@@ -35,9 +35,11 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: macOS (universal)
+          # Both architectures, matching what a release now builds: a test
+          # build of a shape that is not shipped tests the wrong thing.
+          - name: macOS (arm64, x64)
             os: macos-latest
-            args: --mac dmg --universal
+            args: --mac dmg
             artifact: macos
           - name: Windows
             os: windows-latest
