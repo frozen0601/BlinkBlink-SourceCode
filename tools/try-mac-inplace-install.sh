@@ -88,5 +88,11 @@ else
 fi
 
 echo
-echo "All four steps completed. This is exactly what the app does to"
-echo "/Applications/BlinkBlink.app when it installs an update."
+echo "All four steps completed against a copy in a temporary folder."
+echo
+echo "What this does NOT prove: macOS decides whether a bundle in /Applications"
+echo "may be replaced from the identity of the process asking, and here that"
+echo "process is your terminal. To test what the app itself is allowed to do,"
+echo "quit BlinkBlink and run:"
+echo
+echo "  /Applications/BlinkBlink.app/Contents/MacOS/BlinkBlink --try-install \"$DMG\""

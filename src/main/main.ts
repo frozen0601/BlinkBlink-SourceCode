@@ -18,9 +18,37 @@ function actOnIntent(argv: readonly string[], openSettingsByDefault: boolean): v
     else if (openSettingsByDefault && !intent.hidden) createSettingsWindow()
 }
 
+/**
+ * Rehearses the in-place update, for real, against this bundle.
+ *
+ * Deliberately handled before the single-instance lock and before anything is
+ * set up: macOS grants or refuses the right to replace an app bundle based on
+ * the identity of the process asking, so the only faithful test is BlinkBlink's
+ * own binary doing it to BlinkBlink's own bundle. A shell script running the
+ * same four commands tests the terminal instead.
+ */
+function rehearseInstall(dmgPath: string): void {
+    import('./macInstall')
+        .then(({ installFromDmg }) => installFromDmg(dmgPath))
+        .then((outcome) => {
+            if (outcome.installed) process.stdout.write('installed: this bundle has been replaced by the one in the image\n')
+            else process.stdout.write(`not installed: ${outcome.reason}\n`)
+        })
+        .catch((error) => process.stdout.write(`not installed: ${error instanceof Error ? error.message : String(error)}\n`))
+        .finally(() => app.exit(0))
+}
+
+const tryInstall = parseArgv(process.argv).tryInstall
+
 if (process.argv.includes('--help')) {
     process.stdout.write(CLI_HELP)
     app.quit()
+} else if (tryInstall) {
+    if (process.platform === 'darwin') rehearseInstall(tryInstall)
+    else {
+        process.stdout.write('--try-install is macOS only\n')
+        app.exit(2)
+    }
 } else if (!app.requestSingleInstanceLock()) {
     // A second instance would run its own tray icon and its own break timer,
     // and the two would fight over the same settings file. Hand the launch to
