@@ -72,17 +72,21 @@ app without a tray to click.
   and out of window management altogether (verified with `xwininfo`). Full
   screen is a separate fix, for covering the panel.
 - **Electron picks Wayland on its own when `WAYLAND_DISPLAY` is set.** No flag,
-  no `ELECTRON_OZONE_PLATFORM_HINT` — and that variable is ignored. So the
-  override-redirect fix above reaches X11 and XWayland sessions only; on Wayland
-  the break screen is in alt-tab and no app-side code changes that. Only
-  `--ozone-platform=x11` on the process command line moves it.
+  no `ELECTRON_OZONE_PLATFORM_HINT` — and that variable is ignored. Only
+  `--ozone-platform=x11` on the process command line moves it, and the backend is
+  read before the main script runs, so `app.commandLine.appendSwitch` is too
+  late. The app re-execs itself onto XWayland instead; see `x11Relaunch.ts`.
 - **Never `app.relaunch()` an AppImage.** The child inherits `LD_LIBRARY_PATH`
   pointing into the parent's FUSE mount, the parent exits, the mount vanishes,
   and the child dies with `SIGBUS` in the loader before any app code runs. This
-  shipped once. CI cannot catch it — the sandbox has no FUSE, so an AppImage
-  cannot be run here at all. Anything that must be on the command line belongs in
-  `appImage.executableArgs` (which replaces the default `--no-sandbox`, so pass
-  both) or `linux.executableArgs`, set at build time.
+  shipped once. `core/x11Relaunch.ts` scrubs the child's environment and sets its
+  working directory precisely to avoid that, and the parent stays alive if the
+  child does not survive its first 1.5 s.
+- **An AppImage can be run and tested here.** `apt-get install libfuse2t64`, then
+  run `release/BlinkBlink-x86_64.AppImage` directly; `/dev/fuse` is present. A
+  Wayland session can be simulated with `weston --backend=headless-backend.so`
+  alongside `Xvfb`. Anything touching Linux launch behaviour should be exercised
+  that way rather than reasoned about.
 - **The break screen has no Escape handler, on purpose.** A break you leave with
   one keystroke is not a break. Skip is a button, and an unmanaged window
   receives no key events anyway. Do not add one back.

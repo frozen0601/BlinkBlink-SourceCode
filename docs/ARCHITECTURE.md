@@ -132,11 +132,9 @@ Weston: with no switches the app loads `ozone/platform/wayland` and creates no
 X11 window at all.
 
 Wayland has no override-redirect and no protocol for staying out of a switcher,
-and a Wayland client cannot raise itself back afterwards either. **So on a
-Wayland session the break screen is in alt-tab and nothing in `windows.ts` or
-`core/platform.ts` affects that.** The override-redirect path above applies to
-X11 sessions and to XWayland; it is real, it is just not where most Plasma users
-are.
+and a Wayland client cannot raise itself back afterwards either, so on that
+backend the overlay is listed whatever it asks for. The override-redirect path
+above works on X11 and on XWayland — which is why the app moves itself there.
 
 The backend can only be chosen on the process command line:
 
@@ -147,10 +145,14 @@ The backend can only be chosen on the process command line:
 | `ELECTRON_OZONE_PLATFORM_HINT=x11`            | Wayland — ignored      |
 | `--ozone-platform=x11` on the command line    | X11, override-redirect |
 
-#### Do not re-exec the app to get there
+#### Re-executing onto X11
 
-That last row was briefly implemented as a self-relaunch at startup, and it
-crashed every AppImage user with `SIGBUS`:
+That last row is what the app does: on a Wayland session with an X display to
+land on, it spawns a copy of itself carrying `--ozone-platform=x11` and stands
+down. `core/x11Relaunch.ts` decides and builds the child's command line and
+environment; `main/x11Relaunch.ts` does the spawning.
+
+This shipped once before and killed every AppImage with `SIGBUS`:
 
 ```
 #12 dlopen@GLIBC_2.2.5 (libc.so.6)
@@ -158,20 +160,51 @@ crashed every AppImage user with `SIGBUS`:
 #14 main (BlinkBlink-x86_64.AppImage + 0x5d55)
 ```
 
-Those low offsets are the AppImage type-2 runtime, not Electron. An AppImage
-mounts its squashfs over FUSE and points `LD_LIBRARY_PATH` and `PATH` into
-`/tmp/.mount_*`. `app.relaunch` hands the child that environment, the parent
-then exits and its mount disappears, and the child's loader takes `SIGBUS`
-mapping a library out of a filesystem that is no longer there — inside the
-runtime's own `dlopen`, before any of this app's code runs.
+Those low offsets are the AppImage type-2 runtime, not Electron: the child died
+in the loader before any of this app's code ran. An AppImage mounts its
+squashfs over FUSE and points `LD_LIBRARY_PATH`, `PATH` and half a dozen others
+into `/tmp/.mount_*`. `app.relaunch` hands the child that environment, the
+parent exits, the mount disappears, and the child maps a library out of a
+filesystem that is no longer there.
 
-Nothing here can test that: the sandbox has no FUSE, so an AppImage cannot run
-in CI at all. A mechanism that cannot be exercised against the packaging format
-it breaks does not belong in the app. If the flag is wanted, it belongs in the
-launcher at build time — `appImage.executableArgs` (which **replaces** the
-default `--no-sandbox`, so pass both) and `linux.executableArgs` for the deb and
-rpm desktop entries — where no child process is spawned and there is no
-environment to inherit.
+Four things keep that from happening again:
+
+- **The child's environment is scrubbed.** `childEnvironment` drops `APPDIR`,
+  `APPIMAGE`, `ARGV0` and `OWD` outright and filters every `:`-separated path
+  list entry by entry, so nothing points into the parent's mount. The child's
+  own runtime rebuilds all of it against its own fresh mount.
+- **The child's working directory is set.** AppRun chdirs into the mount, and a
+  child sitting there keeps it busy.
+- **Failure is not fatal.** The parent watches the child for 1.5 s. If it errors
+  or exits in that window the parent carries on running, on Wayland. The worst
+  case is an overlay in alt-tab, never an app that will not open — which is what
+  the first version got wrong by exiting immediately.
+- **It cannot loop.** The child carries `--ozone-platform=x11` on its command
+  line _and_ `BLINKBLINK_X11_RELAUNCH=1` in its environment. Either alone stops
+  a second relaunch.
+
+The single-instance lock is taken _after_ the handover resolves, not before: a
+parent holding it would turn its own replacement away.
+
+Verified on a real AppImage, launched with no flags against a headless Weston
+with `DISPLAY` also set — FUSE is available here, so this can be tested
+properly now:
+
+```
+[app] handed over to a copy running on XWayland
+pid 8535: ...AppImage --take-break --ozone-platform=x11
+overlay window 0x200003  Override Redirect State: yes
+```
+
+**Known cost, measured and not yet solved.** The discarded process's Electron
+main exits, but its AppImage runtime — the FUSE server for its own mount —
+stays asleep in `fuse_dev_do_read` instead of unmounting, so each launch on a
+Wayland session leaves behind one ~2.5 MB process and one `/tmp/.mount_*`
+directory until the session ends. A normal launch with no handover tears both
+down correctly, so this is the handover's doing. Nothing was found holding the
+mount open: no process has an fd, a mapping or a working directory inside it.
+Worth another look; not worth blocking the fix, since the alternative is a
+break screen anyone can tab away from.
 
 ## Reminders
 
