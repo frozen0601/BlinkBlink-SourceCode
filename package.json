@@ -139,12 +139,8 @@
       "synopsis": "Healthy Eyes, Happy Life",
       "description": "BlinkBlink reminds you to follow the 20-20-20 rule: every 20 minutes, look at something 20 feet away for 20 seconds.",
       "desktop": {
-        "entry": {
-          "Name": "BlinkBlink",
-          "Comment": "Healthy Eyes, Happy Life",
-          "Categories": "Utility;",
-          "StartupWMClass": "blinkblink"
-        }
+        "Name": "BlinkBlink",
+        "StartupWMClass": "blinkblink"
       }
     },
     "appImage": {
