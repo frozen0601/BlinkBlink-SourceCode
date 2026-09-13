@@ -74,22 +74,34 @@ test('the overlay is interactive: skip asks for confirmation, then closes', asyn
     await expect.poll(() => overlay.isClosed(), { timeout: 15_000 }).toBe(true)
 })
 
-test('the countdown reaches a window that was still loading when it started', async () => {
-    // The overlay window is created and its countdown started in the same tick,
-    // so the first `webContents.send` lands before the renderer exists and is
-    // dropped. Without catching the window up, the very first break of a
-    // session showed a frozen progress bar.
+test('the break screen shows nothing that counts down', async () => {
+    // The screen exists to send someone's eyes twenty feet away. It carried a
+    // countdown number once and a progress bar after that, and both gave people
+    // a reason to keep watching the screen instead. Nothing on it may tick.
     launched = await launchApp({ args: ['--take-break'], settings: { breakDuration: 30_000 } })
     const overlay = await waitForWindow(launched.app, 'overlay.html')
 
-    const progress = overlay.locator('#progress-bar')
-    await expect.poll(() => progress.evaluate((el) => getComputedStyle(el).display), { timeout: 10_000 }).toBe('block')
+    await expect.poll(() => overlay.evaluate(() => document.body.classList.contains('show-break')), { timeout: 10_000 }).toBe(true)
+    await expect(overlay.locator('#progress-bar')).toHaveCount(0)
 
-    // A running CSS transition means the bar is animating rather than parked.
-    const scaleAt = () => progress.evaluate((el) => new DOMMatrixReadOnly(getComputedStyle(el).transform).a)
-    const first = await scaleAt()
-    await overlay.waitForTimeout(1500)
-    expect(await scaleAt()).toBeGreaterThan(first)
+    // Nothing on the screen may be tied to how long is left. A countdown shows
+    // up as an animation or transition running for something like the break's
+    // own duration; the entrance fades are a fraction of a second, so the
+    // length is what separates them. (Counting running animations instead was
+    // flaky: an entrance fade finishes between two samples.)
+    const timedToTheBreak = await overlay.evaluate(() =>
+        document
+            .getAnimations()
+            .map((animation) => Number(animation.effect?.getTiming().duration) || 0)
+            .filter((duration) => duration >= 5000)
+    )
+    expect(timedToTheBreak).toEqual([])
+
+    // And the text has to say the same thing two seconds later.
+    const readBreakText = () => overlay.evaluate(() => document.getElementById('break-view')?.innerText ?? '')
+    const before = await readBreakText()
+    await overlay.waitForTimeout(2000)
+    expect(await readBreakText()).toBe(before)
 })
 
 test('the content security policy does not block the overlay script', async () => {

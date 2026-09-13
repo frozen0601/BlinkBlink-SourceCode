@@ -43,7 +43,6 @@ class OverlayUI {
     #skipArmed = false
     #currentView: ViewName = View.Break
 
-    readonly #progressBar = document.getElementById('progress-bar')
     readonly #progressTracker = document.getElementById('progress-tracker')
     readonly #centralCircle = document.getElementById('central-circle')
     readonly #skipButton = document.getElementById('skip-button')
@@ -73,15 +72,20 @@ class OverlayUI {
         this.#dismissButton?.addEventListener('click', () => this.#dismiss())
     }
 
+    /**
+     * The break screen deliberately shows no countdown of any kind.
+     *
+     * It carried a number first, then a progress bar along the bottom edge.
+     * Both were the same mistake: the screen exists to send someone's eyes
+     * twenty feet away, and anything that ticks gives them a reason to keep
+     * watching it. The main process still runs the interval — it is what ends
+     * the break — the renderer simply is not told about it.
+     *
+     * The summary's Dismiss button keeps its own bar. That one is a control
+     * about to act on its own, which is worth showing.
+     */
     #bindMainProcessEvents(): void {
         window.api.onShowView((view) => this.#setView(view === View.Summary ? View.Summary : View.Break))
-        // `countdown-update` is deliberately not subscribed to. The break used
-        // to show the remaining seconds as a large number, which reads as a
-        // stopwatch to watch rather than a cue to look away. The bar along the
-        // bottom edge carries the same information without asking for
-        // attention. The main process still runs the per-second interval; it is
-        // what ends the break.
-        window.api.onStartCountdown((duration) => this.#startProgress(duration))
     }
 
     #setView(view: ViewName): void {
@@ -94,18 +98,6 @@ class OverlayUI {
 
     #dismiss(): void {
         window.api.dismissSummary()
-    }
-
-    #startProgress(duration: number): void {
-        if (!this.#progressBar) return
-        this.#progressBar.style.transition = 'none'
-        this.#progressBar.style.transform = 'scaleX(0)'
-        this.#progressBar.style.display = 'block'
-        void this.#progressBar.offsetHeight // Force a reflow so the reset applies.
-        this.#progressBar.style.transition = `transform ${duration}ms linear`
-        requestAnimationFrame(() => {
-            if (this.#progressBar) this.#progressBar.style.transform = 'scaleX(1)'
-        })
     }
 
     async #handleSkipClick(): Promise<void> {
@@ -139,7 +131,6 @@ class OverlayUI {
             const [stats, settings] = await Promise.all([window.api.getStats(), window.api.getSettings()])
 
             this.#renderProgressTracker(stats.breakStreakCount)
-            if (this.#progressBar) this.#progressBar.style.transform = 'scaleX(0)'
 
             if (settings?.enableSoundNotification) await this.#playSound(settings.notificationSound)
             if (settings?.enableAutoDismiss) this.#animateDismissButton(settings.summaryDuration)

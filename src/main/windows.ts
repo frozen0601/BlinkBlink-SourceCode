@@ -154,8 +154,9 @@ class WindowManager {
             // Linux asks for real full screen after showing (see below); macOS
             // must not, because its full screen means a new Space.
             fullscreenable: isLinux,
-            // Linux only: keeps the break screen out of the task switcher, at
-            // the cost of keyboard focus. `#bindEscape` buys that back.
+            // Linux only: maps the window override-redirect, which is what
+            // keeps the break screen out of the task switcher. It receives no
+            // key events as a result, which the break screen does not want.
             ...(overlayShouldBypassWm() ? { focusable: false } : {}),
             skipTaskbar: true,
             hasShadow: false,
@@ -202,24 +203,7 @@ class WindowManager {
                 // compositor refuses it.
                 window.setFullScreen(true)
             }
-
-            // A countdown that started while this window was still loading
-            // never reached it — `webContents.send` to an unloaded renderer is
-            // dropped. Catch the window up with the time that is actually left,
-            // so its progress bar animates over the correct remainder.
-            this.#sendCountdownState(window)
         })
-    }
-
-    /** Brings one window up to date with the countdown already in progress. */
-    #sendCountdownState(window: BrowserWindow): void {
-        if (this.#countdownEndsAt === null || window.isDestroyed()) return
-
-        const remainingMs = this.#countdownEndsAt - Date.now()
-        if (remainingMs <= 0) return
-
-        window.webContents.send('start-countdown', remainingMs)
-        window.webContents.send('countdown-update', Math.ceil(remainingMs / 1000))
     }
 
     /**
@@ -303,23 +287,15 @@ class WindowManager {
      * first decided the transition.
      */
     #startCountdown(config: ShowConfig): void {
-        // Recorded on the instance so a window that finishes loading mid-count
-        // can be caught up; see #sendCountdownState.
         this.#countdownEndsAt = Date.now() + config.durationMs
 
-        this.#broadcast('start-countdown', config.durationMs)
-        this.#broadcast('countdown-update', Math.ceil(config.durationMs / 1000))
-
+        // Nothing is sent to the renderers. The break screen shows no
+        // countdown on purpose — see the note in `renderer/overlay.ts` — so
+        // this interval exists only to end the break.
         this.#countdownInterval = setInterval(() => {
-            const remainingMs = (this.#countdownEndsAt ?? 0) - Date.now()
-
-            if (remainingMs <= 0) {
-                this.#stopCountdown()
-                config.onComplete()
-                return
-            }
-
-            this.#broadcast('countdown-update', Math.ceil(remainingMs / 1000))
+            if ((this.#countdownEndsAt ?? 0) - Date.now() > 0) return
+            this.#stopCountdown()
+            config.onComplete()
         }, 250)
     }
 
@@ -328,12 +304,6 @@ class WindowManager {
         if (this.#countdownInterval) {
             clearInterval(this.#countdownInterval)
             this.#countdownInterval = undefined
-        }
-    }
-
-    #broadcast(channel: string, payload: unknown): void {
-        for (const { window } of this.#windowsByDisplay.values()) {
-            if (!window.isDestroyed()) window.webContents.send(channel, payload)
         }
     }
 }

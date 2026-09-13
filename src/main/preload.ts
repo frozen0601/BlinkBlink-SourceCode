@@ -56,8 +56,6 @@ const api = {
 
     // Subscriptions; each returns its own unsubscribe function.
     onShowView: (callback: (view: string) => void) => subscribe<string>('show-view', callback),
-    onStartCountdown: (callback: (duration: number) => void) => subscribe<number>('start-countdown', callback),
-    onCountdownUpdate: (callback: (countdown: number) => void) => subscribe<number>('countdown-update', callback),
     onDownloadProgress: (callback: (progress: { percent: number; transferredBytes: number; totalBytes: number }) => void) =>
         subscribe<{ percent: number; transferredBytes: number; totalBytes: number }>('download-progress', callback),
 }
