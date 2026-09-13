@@ -16,6 +16,7 @@
 import { spawn } from 'child_process'
 import * as os from 'os'
 import { childArguments, childEnvironment, shouldRelaunchOntoX11 } from '../core/x11Relaunch'
+import { isFlatpak, isSnap } from './platform'
 
 /**
  * How long to watch the replacement before trusting it.
@@ -34,6 +35,7 @@ function relaunchFacts() {
         ozoneHint: process.env.ELECTRON_OZONE_PLATFORM_HINT,
         argv: process.argv,
         marker: process.env.BLINKBLINK_X11_RELAUNCH,
+        isConfined: isSnap() || isFlatpak(),
     }
 }
 

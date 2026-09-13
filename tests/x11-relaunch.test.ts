@@ -29,6 +29,12 @@ describe('shouldRelaunchOntoX11', () => {
         expect(shouldRelaunchOntoX11(facts({ platform: 'win32' }))).toBe(false)
     })
 
+    it('leaves snap and Flatpak alone, which are entered through their own launcher', () => {
+        // Untested confinement is how the AppImage got broken; these keep the
+        // old behaviour until someone can try it on a real install.
+        expect(shouldRelaunchOntoX11(facts({ isConfined: true }))).toBe(false)
+    })
+
     describe('never twice', () => {
         it('stops on the marker the child is given', () => {
             expect(shouldRelaunchOntoX11(facts({ marker: '1' }))).toBe(false)

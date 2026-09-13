@@ -11,8 +11,8 @@
 export const RELEASE_NOTES: Record<string, string[]> = {
     '0.2.4': [
         'New statistics: your week at a glance, and the hour you skip most.',
-        'Updates install themselves on macOS and on Linux AppImages.',
-        'Intel Macs have a native build again, and every download is a fifth smaller.',
+        'Escape no longer skips a break — use the Skip button.',
+        'Linux: the break screen covers everything and stays out of alt-tab.',
     ],
 }
 

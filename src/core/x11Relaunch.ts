@@ -55,6 +55,8 @@ export interface RelaunchFacts {
     argv: readonly string[]
     /** The marker from a previous relaunch, if this process is already the child. */
     marker?: string
+    /** True inside snap confinement or a Flatpak sandbox. */
+    isConfined?: boolean
 }
 
 /**
@@ -68,6 +70,13 @@ export function shouldRelaunchOntoX11(facts: RelaunchFacts): boolean {
     if (facts.platform !== 'linux') return false
     // Already the relaunched process.
     if (facts.marker) return false
+    // Snap and Flatpak are entered through their own launcher, which sets up the
+    // confinement before the binary runs. Re-running `process.execPath` from
+    // inside skips that, and neither can be built or run here to find out what
+    // that does. Those users keep the overlay in alt-tab on Wayland until this
+    // can be tested on a real install; an untested re-exec is how the AppImage
+    // got broken.
+    if (facts.isConfined) return false
     // Already on X11; nothing to move.
     if (!facts.waylandDisplay) return false
     // No XWayland to land on. Forcing the backend here would mean an app that
