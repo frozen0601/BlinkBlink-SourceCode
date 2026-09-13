@@ -164,6 +164,39 @@ function showSystemNotification(breakAt: Date): boolean {
     }
 }
 
+/**
+ * Sends a reminder right now, so the user can see whether one arrives.
+ *
+ * There is no way to ask any of the three platforms whether notifications are
+ * actually permitted — Electron exposes no authorisation status, and `show()`
+ * succeeds whether the notification is drawn or silently dropped. So the app
+ * cannot warn someone that the setting they turned on is being ignored by the
+ * OS, which is exactly the position a user ended up in: reminders enabled in
+ * BlinkBlink, blocked in System Settings, and nothing to explain the silence.
+ *
+ * Sending one on demand is the answer that does not need an API. It also puts
+ * the OS permission prompt in front of the user at a moment they understand,
+ * rather than fifteen minutes into the first session.
+ *
+ * Returns false only when the notification could not be handed to the OS at
+ * all; true means it was sent, not that it was seen.
+ */
+export function sendTestReminder(): boolean {
+    if (!Notification.isSupported()) return false
+
+    try {
+        new Notification({
+            title: 'BlinkBlink reminders look like this',
+            body: 'You will get one shortly before each break.',
+            silent: false,
+        }).show()
+        return true
+    } catch (error) {
+        console.error('[reminder] could not send the test notification:', error)
+        return false
+    }
+}
+
 /** Shows the reminder for a break due at `breakAt`, honouring user settings. */
 export function showBreakReminder(breakAt: Date): void {
     const settings = getSettings()

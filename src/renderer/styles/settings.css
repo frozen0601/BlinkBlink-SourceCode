@@ -136,6 +136,44 @@ h1 {
     flex-shrink: 0;
 }
 
+/*
+ * A control that needs a second line under it — the reminder style and its
+ * "Send one now", which has to sit with the control it tests rather than in
+ * the description column.
+ */
+.setting-control-stacked {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.375rem;
+}
+
+/*
+ * A button that reads as an action on the setting beside it, not a second
+ * primary control competing with the select above it.
+ */
+.link-button {
+    background: none;
+    border: none;
+    padding: 0;
+    font: inherit;
+    font-size: 0.75rem;
+    color: var(--accent-color);
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.link-button:hover:not(:disabled) {
+    opacity: 0.8;
+}
+
+.link-button:disabled {
+    color: var(--text-secondary);
+    cursor: default;
+    text-decoration: none;
+    opacity: 0.6;
+}
+
 .setting-control .input-unit {
     margin-left: 0.25rem;
     font-size: 0.9rem;

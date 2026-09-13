@@ -11,8 +11,8 @@
 export const RELEASE_NOTES: Record<string, string[]> = {
     '0.2.4': [
         'New statistics: your week at a glance, and the hour you skip most.',
-        'Escape no longer skips a break — use the Skip button.',
-        'Linux: the break screen covers everything and stays out of alt-tab.',
+        'A more reliable break screen that stays put until the break is over.',
+        'Smaller downloads, and updates that install themselves.',
     ],
 }
 

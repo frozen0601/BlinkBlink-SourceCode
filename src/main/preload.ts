@@ -38,6 +38,7 @@ const api = {
     // Writes
     saveSettings: (settings: Partial<Settings>): Promise<Settings> => ipcRenderer.invoke('save-settings', settings),
     checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
+    sendTestReminder: (): Promise<boolean> => ipcRenderer.invoke('send-test-reminder'),
     openExternal: (url: string): Promise<boolean> => ipcRenderer.invoke('open-external', url),
 
     // Overlay actions

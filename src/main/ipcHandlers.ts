@@ -14,7 +14,7 @@ import { showBreakView } from './windows'
 import { checkForUpdates, startAutoUpdateTimer, stopAutoUpdateTimer } from './updater'
 import { getAvailableSounds, getSoundPath } from './sound'
 import { handleBreakComplete, handleBreakSkip, handleScheduleUpdated, handleSummaryDismissed } from './controller'
-import { closeReminder } from './reminder'
+import { closeReminder, sendTestReminder } from './reminder'
 import { closeWhatsNew, getWhatsNew } from './whatsNew'
 import { canShowNotificationActions, getBackdropMode, getUpdateDelivery, isLinux, isMac, isWindows } from './platform'
 import { SETTINGS_LIMITS } from '../core/settings'
@@ -135,6 +135,12 @@ export function registerIpcHandlers(): void {
     })
 
     ipcMain.handle('check-for-updates', () => checkForUpdates(false))
+
+    /**
+     * Sends a reminder now. No platform will tell us whether notifications are
+     * permitted, so seeing one arrive is the only test there is.
+     */
+    ipcMain.handle('send-test-reminder', () => sendTestReminder())
 
     ipcMain.handle('open-external', async (_event, url: unknown) => {
         if (!isSafeExternalUrl(url)) {

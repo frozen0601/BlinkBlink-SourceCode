@@ -374,6 +374,41 @@ function applyCapabilities(capabilities: Capabilities): void {
     if (reminderNote && capabilities.isMac && !capabilities.notificationActionsSupported) {
         reminderNote.textContent = 'System notifications on macOS cannot show a Skip button unless the app is code signed.'
     }
+
+    bindTestReminder(capabilities.isMac)
+}
+
+/**
+ * "Send one now", beside the reminder style.
+ *
+ * No platform tells the app whether notifications are actually permitted, so
+ * someone whose OS is blocking them sees the setting switched on and nothing
+ * happening. Sending one on demand is the only way to find out, and the note
+ * afterwards says where to go if it does not arrive.
+ */
+function bindTestReminder(isMac: boolean): void {
+    const button = byId<HTMLButtonElement>('testReminder')
+    const note = byId('reminder-note')
+    if (!button) return
+
+    const settingsPath = isMac ? 'System Settings → Notifications' : 'your system notification settings'
+
+    button.addEventListener('click', async () => {
+        button.disabled = true
+        const sent = await window.api.sendTestReminder()
+
+        if (note) {
+            note.textContent = sent
+                ? `Sent. If nothing appeared, allow notifications for BlinkBlink in ${settingsPath}, or switch to the BlinkBlink toast.`
+                : 'This system has no notification service. Switch to the BlinkBlink toast to get reminders.'
+        }
+
+        // Long enough that a second click is a deliberate re-test rather than
+        // an impatient one while the first is still arriving.
+        setTimeout(() => {
+            button.disabled = false
+        }, 3000)
+    })
 }
 
 // Tabs ------------------------------------------------------------------
