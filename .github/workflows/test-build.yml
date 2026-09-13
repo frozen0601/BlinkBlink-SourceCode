@@ -15,6 +15,11 @@ name: Test build
 
 on:
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version for this build only, e.g. 0.2.4. Leave empty to use package.json.'
+        required: false
+        type: string
   push:
     branches: [main, 'claude/**']
 
@@ -58,6 +63,15 @@ jobs:
           cache: npm
 
       - run: npm ci
+
+      # Rehearsing an update needs two builds whose versions differ, and the
+      # macOS in-place installer refuses anything not strictly newer than what
+      # is running. This sets the version for one build without touching the
+      # committed one, so the release flow still owns the real number.
+      - name: Set the version for this build
+        if: inputs.version != ''
+        shell: bash
+        run: npm version "${{ inputs.version }}" --no-git-tag-version --allow-same-version
 
       - name: Build installers
         shell: bash
