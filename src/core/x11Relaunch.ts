@@ -88,6 +88,53 @@ export function shouldRelaunchOntoX11(facts: RelaunchFacts): boolean {
     return true
 }
 
+/** Whether the break overlay can stay out of the task switcher, and why. */
+export interface SwitcherReport {
+    /** True when the overlay is on X11 (or XWayland) and can hide from alt-tab. */
+    hidesFromSwitcher: boolean
+    /** A one-line explanation, for a startup log the user can read. */
+    reason: string
+}
+
+/**
+ * Describes, for the log, whether this launch can keep the break out of alt-tab.
+ *
+ * The override-redirect trick only works on X11 and XWayland; on the Wayland
+ * backend the overlay is always listed. This turns the launch's facts into a
+ * plain statement of which case the user is in, so an intermittent "sometimes I
+ * can alt-tab" can be read off a terminal rather than guessed at. It describes
+ * the process as it is now: a marker or an `--ozone-platform=x11` on the
+ * command line means this *is* the X11 child, whatever the session type.
+ */
+export function switcherReport(facts: RelaunchFacts): SwitcherReport {
+    if (facts.platform !== 'linux') {
+        return { hidesFromSwitcher: true, reason: 'not Linux; the overlay is not switcher-listed here' }
+    }
+
+    const onX11 = Boolean(facts.marker) || facts.argv.some((argument) => argument.startsWith('--ozone-platform=x11'))
+    if (onX11) {
+        return { hidesFromSwitcher: true, reason: 'running on X11/XWayland; the break is hidden from alt-tab' }
+    }
+    if (!facts.waylandDisplay) {
+        return { hidesFromSwitcher: true, reason: 'X11 session; the break is hidden from alt-tab' }
+    }
+    if (facts.isConfined) {
+        return { hidesFromSwitcher: false, reason: 'snap/Flatpak on Wayland; the break IS in alt-tab (re-exec is disabled in confinement)' }
+    }
+    if (!facts.display) {
+        return { hidesFromSwitcher: false, reason: 'Wayland with no XWayland to fall back to; the break IS in alt-tab' }
+    }
+    if (facts.ozoneHint) {
+        return {
+            hidesFromSwitcher: false,
+            reason: `Wayland, backend forced by ELECTRON_OZONE_PLATFORM_HINT=${facts.ozoneHint}; the break IS in alt-tab`,
+        }
+    }
+    // Otherwise shouldRelaunchOntoX11 is about to re-exec onto X11; the outcome
+    // of that attempt is logged separately by the re-exec itself.
+    return { hidesFromSwitcher: true, reason: 'Wayland with XWayland; handing over to X11 so the break is hidden from alt-tab' }
+}
+
 /**
  * Where every AppImage mount point is created, whatever its random suffix.
  *

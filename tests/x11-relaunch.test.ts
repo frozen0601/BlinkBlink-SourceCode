@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { RELAUNCH_MARKER, childArguments, childEnvironment, shouldRelaunchOntoX11 } from '../src/core/x11Relaunch'
+import { RELAUNCH_MARKER, childArguments, childEnvironment, shouldRelaunchOntoX11, switcherReport } from '../src/core/x11Relaunch'
 
 const facts = (extra: Record<string, unknown> = {}) => ({
     platform: 'linux',
@@ -120,6 +120,35 @@ describe('childEnvironment', () => {
 
     it('skips variables that are not set', () => {
         expect('NOPE' in childEnvironment({ NOPE: undefined })).toBe(false)
+    })
+})
+
+describe('switcherReport', () => {
+    it('says an X11 session hides the break', () => {
+        const r = switcherReport(facts({ waylandDisplay: undefined }))
+        expect(r.hidesFromSwitcher).toBe(true)
+    })
+
+    it('says the re-exec child, on X11, hides the break', () => {
+        expect(switcherReport(facts({ marker: '1' })).hidesFromSwitcher).toBe(true)
+        expect(switcherReport(facts({ argv: ['/usr/bin/blinkblink', '--ozone-platform=x11'] })).hidesFromSwitcher).toBe(true)
+    })
+
+    it('admits snap and Flatpak on Wayland cannot hide it', () => {
+        const r = switcherReport(facts({ isConfined: true }))
+        expect(r.hidesFromSwitcher).toBe(false)
+        expect(r.reason).toContain('alt-tab')
+    })
+
+    it('admits a forced Wayland backend cannot hide it', () => {
+        expect(switcherReport(facts({ ozoneHint: 'wayland' })).hidesFromSwitcher).toBe(false)
+    })
+
+    it('reports the pending X11 handover as hiding it', () => {
+        // Plain Wayland-with-XWayland: shouldRelaunchOntoX11 is true here, and
+        // the report describes the intended outcome of that handover.
+        expect(shouldRelaunchOntoX11(facts())).toBe(true)
+        expect(switcherReport(facts()).hidesFromSwitcher).toBe(true)
     })
 })
 

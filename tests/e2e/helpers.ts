@@ -5,6 +5,9 @@ import * as path from 'path'
 import { DEFAULT_SETTINGS } from '../../src/core/settings'
 import { Settings } from '../../src/core/types'
 
+/** The version the app reports at runtime, read the same way electron-builder stamps it. */
+const APP_VERSION = JSON.parse(fs.readFileSync(path.join(__dirname, '../../package.json'), 'utf-8')).version as string
+
 export interface LaunchOptions {
     /** Extra command-line arguments passed after the app path. */
     args?: string[]
@@ -52,6 +55,13 @@ export async function launchApp(options: LaunchOptions = {}): Promise<LaunchedAp
             settings: { ...DEFAULT_SETTINGS, ...options.settings },
             // Skip the first-run walkthrough; it is exercised separately.
             hasCompletedFirstRun: true,
+            // Mark the running version as already seen, so the what's-new card
+            // does not open on a bare launch. Without this, a version that
+            // carries release notes (and a seeded, non-first-run profile) trips
+            // the "opens no window of its own" expectation — which is real
+            // behaviour, just not what these tests are about. A test that wants
+            // the card can override lastSeenVersion through `store`.
+            lastSeenVersion: APP_VERSION,
             ...options.store,
         }),
         'utf-8'

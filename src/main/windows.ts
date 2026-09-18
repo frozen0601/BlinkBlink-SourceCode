@@ -193,6 +193,17 @@ class WindowManager {
             // the window is first mapped.
             window.setAlwaysOnTop(true, 'screen-saver')
 
+            // The break must never hold the keyboard. Media keys, and typing
+            // for anyone who insists on working through the break, reach
+            // whatever is behind it. The pre-rewrite app called
+            // `setFocusable(false)` here on every platform, and dropping it in
+            // the rewrite is what made the overlay start swallowing the
+            // keyboard. On Linux the constructor's `focusable: false` already
+            // does this (bundled with the override-redirect that keeps it out
+            // of the switcher) and re-setting it after mapping would undo that,
+            // so this is only for the platforms that come up focusable.
+            if (!overlayShouldBypassWm()) window.setFocusable(false)
+
             if (isLinux) {
                 // Screen-sized and always-on-top is not the same thing as full
                 // screen to a Linux window manager: a panel set to stay visible

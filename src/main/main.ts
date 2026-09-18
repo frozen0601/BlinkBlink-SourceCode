@@ -7,7 +7,7 @@ import { registerIpcHandlers } from './ipcHandlers'
 import { setupApp, teardownApp } from './appSetup'
 import { createSettingsWindow, createStatsWindow } from './tray'
 import { showBreakView } from './windows'
-import { relaunchOntoX11IfNeeded } from './x11Relaunch'
+import { relaunchOntoX11IfNeeded, logSwitcherStatus } from './x11Relaunch'
 
 /** Applies a parsed command line to the running app. */
 function actOnIntent(argv: readonly string[], openSettingsByDefault: boolean): void {
@@ -96,6 +96,11 @@ async function start(): Promise<void> {
         standDown()
         return
     }
+
+    // One line per launch saying whether the break can hide from alt-tab, so an
+    // intermittent report ("sometimes I can alt-tab it") can be read straight
+    // off `blinkblink` in a terminal instead of guessed at.
+    logSwitcherStatus()
 
     // A second instance would run its own tray icon and its own break timer,
     // and the two would fight over the same settings file. Hand the launch to

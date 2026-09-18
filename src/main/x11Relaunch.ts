@@ -15,8 +15,8 @@
 
 import { spawn } from 'child_process'
 import * as os from 'os'
-import { childArguments, childEnvironment, shouldRelaunchOntoX11 } from '../core/x11Relaunch'
-import { isFlatpak, isSnap } from './platform'
+import { childArguments, childEnvironment, shouldRelaunchOntoX11, switcherReport } from '../core/x11Relaunch'
+import { isFlatpak, isLinux, isSnap } from './platform'
 
 /**
  * How long to watch the replacement before trusting it.
@@ -101,4 +101,16 @@ export async function relaunchOntoX11IfNeeded(): Promise<boolean> {
     child.unref()
     console.info('[app] handed over to a copy running on XWayland')
     return true
+}
+
+/**
+ * Logs, once at startup, whether the break can stay out of the task switcher.
+ *
+ * Only on Linux, where the answer varies with the session and the install. It
+ * is the ground truth for an intermittent "sometimes I can alt-tab it": run
+ * `blinkblink` from a terminal and read the one `[app] task switcher:` line.
+ */
+export function logSwitcherStatus(): void {
+    if (!isLinux) return
+    console.info(`[app] task switcher: ${switcherReport(relaunchFacts()).reason}`)
 }
